@@ -1,0 +1,205 @@
+/* -----------------------------
+   기본 리셋/박스 사이징
+----------------------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  font-family: "Noto Sans", "Open Sans", sans-serif;
+  color: #333;
+  line-height: 1.5;
+  background-color: #fff;
+  -webkit-text-size-adjust: none; /* 모바일에서 폰트 크기 임의 조정 방지 */
+}
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+ul, li {
+  list-style: none;
+}
+
+/* -----------------------------
+   레이아웃 컨테이너
+----------------------------- */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* -----------------------------
+   헤더(내비게이션)
+----------------------------- */
+.site-header {
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.site-logo {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #4b2d63; /* NewsBalance 보라색 */
+}
+.nav-menu ul {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.nav-menu a {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.25rem 0;
+  transition: color 0.2s ease;
+}
+.nav-menu a:hover {
+  color: #5F3DC4;
+}
+.nav-menu a.active {
+  border-bottom: 2px solid #5F3DC4;
+}
+
+.login-btn {
+  border: 1px solid #5F3DC4;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: #5F3DC4;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.login-btn:hover {
+  background-color: #5F3DC4;
+  color: #fff;
+}
+
+/* -----------------------------
+   메인 히어로 섹션 (홈)
+----------------------------- */
+.hero-section {
+  background: #fff;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  padding-top: 2rem;
+}
+
+.hero-top,
+.hero-middle,
+.hero-bottom {
+  text-align: center;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.hero-title {
+  font-family: "Open Sans", sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #4b2d63;
+}
+.hero-subtitle {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: #666;
+}
+.hero-subtitle a {
+  text-decoration: none;
+  color: #666;
+}
+.hero-subtitle a:hover {
+  color: #5F3DC4;
+}
+
+/* 검색창 스타일 */
+.search-bar-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  max-width: 600px;
+  width: 90%;
+  margin: 0 auto;
+}
+.search-bar-container input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  padding: 0.5rem;
+}
+.search-bar-container button {
+  background-color: #5F3DC4;
+  color: #fff;
+  border: none;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.search-bar-container button:hover {
+  background-color: #4D2F9A;
+}
+
+/* 실시간 핫 키워드 박스 */
+.hot-keywords-section {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+.hot-keywords-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+.hot-keywords-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.keyword {
+  background-color: #eaeaea;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.keyword:hover {
+  background-color: #5F3DC4;
+  color: #fff;
+}
+
+/* 반응형 (모바일 대응) */
+@media (max-width: 768px) {
+  .header-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .search-bar-container {
+    width: 100%;
+    max-width: 100%;
+  }
+}

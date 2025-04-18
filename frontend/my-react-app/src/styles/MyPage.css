@@ -1,0 +1,69 @@
+/* src/index.css */
+
+/* 1) 구글 폰트 임포트 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Open+Sans:wght@600;700&display=swap');
+
+/* 2) Tailwind 기본/컴포넌트/유틸리티 로드 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3) 추가 글로벌 스타일 */
+html {
+  /* 모바일 텍스트 자동 확대 방지 */
+  -webkit-text-size-adjust: none;
+}
+
+body {
+  @apply bg-white text-gray-900 font-sans;
+}
+
+/* 링크 호버시 보라색 강조 */
+a:hover {
+  @apply text-brand;
+}
+
+/* 카드 공통 */
+.card {
+  @apply bg-white shadow rounded-lg p-6;
+}
+
+/* 버튼 공통 */
+.btn {
+  @apply px-4 py-2 rounded-md font-medium;
+}
+
+.btn-primary {
+  @apply bg-brand text-white hover:bg-brand-hover;
+}
+
+.btn-outline {
+  @apply border border-brand text-brand hover:bg-brand hover:text-white;
+}
+
+/* 헤더 내비게이션 */
+.nav-link {
+  @apply pb-1 border-b-2 border-transparent hover:border-current;
+}
+
+.nav-link--active {
+  @apply border-brand text-brand;
+}
+
+/* 검색창 커스텀 */
+.search-bar {
+  @apply flex items-center border border-gray-300 rounded-full overflow-hidden;
+}
+.search-bar input {
+  @apply flex-1 px-4 py-2 focus:outline-none;
+}
+.search-bar button {
+  @apply bg-brand text-white px-4 py-2 rounded-full hover:bg-brand-hover;
+}
+
+/* 반응형 폰트/레이아웃 조정 예시 */
+@media (max-width: 768px) {
+  .container {
+    @apply px-4;
+  }
+}
