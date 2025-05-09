@@ -1,6 +1,7 @@
 // src/pages/goals.tsx
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom'; // 추가
+import Header from '../components/Header';
 import '../styles/Goals.css'; // 예: styles 폴더에서 가져온다면 이렇게 수정
 
 function GoalsPage() {
@@ -57,44 +58,7 @@ function GoalsPage() {
 
   return (
     <>
-      {/* 헤더 */}
-      <header className="site-header">
-        <div className="container header-inner">
-          {/* 로고 및 메뉴 */}
-          {/* a href="index.html" -> <Link to="/" ...> */}
-          <Link to="/" className="site-logo">
-            NewsBalance
-          </Link>
-
-          <nav className="nav-menu">
-            <ul>
-              {/* 홈 -> / */}
-              <li>
-                <Link to="/" className="active">
-                  홈
-                </Link>
-              </li>
-
-              {/* 토론장 (라우트 없으면 #으로 유지 or 새 path="/discussion" 등) */}
-              <li>
-                <Link to="/discussion">토론장</Link>
-              </li>
-
-              {/* 마이페이지 -> /mypage */}
-              <li>
-                <Link to="/mypage">마이페이지</Link>
-              </li>
-
-              {/* 로그인 -> /login */}
-              <li>
-                <Link to="/login" className="login-btn">
-                  로그인
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* 히어로 섹션 */}
       <section className="hero">
@@ -193,7 +157,7 @@ function GoalsPage() {
                 className="team-img"
               />
               <div className="team-info">
-                <p className="team-name">최성ㅄ</p>
+                <p className="team-name">최성</p>
                 <p className="team-role">Frontend Developer</p>
                 <p className="team-desc-text">UI/UX를 구현하며 사용자에게 직관적인 경험을 제공합니다.</p>
               </div>
@@ -205,7 +169,7 @@ function GoalsPage() {
                 className="team-img"
               />
               <div className="team-info">
-                <p className="team-name">야탑물주먹</p>
+                <p className="team-name">신의진</p>
                 <p className="team-role">AI Researcher</p>
                 <p className="team-desc-text">인공지능 모델을 연구하여 정치적 편향성과 정확도를 분석합니다.</p>
               </div>

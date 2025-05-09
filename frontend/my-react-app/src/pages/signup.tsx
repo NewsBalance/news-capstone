@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// CSS가 styles 폴더에 있다면, 예: '../styles/Signup.css'
+import Header from '../components/Header';
 import '../styles/Signup.css';
 
 function SignupPage() {
@@ -292,31 +292,7 @@ function SignupPage() {
 
   return (
     <>
-      {/* 상단 내비게이션(헤더) */}
-      <header className="site-header">
-        <div className="container header-inner">
-          {/* a href="index.html" -> <Link to="/" ...> */}
-          <Link to="/" className="site-logo">
-            NewsBalance
-          </Link>
-          <nav className="nav-menu">
-            <ul>
-              {/* <a href="index.html"> -> <Link to="/"> */}
-              <li>
-                <Link to="/">홈</Link>
-              </li>
-              {/* 토론장 -> 라우트 없으면 # */}
-              <li>
-                <Link to="/discussion">토론장</Link>
-              </li>
-              {/* 마이페이지 -> /mypage */}
-              <li>
-                <Link to="/mypage">마이페이지</Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* 회원가입 섹션 */}
       <section className="signup-section">

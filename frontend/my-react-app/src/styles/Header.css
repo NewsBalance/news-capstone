@@ -1,0 +1,53 @@
+/* 헤더 공통 */
+.site-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eee;
+  }
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .site-logo {
+    font-family: "Open Sans", sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #4b2d63;
+  }
+  .nav-menu ul {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .nav-menu a {
+    font-size: 0.95rem;
+    color: #333;
+    padding: 0.25rem 0;
+    transition: color 0.2s ease;
+  }
+  .nav-menu a:hover {
+    color: #5f3dc4;
+  }
+  .nav-menu a.active {
+    border-bottom: 2px solid #5f3dc4;
+  }
+  .login-btn {
+    border: 1px solid #5f3dc4;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: #5f3dc4;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .login-btn:hover {
+    background-color: #5f3dc4;
+    color: #fff;
+  }
+  
