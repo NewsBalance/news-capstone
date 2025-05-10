@@ -19,7 +19,7 @@ public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
+    private String nickname;
     private String password;
     private String email;
 
@@ -36,10 +36,17 @@ public class User {
     @LastModifiedDate
     private LocalDateTime modifiedAt;
 
-    public User(String username, String password, String email) {
-        this.username = username;
+    public User(String nickname, String password, String email) {
+        this.nickname = nickname;
         this.password = password;
         this.email = email;
     }
 
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
 }

@@ -1,4 +1,4 @@
-package newsbalance.demo.Controller;
+package newsbalance.demo.DTO.Request;
 
 import lombok.Builder;
 import lombok.Data;
@@ -7,7 +7,8 @@ import lombok.Data;
 @Builder
 public class UserRegisterDTO {
 
-    private String username;
+
+    private String nickname;
 
     private String password;
 

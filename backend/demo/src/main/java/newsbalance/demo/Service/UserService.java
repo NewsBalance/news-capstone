@@ -15,9 +15,32 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public User login(String email, String password) {
-        return userRepository.findByEmailAndPassword(email, password);
+    public boolean login(String email, String password) {
+        return userRepository.findByEmailAndPassword(email, password) != null;
     }
 
+    public User getUserbyEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public boolean isExistbyEmail(String email) {
+        return userRepository.findByEmail(email) != null;
+    }
+
+    public void changeNickname(String email, String newnickname) {
+        User user = userRepository.findByEmail(email);
+        user.changeNickname(newnickname);
+        userRepository.save(user);
+    }
+
+    public void changePassword(String email, String newpassword) {
+        User user = userRepository.findByEmail(email);
+        user.changePassword(newpassword);
+        userRepository.save(user);
+    }
+
+    public void delete(User user) {
+        userRepository.delete(user);
+    }
 
 }
