@@ -4,6 +4,11 @@ package newsbalance.demo.Controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import newsbalance.demo.Configuration.SessionConst;
+import newsbalance.demo.DTO.Request.EmailDTO;
+import newsbalance.demo.DTO.Request.LoginDTO;
+import newsbalance.demo.DTO.Response.APIResponse;
+import newsbalance.demo.Entity.User;
+import newsbalance.demo.Service.MailService;
 import newsbalance.demo.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,38 +21,77 @@ public class LoginController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private MailService mailService;
 
-    protected UserRegisterDTO userRegisterDTO;
-
+    // 로그인
     @PostMapping("/login")
-    public ResponseEntity<?> Login(@ModelAttribute UserRegisterDTO userRegisterDTO, HttpServletRequest request) {
-        this.userRegisterDTO = userRegisterDTO;
+    public ResponseEntity<APIResponse> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+        try {
+            String email = loginDTO.getEmail();
+            String password = loginDTO.getPassword();
 
-        // 유저 이메일, 비밀번호가져오기
-        String login_email = userRegisterDTO.getEmail();
-        String login_password = userRegisterDTO.getPassword();
+            boolean isAuthenticated = userService.login(email, password); // 로그인 결과 true/false로 반환하도록 설계
 
-        // db 조회
-        userService.login(login_email, login_password);
+            if (!isAuthenticated) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(new APIResponse(false, 401, "이메일 또는 비밀번호가 올바르지 않습니다.", null));
+            }
 
-        HttpSession session = request.getSession();
-        session.setAttribute(SessionConst.Login_email, login_email);
+            User user = userService.getUserbyEmail(email);
 
-        return ResponseEntity.ok("success");
+            HttpSession session = request.getSession();
+            session.setAttribute(SessionConst.Login_email, email);
+            session.setAttribute(SessionConst.Login_nickname, user.getNickname());
+
+            return ResponseEntity
+                    .ok(new APIResponse(true, 200, "로그인 성공", null));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new APIResponse(false, 500, "로그인 중 오류 발생", e.getMessage()));
+        }
     }
 
-    // 인증번호 메일 전송
-
-    // 인증번호 확인
-
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
+    // 세션 확인
+    @GetMapping("/session")
+    public ResponseEntity<APIResponse> checkSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false); // 세션이 없으면 null 반환
+
         if (session != null) {
-            session.invalidate(); // 세션 무효화
+            String loginEmail = (String) session.getAttribute(SessionConst.Login_email);
+            if (loginEmail != null) {
+                return ResponseEntity
+                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", null));
+            }
         }
 
-        return ResponseEntity.ok(200);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new APIResponse(false, 401, "로그인 상태가 아닙니다.", null));
     }
 
+    // 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<APIResponse> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false); // 세션이 없으면 null
+
+        if (session != null) {
+            session.invalidate();
+            return ResponseEntity
+                    .ok(new APIResponse(true, 200, "로그아웃 성공", null));
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new APIResponse(false, 400, "로그인 상태가 아닙니다.", null));
+        }
+    }
+
+    // 비밀번호 찾기(이메일 입력)
+    @PostMapping("/findPassword")
+    public ResponseEntity<APIResponse> findPassword(@RequestBody EmailDTO emailDTO) {
+        // 이메일로 인증번호를 보냄
+        // 입력받은 번호가 맞는 지 확인
+    }
 }
