@@ -40,19 +40,21 @@ public class UserController {
     }
 
 
-    // 이메일 중복 확인
+    // 이메일 중복 확인 - 완료
     @PostMapping("/checkemail")
     public ResponseEntity<APIResponse> checkEmail(@RequestBody EmailDTO emailDTO) {
         boolean isConflicted = userService.isExistbyEmail(emailDTO.getEmail());
 
+        // isConflicted가 ture일 경우 이미 존재하는 이메일이므로 사용 불가능
+        // false면 존재하지 않는 이메일이므로 사용가능
         if (!isConflicted) {
             return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(new APIResponse(false, 409, "이미 존재하는 이메일입니다.", null));
+                    .ok(new APIResponse(true, 200, "사용가능한 이메일입니다.", null));
         }
 
         return ResponseEntity
-                .ok(new APIResponse(true, 200, "사용가능한 이메일입니다.", null));
+                .status(HttpStatus.CONFLICT)
+                .body(new APIResponse(false, 409, "이미 존재하는 이메일입니다.", null));
     }
 
 

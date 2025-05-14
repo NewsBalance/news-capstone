@@ -88,10 +88,10 @@ public class LoginController {
         }
     }
 
-    // 비밀번호 찾기(이메일 입력)
-    @PostMapping("/findPassword")
-    public ResponseEntity<APIResponse> findPassword(@RequestBody EmailDTO emailDTO) {
-        // 이메일로 인증번호를 보냄
-        // 입력받은 번호가 맞는 지 확인
-    }
+//    // 비밀번호 찾기(이메일 입력)
+//    @PostMapping("/findPassword")
+//    public ResponseEntity<APIResponse> findPassword(@RequestBody EmailDTO emailDTO) {
+//        // 이메일로 인증번호를 보냄
+//        // 입력받은 번호가 맞는 지 확인
+//    }
 }
