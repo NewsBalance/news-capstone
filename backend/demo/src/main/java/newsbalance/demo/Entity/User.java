@@ -8,6 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,8 +24,8 @@ public class User {
     private String password;
     private String email;
 
+    private LocalDate birth;
     // 데이터 타입 고민 필요
-//    private String birth;
 //    private String region;
 
     @Enumerated(EnumType.STRING)
@@ -36,10 +37,11 @@ public class User {
     @LastModifiedDate
     private LocalDateTime modifiedAt;
 
-    public User(String nickname, String password, String email) {
+    public User(String nickname, String password, String email, LocalDate birth) {
         this.nickname = nickname;
         this.password = password;
         this.email = email;
+        this.birth = birth;
     }
 
     public void changeNickname(String nickname) {

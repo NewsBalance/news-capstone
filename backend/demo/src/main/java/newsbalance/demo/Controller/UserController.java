@@ -31,7 +31,7 @@ public class UserController {
     @PostMapping("/regi")
     public ResponseEntity<?> userRegister(@RequestBody UserRegisterDTO userRegisterDTO) {
         this.userRegisterDTO = userRegisterDTO;
-        User newuser = new User(userRegisterDTO.getNickname(), userRegisterDTO.getPassword(), userRegisterDTO.getEmail());
+        User newuser = new User(userRegisterDTO.getNickname(), userRegisterDTO.getPassword(), userRegisterDTO.getEmail(), userRegisterDTO.getBirth());
 
         userService.save(newuser);
         return ResponseEntity

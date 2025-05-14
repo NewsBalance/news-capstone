@@ -159,7 +159,6 @@ function SignupPage() {
       return;
     }
     try {
-      // 실제 API 엔드포인트로 수정
       const response = await fetch(`${URL}/user/checkemail`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,7 +192,7 @@ function SignupPage() {
   };
 
   // ---- 폼 제출 ----
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     let valid = true;
@@ -284,13 +283,30 @@ function SignupPage() {
       return;
     }
 
-    // 실제 서버 통신 예시
-    // fetch('/signup', { method: 'POST', body: ... })
-    //   .then(...)
-    //   .catch(...)
+    try {
+      const response = await fetch(`${URL}/user/regi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nickname,
+        password,
+        email,
+        birth: birthdate
+    })
+    });
+    const result = await response.json();
 
-    alert('회원가입이 완료되었습니다(예시). 실제 서버 통신은 별도 로직으로 처리하세요.');
-  };
+    if (response.ok) {
+      alert('회원가입이 완료되었습니다.');
+      // 로그인 페이지로 리디렉션 추가 필요
+      
+    } else {
+      alert(`회원가입 실패: ${result.message}`);
+    }
+  } catch (error) {
+    alert('서버 통신 중 오류가 발생했습니다.');
+  }
+};
 
   return (
     <>
