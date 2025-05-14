@@ -1,9 +1,10 @@
 // src/pages/signup.tsx
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Signup.css';
+
+const URL = 'http://localhost:8080';
 
 function SignupPage() {
   // ---- 폼 필드 상태 ----
@@ -159,17 +160,18 @@ function SignupPage() {
     }
     try {
       // 실제 API 엔드포인트로 수정
-      const response = await fetch('/checkEmail?email=' + encodeURIComponent(email));
+      const response = await fetch(`${URL}/user/checkemail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const result = await response.json();
       if (!response.ok) {
-        throw new Error('서버 오류');
-      }
-      const data = await response.json();
-      if (data.exists) {
-        setEmailCheckResult('이미 사용 중인 이메일입니다.');
+        setEmailCheckResult(result.message || '이미 사용 중인 이메일입니다.');
         setEmailIconState('duplicate');
         setIconLabel('중복');
       } else {
-        setEmailCheckResult('사용 가능한 이메일입니다.');
+        setEmailCheckResult(result.message || '사용 가능한 이메일입니다.');
         setEmailIconState('available');
         setIconLabel('OK');
       }
