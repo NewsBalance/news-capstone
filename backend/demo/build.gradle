@@ -50,8 +50,6 @@ dependencies {
 	implementation 'co.elastic.clients:elasticsearch-java:8.12.0'
 
 	// Google API Client Library for Java
-	implementation 'com.google.apis:google-api-services-youtube:v3-rev20230816-2.0.0'
-	implementation 'com.google.http-client:google-http-client-gson:1.42.3'
 	implementation 'org.apache.httpcomponents:httpclient'
 
 	// 자막 파싱 등을 위한 Jsoup
