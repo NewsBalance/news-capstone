@@ -1,6 +1,7 @@
 // src/index.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -11,11 +12,12 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  /*  StrictMode 를 잠시 주석 처리  */
   // <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </BrowserRouter>
   // </React.StrictMode>
 );
 
