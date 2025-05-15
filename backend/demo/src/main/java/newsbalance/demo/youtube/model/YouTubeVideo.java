@@ -1,4 +1,4 @@
-package com.example.youtube.model;
+package newsbalance.demo.youtube.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

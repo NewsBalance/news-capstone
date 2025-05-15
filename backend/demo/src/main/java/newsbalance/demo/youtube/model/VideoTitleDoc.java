@@ -1,4 +1,4 @@
-package com.example.youtube.model;
+package newsbalance.demo.youtube.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

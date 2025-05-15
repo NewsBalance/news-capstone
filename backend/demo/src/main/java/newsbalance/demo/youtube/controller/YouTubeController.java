@@ -1,6 +1,6 @@
-package com.example.youtube.controller;
+package newsbalance.demo.youtube.controller;
 
-import com.example.youtube.service.YouTubeService;
+import newsbalance.demo.youtube.service.YouTubeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

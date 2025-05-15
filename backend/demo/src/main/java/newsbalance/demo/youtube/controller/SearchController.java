@@ -1,9 +1,9 @@
-package com.example.youtube.controller;
+package newsbalance.demo.youtube.controller;
 
-import com.example.youtube.model.VideoTitleDoc;
-import com.example.youtube.model.YouTubeVideo;
-import com.example.youtube.repository.VideoTitleElasticRepository;
-import com.example.youtube.repository.YouTubeVideoRepository;
+import newsbalance.demo.youtube.model.VideoTitleDoc;
+import newsbalance.demo.youtube.model.YouTubeVideo;
+import newsbalance.demo.youtube.repository.VideoTitleElasticRepository;
+import newsbalance.demo.youtube.repository.YouTubeVideoRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

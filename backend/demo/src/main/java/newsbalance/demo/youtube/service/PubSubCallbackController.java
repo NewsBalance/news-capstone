@@ -1,4 +1,4 @@
-package com.example.youtube.service;
+package newsbalance.demo.youtube.service;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

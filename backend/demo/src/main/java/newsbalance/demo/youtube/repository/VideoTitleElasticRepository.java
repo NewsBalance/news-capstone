@@ -1,6 +1,6 @@
-package com.example.youtube.repository;
+package newsbalance.demo.youtube.repository;
 
-import com.example.youtube.model.VideoTitleDoc;
+import newsbalance.demo.youtube.model.VideoTitleDoc;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 
 import java.util.List;

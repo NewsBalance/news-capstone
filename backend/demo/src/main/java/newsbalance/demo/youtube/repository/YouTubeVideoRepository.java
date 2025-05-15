@@ -1,6 +1,6 @@
-package com.example.youtube.repository;
+package newsbalance.demo.youtube.repository;
 
-import com.example.youtube.model.YouTubeVideo;
+import newsbalance.demo.youtube.model.YouTubeVideo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface YouTubeVideoRepository extends JpaRepository<YouTubeVideo, String> {}
