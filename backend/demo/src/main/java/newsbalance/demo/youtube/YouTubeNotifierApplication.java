@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @SpringBootApplication
-@EnableElasticsearchRepositories(basePackages = "com.example.youtube.repository")
+@EnableElasticsearchRepositories(basePackages = "newsbalance.demo.youtube.repository")
 
 public class YouTubeNotifierApplication {
     public static void main(String[] args) {
