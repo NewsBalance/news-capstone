@@ -19,17 +19,31 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/goals" element={<GoalsPage />} />
-      <Route path="/mypage" element={<MyPage />} />
-      <Route path="/discussion" element={<DiscussionPage />} />
       <Route
-        path="/videos"
+        path="/myPage"
         element={
           <ProtectedRoute>
-            <VideosPage />
+            <MyPage />
           </ProtectedRoute>
         }
       />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route
+        path="/discussion"
+        element={
+          <ProtectedRoute>
+            <DiscussionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/videos" element={<VideosPage />} />
+      <Route
+        path="/reset-password"
+        element={
+          <ProtectedRoute>
+            <ResetPassword />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
