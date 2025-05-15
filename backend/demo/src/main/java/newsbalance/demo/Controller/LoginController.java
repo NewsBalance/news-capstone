@@ -46,7 +46,7 @@ public class LoginController {
             session.setAttribute(SessionConst.Login_nickname, user.getNickname());
 
             return ResponseEntity
-                    .ok(new APIResponse(true, 200, "로그인 성공", null));
+                    .ok(new APIResponse(true, 200, "로그인 성공", user.getNickname()));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -61,9 +61,10 @@ public class LoginController {
 
         if (session != null) {
             String loginEmail = (String) session.getAttribute(SessionConst.Login_email);
+            String nickname = (String) session.getAttribute(SessionConst.Login_nickname);
             if (loginEmail != null) {
                 return ResponseEntity
-                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", null));
+                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", nickname));
             }
         }
 
