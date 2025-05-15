@@ -1,4 +1,4 @@
-package com.example.youtube.service;
+package newsbalance.demo.youtube.service;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

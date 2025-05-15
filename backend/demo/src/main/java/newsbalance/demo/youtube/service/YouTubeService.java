@@ -1,10 +1,10 @@
-    package com.example.youtube.service;
+    package newsbalance.demo.youtube.service;
 
-    import com.example.youtube.config.YouTubeConfig;
-    import com.example.youtube.model.VideoTitleDoc;
-    import com.example.youtube.model.YouTubeVideo;
-    import com.example.youtube.repository.VideoTitleElasticRepository;
-    import com.example.youtube.repository.YouTubeVideoRepository;
+    import newsbalance.demo.youtube.config.YouTubeConfig;
+    import newsbalance.demo.youtube.model.VideoTitleDoc;
+    import newsbalance.demo.youtube.model.YouTubeVideo;
+    import newsbalance.demo.youtube.repository.VideoTitleElasticRepository;
+    import newsbalance.demo.youtube.repository.YouTubeVideoRepository;
     import org.json.JSONObject;
     import org.springframework.stereotype.Service;
     import org.springframework.web.reactive.function.client.WebClient;

@@ -1,4 +1,4 @@
-package com.example.youtube;
+package newsbalance.demo.youtube;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
