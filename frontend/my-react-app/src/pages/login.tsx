@@ -1,9 +1,9 @@
 // src/pages/login.tsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
 import Header from '../components/Header';          // ★ 공통 헤더
 import '../styles/Login.css';
-
 const URL = 'http://localhost:8080';
 
 function LoginPage() {
@@ -15,6 +15,9 @@ function LoginPage() {
   const [EmailError, setEmailError] = useState('');
   const [passwordError, setpasswordError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   /* -------------------- 제출 -------------------- */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -55,8 +58,9 @@ function LoginPage() {
         const result = await response.json();
 
       if (response.ok) {
+        login(result.result)
+        navigate('/');
         alert('로그인이 완료되었습니다.');
-        
     } else {
       alert(`로그인 실패: ${result.message}`);
     }

@@ -50,4 +50,13 @@
     background-color: #5f3dc4;
     color: #fff;
   }
+  /* 닉네임 표시 스타일 */
+.nav-menu .nickname {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  line-height: 1; /* 버튼과 수직 정렬 보조 */
+}
   
