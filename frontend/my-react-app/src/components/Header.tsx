@@ -17,6 +17,7 @@ const Header: React.FC = () => {
       credentials: 'include',
     });
     logout();          // ★ 컨텍스트 상태 초기화
+    alert("로그아웃 되었습니다.");
     navigate('/');
   };
 
@@ -38,12 +39,12 @@ const Header: React.FC = () => {
                 </li>
                 <li>
                   <button
-                    className={`logout-btn ${isActive('/logout')}`}
+                    className={`login-btn ${isActive('/logout')}`}
                     onClick={handleLogout}
                   >
                     로그아웃
                   </button>
-                </li>
+                </li>   
               </>
             ) : (
               <li>

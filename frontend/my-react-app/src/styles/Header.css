@@ -1,62 +1,75 @@
 /* 헤더 공통 */
 .site-header {
-    background-color: #fff;
-    border-bottom: 1px solid #eee;
-  }
-  .container {
-    width: 90%;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .header-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-  }
-  .site-logo {
-    font-family: "Open Sans", sans-serif;
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: #4b2d63;
-  }
-  .nav-menu ul {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-  }
-  .nav-menu a {
-    font-size: 0.95rem;
-    color: #333;
-    padding: 0.25rem 0;
-    transition: color 0.2s ease;
-  }
-  .nav-menu a:hover {
-    color: #5f3dc4;
-  }
-  .nav-menu a.active {
-    border-bottom: 2px solid #5f3dc4;
-  }
-  .login-btn {
-    border: 1px solid #5f3dc4;
-    border-radius: 4px;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-    background-color: #fff;
-    color: #5f3dc4;
-    transition: background-color 0.2s ease, color 0.2s ease;
-  }
-  .login-btn:hover {
-    background-color: #5f3dc4;
-    color: #fff;
-  }
-  /* 닉네임 표시 스타일 */
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.site-logo {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #4b2d63;
+}
+.nav-menu ul {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.nav-menu a {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.25rem 0;
+  transition: color 0.2s ease;
+}
+.nav-menu a:hover {
+  color: #5f3dc4;
+}
+.nav-menu a.active {
+  border-bottom: 2px solid #5f3dc4;
+}
+
+/* 로그인·로그아웃 버튼 & 링크 공통 */
+.nav-menu .login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 브라우저 기본 버튼 스타일 제거 */
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #fff;
+  border: 1px solid #5f3dc4;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  color: #5f3dc4;
+  text-decoration: none; /* <a>에도 적용 */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nav-menu .login-btn:hover {
+  background-color: #5f3dc4;
+  color: #fff;
+}
+.nav-menu .login-btn:focus {
+  outline: none;
+}
+
+/* 닉네임 표시 스타일 */
 .nav-menu .nickname {
   display: inline-block;
-  margin-right: 0.5rem;
+  margin: 0 0.5rem;
   font-size: 0.95rem;
   font-weight: 500;
   color: #333;
-  line-height: 1; /* 버튼과 수직 정렬 보조 */
+  line-height: 1;
 }
-  
