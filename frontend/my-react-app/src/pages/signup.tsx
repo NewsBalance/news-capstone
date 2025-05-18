@@ -13,7 +13,7 @@ function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [birthdate, setBirthdate] = useState('');
-  const [phone, setPhone] = useState('');
+  // const [phone, setPhone] = useState('');
 
   // ---- 에러 메시지 상태 ----
   const [emailError, setEmailError] = useState('');
@@ -22,7 +22,7 @@ function SignupPage() {
   const [passwordError, setPasswordError] = useState('');
   const [confirmPwError, setConfirmPwError] = useState('');
   const [birthdateError, setBirthdateError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
+  // const [phoneError, setPhoneError] = useState('');
   const [termsError, setTermsError] = useState('');
 
   // ---- 약관 동의 ----
@@ -41,6 +41,14 @@ function SignupPage() {
   // 'default' | 'duplicate' | 'available'
   const [emailIconState, setEmailIconState] = useState<'default' | 'duplicate' | 'available'>('default');
   const [iconLabel, setIconLabel] = useState('');
+  
+  // ---- 이메일 인증 코드 상태 ---- 
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendCodeMessage, setSendCodeMessage] = useState('');
+  const [verifyMessage, setVerifyMessage] = useState('');
+
+  // ---- 닉네임 상태 ----
+  
 
   // ---- 약관 펼치기/접기 ----
   const handleToggleTerms = (targetId: string) => {
@@ -134,20 +142,20 @@ function SignupPage() {
     }
   };
 
-  // ---- 전화번호 자동 포맷 ----
-  const handlePhoneChange = (val: string) => {
-    let onlyDigits = val.replace(/[^0-9]/g, '');
-    if (onlyDigits.startsWith('010')) {
-      if (onlyDigits.length <= 7) {
-        onlyDigits = onlyDigits.replace(/^(\d{3})(\d{1,4})/, '$1-$2');
-      } else if (onlyDigits.length <= 10) {
-        onlyDigits = onlyDigits.replace(/^(\d{3})(\d{3,4})(\d{1,4})?$/, '$1-$2-$3');
-      } else {
-        onlyDigits = onlyDigits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
-      }
-    }
-    setPhone(onlyDigits);
-  };
+  // // ---- 전화번호 자동 포맷 ----
+  // const handlePhoneChange = (val: string) => {
+  //   let onlyDigits = val.replace(/[^0-9]/g, '');
+  //   if (onlyDigits.startsWith('010')) {
+  //     if (onlyDigits.length <= 7) {
+  //       onlyDigits = onlyDigits.replace(/^(\d{3})(\d{1,4})/, '$1-$2');
+  //     } else if (onlyDigits.length <= 10) {
+  //       onlyDigits = onlyDigits.replace(/^(\d{3})(\d{3,4})(\d{1,4})?$/, '$1-$2-$3');
+  //     } else {
+  //       onlyDigits = onlyDigits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
+  //     }
+  //   }
+  //   setPhone(onlyDigits);
+  // };
 
   // ---- 이메일 중복확인 ----
   const handleCheckEmail = async () => {
@@ -168,7 +176,7 @@ function SignupPage() {
       if (!response.ok) {
         setEmailCheckResult(result.message || '이미 사용 중인 이메일입니다.');
         setEmailIconState('duplicate');
-        setIconLabel('중복');
+        setIconLabel('');
       } else {
         setEmailCheckResult(result.message || '사용 가능한 이메일입니다.');
         setEmailIconState('available');
@@ -181,6 +189,54 @@ function SignupPage() {
     }
   };
 
+  // ---- 인증번호 전송 ----
+  const handleSendCode = async () => {
+    setVerifyMessage('');
+    if (!email.trim()) {
+      setSendCodeMessage('이메일을 먼저 입력해주세요.');
+      return;
+    }
+    try {
+      const res = await fetch(`${URL}/user/sendcode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setSendCodeMessage(json.message || '인증 코드가 전송되었습니다.');
+      } else {
+        setSendCodeMessage(json.message || '인증 코드 전송에 실패했습니다.');
+      }
+    } catch (e) {
+      setSendCodeMessage('서버 통신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ---- 인증번호 확인 ---- 
+  const handleVerifyCode = async () => {
+    setSendCodeMessage('');
+    if (!verificationCode.trim()) {
+      setVerifyMessage('인증번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const res = await fetch(`${URL}/user/verifycode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode })
+      });
+      const json = await res.json();
+      setVerifyMessage(
+        res.ok
+          ? json.message || '인증 완료'
+          : json.message || '인증 코드가 올바르지 않습니다.'
+      );
+    } catch {
+      setVerifyMessage('서버 통신 중 오류가 발생했습니다.');
+    }
+  };
+
   // ---- 닉네임 실시간 검증 ----
   const handleNicknameChange = (val: string) => {
     setNickname(val);
@@ -190,6 +246,8 @@ function SignupPage() {
       setNicknameError('');
     }
   };
+
+  
 
   // ---- 폼 제출 ----
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -257,19 +315,19 @@ function SignupPage() {
       }
     }
 
-    // 휴대전화
-    if (!phone.trim()) {
-      setPhoneError('휴대전화번호를 입력해주세요.');
-      valid = false;
-    } else {
-      const phonePattern = /^010-?\d{3,4}-?\d{4}$/;
-      if (!phonePattern.test(phone)) {
-        setPhoneError('유효한 휴대전화번호 형식이 아닙니다.');
-        valid = false;
-      } else {
-        setPhoneError('');
-      }
-    }
+    // // 휴대전화
+    // if (!phone.trim()) {
+    //   setPhoneError('휴대전화번호를 입력해주세요.');
+    //   valid = false;
+    // } else {
+    //   const phonePattern = /^010-?\d{3,4}-?\d{4}$/;
+    //   if (!phonePattern.test(phone)) {
+    //     setPhoneError('유효한 휴대전화번호 형식이 아닙니다.');
+    //     valid = false;
+    //   } else {
+    //     setPhoneError('');
+    //   }
+    // }
 
     // 약관 체크(필수: age, collect, thirdParty)
     if (!ageAgree || !collectAgree || !thirdPartyAgree) {
@@ -369,13 +427,13 @@ function SignupPage() {
               {emailError && <div className="error-message">{emailError}</div>}
               {emailCheckResult && (
                 <div
-                  className="error-message"
+                  className={emailIconState === 'available' ? '' : 'error-message'}
                   style={{
                     color:
                       emailIconState === 'duplicate'
                         ? '#d9534f'
                         : emailIconState === 'available'
-                        ? '#5F3DC4'
+                        ? '#4CAF50'
                         : '#d9534f',
                   }}
                 >
@@ -383,6 +441,55 @@ function SignupPage() {
                 </div>
               )}
             </div>
+
+            {/* 이메일 인증 + 인증번호 입력 */}
+            {emailIconState === 'available' && (
+              <div className="form-group">
+                <label htmlFor="sendCodeBtn">이메일 인증</label>
+                <div className="form-row">
+                  <input
+                    type="text"
+                    id="verificationCode"
+                    name="verificationCode"
+                    placeholder="인증번호 입력"
+                    style={{width: '200px'}}
+                    value={verificationCode}
+                    onChange={e => setVerificationCode(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    id="checkEmailBtn"
+                    onClick={handleSendCode}
+                  >
+                    전송
+                  </button>
+                  <button
+                    type="button"
+                    id="verifyCodeBtn"
+                    className="icon-btn"
+                    onClick={handleVerifyCode}
+                  >
+                    인증
+                  </button>
+                </div>
+                {/* 전송 결과 메시지 */}
+                {sendCodeMessage && (
+                  <div className={sendCodeMessage.includes('성공') ? 'success-message' : 'error-message'}>
+                    {sendCodeMessage}
+                  </div>
+                )}
+                {/* 확인 결과 메시지 */}
+                {verifyMessage && (
+                  <div 
+                    className={verifyMessage.includes('완료') ? 'success-message' : 'error-message'}
+                    style={{ textAlign: 'left'}}
+                  >
+                    {verifyMessage}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 닉네임 */}
             <div className="form-group">
@@ -460,7 +567,7 @@ function SignupPage() {
             </div>
 
             {/* 휴대전화번호 */}
-            <div className="form-group">
+            {/* <div className="form-group">
               <label htmlFor="phone">휴대전화번호</label>
               <input
                 type="tel"
@@ -474,7 +581,7 @@ function SignupPage() {
                 onChange={(e) => handlePhoneChange(e.target.value)}
               />
               {phoneError && <div className="error-message">{phoneError}</div>}
-            </div>
+            </div> */}
 
             {/* 약관 동의 섹션 */}
             <div className="terms-section">
