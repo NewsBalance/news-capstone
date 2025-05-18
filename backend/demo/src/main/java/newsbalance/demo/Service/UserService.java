@@ -27,6 +27,10 @@ public class UserService {
         return userRepository.findByEmail(email) != null;
     }
 
+    public boolean isExistbyNickname(String nickname) {
+        return userRepository.findByNickname(nickname) != null;
+    }
+
     public void changeNickname(String email, String newnickname) {
         User user = userRepository.findByEmail(email);
         user.changeNickname(newnickname);

@@ -40,7 +40,7 @@ public class UserController {
     }
 
 
-    // 이메일 중복 확인 - 완료
+    // 이메일 중복 확인
     @PostMapping("/checkemail")
     public ResponseEntity<APIResponse> checkEmail(@RequestBody EmailDTO emailDTO) {
         boolean isConflicted = userService.isExistbyEmail(emailDTO.getEmail());
@@ -57,6 +57,22 @@ public class UserController {
                 .body(new APIResponse(false, 409, "이미 존재하는 이메일입니다.", null));
     }
 
+    // 닉네임 중복 확인
+    @PostMapping("/checknick")
+    public ResponseEntity<APIResponse> checkNickname(@RequestBody NicknameDTO nicknameDTO) {
+        boolean isConflicted = userService.isExistbyNickname(nicknameDTO.getNickname());
+
+        // isConflicted가 ture일 경우 이미 존재하는 닉네임이므로 사용 불가능
+        // false면 존재하지 않는 닉네임이므로 사용가능
+        if (!isConflicted) {
+            return ResponseEntity
+                    .ok(new APIResponse(true, 200, "사용가능한 닉네임입니다.", null));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new APIResponse(false, 409, "이미 존재하는 닉네임입니다.", null));
+    }
 
     // 인증번호 메일 전송
     @PostMapping("/sendcode")
