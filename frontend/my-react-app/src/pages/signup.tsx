@@ -46,9 +46,12 @@ function SignupPage() {
   const [verificationCode, setVerificationCode] = useState('');
   const [sendCodeMessage, setSendCodeMessage] = useState('');
   const [verifyMessage, setVerifyMessage] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // ---- 닉네임 상태 ----
-  
+  const [nicknameCheckResult, setNicknameCheckResult] = useState('');
+  const [nicknameIconState, setNicknameIconState] = useState<'default'|'duplicate'|'available'>('default');
+  const [nicknameIconLabel, setNicknameIconLabel] = useState('');
 
   // ---- 약관 펼치기/접기 ----
   const handleToggleTerms = (targetId: string) => {
@@ -180,7 +183,7 @@ function SignupPage() {
       } else {
         setEmailCheckResult(result.message || '사용 가능한 이메일입니다.');
         setEmailIconState('available');
-        setIconLabel('OK');
+        setIconLabel('');
       }
     } catch (error) {
       setEmailCheckResult('중복 확인에 실패했습니다.');
@@ -192,6 +195,7 @@ function SignupPage() {
   // ---- 인증번호 전송 ----
   const handleSendCode = async () => {
     setVerifyMessage('');
+    setIsEmailVerified(false);
     if (!email.trim()) {
       setSendCodeMessage('이메일을 먼저 입력해주세요.');
       return;
@@ -227,6 +231,8 @@ function SignupPage() {
         body: JSON.stringify({ email, code: verificationCode })
       });
       const json = await res.json();
+      if(res.ok)
+        setIsEmailVerified(true);
       setVerifyMessage(
         res.ok
           ? json.message || '인증 완료'
@@ -247,13 +253,55 @@ function SignupPage() {
     }
   };
 
-  
+  // ---- 닉네임 중복 확인 ----
+  const handleCheckNickname = async () => {
+  if (!nickname.trim()) {
+    setNicknameCheckResult('닉네임을 먼저 입력해주세요.');
+    setNicknameIconState('default');
+    setNicknameIconLabel('');
+    return;
+  }
+  try {
+    const res = await fetch(`${URL}/user/checknick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      // 사용 가능한 닉네임
+      setNicknameIconState('available');
+      setNicknameCheckResult(json.message || '사용가능한 닉네임입니다.');
+    } else {
+      // 이미 존재
+      setNicknameIconState('duplicate');
+      setNicknameCheckResult(json.message || '이미 존재하는 닉네임입니다.');
+    }
+  } catch {
+    setNicknameIconState('default');
+    setNicknameIconLabel('');
+    setNicknameCheckResult('중복 확인에 실패했습니다.');
+  }
+};
 
   // ---- 폼 제출 ----
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     let valid = true;
+
+    // 이메일 인증 확인
+    if (!verificationCode.trim()){
+      setVerifyMessage('인증번호를 입력해주세요.');
+      alert('인증번호를 입력해주세요.')
+      valid = false;
+    } else if (!isEmailVerified){
+      setVerifyMessage('이메일 인증을 완료해주세요.');
+      alert('이메일 인증을 완료해주세요.')
+      valid = false;
+    } else {
+      setVerifyMessage('');
+    }
 
     // 이메일
     if (!email.trim()) {
@@ -387,6 +435,7 @@ function SignupPage() {
                   aria-label="이메일"
                   placeholder="이메일 입력"
                   required
+                  style={{width: '375px'}}
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -394,26 +443,13 @@ function SignupPage() {
                 {/* 아이콘 버튼 */}
                 <button
                   type="button"
-                  className="icon-btn"
+                  className="check-btn"
                   id="checkEmailBtn"
                   aria-label="이메일 중복확인"
                   title="이메일 중복확인"
                   onClick={handleCheckEmail}
                 >
-                  {/* 아이콘 상태에 따라 클래스 변경 */}
-                  <svg
-                    className={
-                      emailIconState === 'default'
-                        ? 'icon-default'
-                        : emailIconState === 'duplicate'
-                        ? 'icon-duplicate'
-                        : 'icon-available'
-                    }
-                    id="emailIcon"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M20,4H4C2.9,4,2,4.9,2,6v12c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V6C22,4.9,21.1,4,20,4z M20,8l-8,5L4,8V6l8,5l8-5V8z" />
-                  </svg>
+                  중복확인
                 </button>
                 <span
                   className="icon-label"
@@ -458,7 +494,7 @@ function SignupPage() {
                   />
                   <button
                     type="button"
-                    className="icon-btn"
+                    className="check-btn"
                     id="checkEmailBtn"
                     onClick={handleSendCode}
                   >
@@ -467,7 +503,7 @@ function SignupPage() {
                   <button
                     type="button"
                     id="verifyCodeBtn"
-                    className="icon-btn"
+                    className="check-btn"
                     onClick={handleVerifyCode}
                   >
                     인증
@@ -494,21 +530,75 @@ function SignupPage() {
             {/* 닉네임 */}
             <div className="form-group">
               <label htmlFor="nickname">닉네임</label>
-              <input
-                type="text"
-                id="nickname"
-                name="nickname"
-                aria-label="닉네임"
-                placeholder="닉네임 입력 (2~12자)"
-                required
-                minLength={2}
-                maxLength={12}
-                autoComplete="nickname"
-                value={nickname}
-                onChange={(e) => handleNicknameChange(e.target.value)}
-              />
+              <div className="form-row">
+                <input
+                  type="text"
+                  id="nickname"
+                  name="nickname"
+                  aria-label="닉네임"
+                  placeholder="닉네임 입력 (2~12자)"
+                  required
+                  minLength={2}
+                  maxLength={12}
+                  style={{width: '375px'}}
+                  autoComplete="nickname"
+                  value={nickname}
+                  onChange={e => {
+                    setNickname(e.target.value);
+
+                    if(e.target.value.trim()){
+                      setNicknameError('');
+                      setNicknameCheckResult('');
+                      setNicknameIconState('default');
+                      setNicknameIconLabel('');
+                      return;
+                    }
+
+                    // 기존 유효성 검사
+                    if (e.target.value.trim().length < 2 || e.target.value.trim().length > 12) {
+                      setNicknameError('닉네임은 2자 이상 12자 이하입니다.');
+                    } else {
+                      setNicknameError('');
+                    }
+                  }}
+                />
+                {/* 중복확인 버튼 */}
+                <button
+                  type="button"
+                  className="check-btn"
+                  id="checkNicknameBtn"
+                  aria-label="닉네임 중복확인"
+                  title="닉네임 중복확인"
+                  onClick={handleCheckNickname}
+                >
+                  중복확인
+                </button>
+                {/* 아이콘 레이블 */}
+                <span
+                  className="icon-label"
+                  style={{ color:
+                    nicknameIconState === 'available' ? '#4CAF50'
+                    : nicknameIconState === 'duplicate' ? '#d9534f'
+                    : '#777'
+                  }}
+                >
+                  {nicknameIconLabel}
+                </span>
+              </div>
               {nicknameError && <div className="error-message">{nicknameError}</div>}
+              {nicknameCheckResult && (
+                <div
+                  className={nicknameIconState === 'available' ? '' : 'error-message'}
+                  style={{ color:
+                    nicknameIconState === 'available' ? '#4CAF50'
+                    : '#d9534f'
+                  }}
+                >
+                  {nicknameCheckResult}
+                </div>
+              )}
             </div>
+            
 
             {/* 비밀번호 */}
             <div className="form-group">

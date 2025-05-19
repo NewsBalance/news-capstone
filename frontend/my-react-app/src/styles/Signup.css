@@ -94,8 +94,9 @@ li {
   gap: 0.5rem;
   align-items: center;
 }
-.form-row input[type="email"] {
+.form-row input {
   flex: 1;
+  width: auto;
 }
 
 .form-group input {
@@ -147,6 +148,31 @@ li {
   margin-left: 0.5rem;
   font-size: 0.875rem;
   white-space: nowrap;
+}
+
+/* 중복확인 버튼 */
+.check-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 브라우저 기본 버튼 스타일 제거 */
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #fff;
+  border: 1px solid #5f3dc4;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  color: #5f3dc4;
+  text-decoration: none; /* <a>에도 적용 */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.check-btn:hover{
+  background-color: #5f3dc4;
+  color: #fff;
+  border-color: #5f3dc4;
 }
 
 /* 비밀번호 강도 표시 */
