@@ -4,9 +4,9 @@ package newsbalance.demo.Controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import newsbalance.demo.Configuration.SessionConst;
-import newsbalance.demo.DTO.Request.EmailDTO;
 import newsbalance.demo.DTO.Request.LoginDTO;
 import newsbalance.demo.DTO.Response.APIResponse;
+import newsbalance.demo.DTO.Response.SessionInfo;
 import newsbalance.demo.Entity.User;
 import newsbalance.demo.Service.MailService;
 import newsbalance.demo.Service.UserService;
@@ -61,10 +61,11 @@ public class LoginController {
 
         if (session != null) {
             String loginEmail = (String) session.getAttribute(SessionConst.Login_email);
-            String nickname = (String) session.getAttribute(SessionConst.Login_nickname);
+            String loginNickname = (String) session.getAttribute(SessionConst.Login_nickname);
             if (loginEmail != null) {
+                SessionInfo info = new SessionInfo(loginEmail, loginNickname);
                 return ResponseEntity
-                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", nickname));
+                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", info));
             }
         }
 

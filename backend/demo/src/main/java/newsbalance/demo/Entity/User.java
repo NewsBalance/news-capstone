@@ -37,6 +37,8 @@ public class User {
     @LastModifiedDate
     private LocalDateTime modifiedAt;
 
+    private String 
+
     public User(String nickname, String password, String email, LocalDate birth) {
         this.nickname = nickname;
         this.password = password;
