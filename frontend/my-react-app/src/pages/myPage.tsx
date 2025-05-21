@@ -3,9 +3,11 @@ import React, {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState
+  useState,
+  useContext
 } from 'react';
 import Header from '../components/Header';
+import { AuthContext } from '../contexts/AuthContext';
 import {
   PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -65,6 +67,9 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'analytics'|'security'|'activity'>('analytics');
+
+  // 로그인 정보 꺼내기
+  const { isLoggedIn, nickname: loginNickname, email: loginEmail, loading: authLoading} = useContext(AuthContext);
 
   // 프로필 편집
   const [editingProfile, setEditingProfile] = useState(false);
@@ -352,7 +357,7 @@ export default function MyPage() {
         <aside className="sidebar">
           <div className="profile-box">
             <div className="avatar"><img src={avatarPreview} alt="avatar" /></div>
-            <h2 className="nickname">{user.nickname}</h2>
+            <h2 className="nickname">{loginNickname}</h2>
             <p className="bio">{user.bio || '소개 없음'}</p>
             <div className="follow-info">
               <span>👥 {user.followers}</span>
@@ -481,7 +486,7 @@ export default function MyPage() {
                 <div className="info-row">
                   <span className="label">이메일</span>
                   <div className="display-group">
-                    <span>{user.loginEmail}</span>
+                    <span>{loginEmail}</span>
                     <button className="btn edit" onClick={openEmailModal}>변경</button>
                   </div>
                 </div>
@@ -504,7 +509,7 @@ export default function MyPage() {
                   <div className="profile-display">
                     <div className="avatar-large"><img src={avatarPreview} alt="avatar" /></div>
                     <div className="profile-info">
-                      <h4 className="profile-name">{user.nickname}</h4>
+                      <h4 className="profile-name">{loginNickname}</h4>
                       <p className="profile-bio">{user.bio || '소개가 아직 없습니다.'}</p>
                     </div>
                     <button className="btn btn-edit-profile" onClick={()=>setEditingProfile(true)}>✎ 수정</button>
