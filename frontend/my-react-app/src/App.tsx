@@ -7,6 +7,7 @@ import LoginPage from './pages/login';
 import SignupPage from './pages/signup';
 import GoalsPage from './pages/goals';
 import MyPage from './pages/myPage';
+import UserPage from './pages/UserPage';
 import DiscussionPage from './pages/DiscussionPage';
 import VideosPage from './pages/Videos';
 import ResetPassword from './pages/ResetPassword';
@@ -27,6 +28,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/Profile/:nickname" element={<UserPage />} />
       <Route
         path="/discussion"
         element={

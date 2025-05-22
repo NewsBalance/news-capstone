@@ -30,6 +30,7 @@ const DEFAULT_AVATAR =
 const PIE_COLORS = ['#6699FF', '#C8BFFF', '#FF6B6B'];
 const BAR_COLOR = '#5c3c91';
 const LINE_COLOR = '#5c3c91';
+const URL = 'http://localhost:8080';
 
 interface Bookmark     { id: number; title: string; url: string }
 interface Session      { id: string; device: string; lastActive: string }
@@ -262,7 +263,7 @@ export default function MyPage() {
   // 핸들러
   const handleAvatarChange = (file: File) => {
     setFormAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+    // setAvatarPreview(URL.createObjectURL(file));
   };
   const handleAvatarReset = () => {
     if (!user) return;

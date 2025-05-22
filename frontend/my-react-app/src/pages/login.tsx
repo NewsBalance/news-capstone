@@ -45,7 +45,7 @@ function LoginPage() {
     if (!valid) return;
 
     try{
-      const response = await fetch(`${URL}/Login/login`, {
+      const response = await fetch(`${URL}/session/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -12,7 +12,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await fetch(`${URL}/Login/logout`, {
+    await fetch(`${URL}/session/logout`, {
       method: 'POST',
       credentials: 'include',
     });

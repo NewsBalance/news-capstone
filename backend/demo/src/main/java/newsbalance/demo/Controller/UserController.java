@@ -39,7 +39,6 @@ public class UserController {
                 .body(new APIResponse(true, 201, "회원가입에 성공했습니다.", null));
     }
 
-
     // 이메일 중복 확인
     @PostMapping("/checkemail")
     public ResponseEntity<APIResponse> checkEmail(@RequestBody EmailDTO emailDTO) {
@@ -83,7 +82,6 @@ public class UserController {
                 .ok(new APIResponse(true, 200, "인증 코드가 전송되었습니다.", null));
     }
 
-
     // 인증번호 확인
     @PostMapping("/verifycode")
     public ResponseEntity<APIResponse> verifyCode(@RequestBody EmailVerifyDTO emailVerifyDTO) {
@@ -96,7 +94,6 @@ public class UserController {
                     .body(new APIResponse(false, 400, "인증 코드가 올바르지 않습니다.", null));
         }
     }
-
 
     // 닉네임 수정
     @PostMapping("/changeNickname")
@@ -116,7 +113,6 @@ public class UserController {
                 .ok(new APIResponse(true, 200, "성공적으로 닉네임을 변경했습니다.", null));
     }
 
-
     // 비밀번호 수정
     @PostMapping("/changePassword")
     public ResponseEntity<APIResponse> changePassword(@RequestBody PasswordDTO passwordDTO, HttpServletRequest request) {
@@ -135,6 +131,23 @@ public class UserController {
                 .ok(new APIResponse(true, 200, "성공적으로 비밀번호를 변경했습니다.", null));
     }
 
+    // 자기 소개 변경
+    @PostMapping("/setBio")
+    public ResponseEntity<APIResponse> setBio(@RequestBody BioDTO bioDTO, HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+
+        if (session == null || session.getAttribute(SessionConst.Login_email) == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new APIResponse(false, 401, "인증이 필요한 서비스입니다.", null));
+        }
+
+        String nickname = SessionConst.Login_nickname;
+        userService.setBio(nickname, bioDTO.getBio());
+
+        return ResponseEntity
+                .ok(new APIResponse(true, 200, "성공적으로 자기소개를 변경했습니다.", null));
+    }
 
     // 생일, 지역 수정 (프론트에서 작업 후 추가예정)
 
