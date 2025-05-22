@@ -28,8 +28,8 @@ public class MailService {
 
     private final ConcurrentHashMap<String, CodeEntry> codeStorage = new ConcurrentHashMap<>();
 
-    // 인증코드 유효시간 1분
-    private static final Duration TIME = Duration.ofMinutes(1);
+    // 인증코드 유효시간 5분
+    private static final Duration TIME = Duration.ofMinutes(5);
 
     // 인증 코드 생성
     private String generateCode() {
