@@ -25,6 +25,7 @@ public class User {
     private String email;
 
     private LocalDate birth;
+
     // 데이터 타입 고민 필요
 //    private String region;
 
@@ -37,7 +38,8 @@ public class User {
     @LastModifiedDate
     private LocalDateTime modifiedAt;
 
-    private String 
+    // 자기소개
+    private String bio = null;
 
     public User(String nickname, String password, String email, LocalDate birth) {
         this.nickname = nickname;
@@ -52,5 +54,9 @@ public class User {
 
     public void changePassword(String password) {
         this.password = password;
+    }
+
+    public void setBio(String bid){
+        this.bio = bio;
     }
 }

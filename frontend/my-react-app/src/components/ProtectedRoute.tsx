@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<Props> = ({ children }) => {
 
     useEffect(() => {
     // 세션 확인 API 호출 (백엔드에 /api/check-session 등 구현)
-    fetch(`${URL}/Login/session`, {
+    fetch(`${URL}/session/my`, {
         method: 'GET',
         credentials: 'include',           // 쿠키 포함
         headers: { 'Content-Type': 'application/json' },

@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // 마운트 시 서버 세션 확인
     useEffect(() => {
-        fetch(`${URL}/Login/session`, { credentials: 'include' })
+        fetch(`${URL}/session/my`, { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {

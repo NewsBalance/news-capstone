@@ -23,6 +23,10 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    public User getUserbyNickname(String nickname) {
+        return userRepository.findByNickname(nickname);
+    }
+
     public boolean isExistbyEmail(String email) {
         return userRepository.findByEmail(email) != null;
     }
@@ -40,6 +44,12 @@ public class UserService {
     public void changePassword(String email, String newpassword) {
         User user = userRepository.findByEmail(email);
         user.changePassword(newpassword);
+        userRepository.save(user);
+    }
+
+    public void setBio(String nickname, String bio) {
+        User user = userRepository.findByNickname(nickname);
+        user.setBio(bio);
         userRepository.save(user);
     }
 
