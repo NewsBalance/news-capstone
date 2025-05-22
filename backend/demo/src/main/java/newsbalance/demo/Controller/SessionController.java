@@ -18,8 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/session")
-public class LoginController {
-
+public class SessionController {
     @Autowired
     private UserService userService;
     @Autowired
