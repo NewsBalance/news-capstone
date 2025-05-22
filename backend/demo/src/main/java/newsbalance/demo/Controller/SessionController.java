@@ -7,6 +7,7 @@ import newsbalance.demo.Configuration.SessionConst;
 import newsbalance.demo.DTO.Request.LoginDTO;
 import newsbalance.demo.DTO.Response.APIResponse;
 import newsbalance.demo.DTO.Response.SessionInfo;
+import newsbalance.demo.DTO.Response.UserProfileDTO;
 import newsbalance.demo.Entity.User;
 import newsbalance.demo.Service.MailService;
 import newsbalance.demo.Service.UserService;
@@ -16,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/Login")
+@RequestMapping("/session")
 public class LoginController {
 
     @Autowired
@@ -54,8 +55,8 @@ public class LoginController {
         }
     }
 
-    // 세션 확인
-    @GetMapping("/session")
+    // 내 세션 확인
+    @GetMapping("/my")
     public ResponseEntity<APIResponse> checkSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false); // 세션이 없으면 null 반환
 
@@ -72,6 +73,27 @@ public class LoginController {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new APIResponse(false, 401, "로그인 상태가 아닙니다.", null));
+    }
+
+    // 다른 사람 프로필 조회
+    @GetMapping("/Profile/{nickname}")
+    public ResponseEntity<APIResponse> getuserProfile(@PathVariable String nickname){
+        User user = userService.getUserbyNickname(nickname);
+
+        if (user == null) {
+            return ResponseEntity
+                    .status(404)
+                    .body(new APIResponse(false, 404, "찾을 수 없는 유저", null));
+        }
+
+        UserProfileDTO userDTO = UserProfileDTO.builder()
+                .nickname(user.getNickname())
+                .email(user.getEmail())
+                .bio(user.getBio())
+                .build();
+
+        return ResponseEntity
+                .ok(new APIResponse(true, 200, "유저 정보 가져오기 성공", userDTO));
     }
 
     // 로그아웃
