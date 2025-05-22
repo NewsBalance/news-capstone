@@ -1,6 +1,6 @@
 // src/pages/signup.tsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Signup.css';
 
@@ -60,6 +60,9 @@ function SignupPage() {
       content.classList.toggle('open');
     }
   };
+
+  // ---- 리다이렉트용 네비게이터 ----
+  const navigate = useNavigate();
 
   // ---- 약관 전체 체크 ----
   const handleAgreeAllChange = (checked: boolean) => {
@@ -404,8 +407,7 @@ function SignupPage() {
 
     if (response.ok) {
       alert('회원가입이 완료되었습니다.');
-      // 로그인 페이지로 리디렉션 추가 필요
-      
+      navigate('/login');
     } else {
       alert(`회원가입 실패: ${result.message}`);
     }
