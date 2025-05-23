@@ -36,3 +36,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### ai model ###
+ai/model/kcbert_final_model/
