@@ -1,6 +1,6 @@
-package newsbalance.demo.debate.repository;
+package newsbalance.demo.Repository;
 
-import newsbalance.demo.debate.entity.DebateRoom;
+import newsbalance.demo.Entity.DebateRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

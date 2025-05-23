@@ -1,4 +1,4 @@
-package newsbalance.demo.debate.config;
+package newsbalance.demo.Configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

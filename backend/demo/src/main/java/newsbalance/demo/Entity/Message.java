@@ -1,4 +1,4 @@
-package newsbalance.demo.debate.entity;
+package newsbalance.demo.Entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

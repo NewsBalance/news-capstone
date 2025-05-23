@@ -1,9 +1,12 @@
 package newsbalance.demo.Service;
 
+import jakarta.persistence.EntityNotFoundException;
+import newsbalance.demo.DTO.UserInfoDto;
 import newsbalance.demo.Entity.User;
 import newsbalance.demo.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -41,6 +44,19 @@ public class UserService {
 
     public void delete(User user) {
         userRepository.delete(user);
+    }
+
+    @Transactional(readOnly = true)
+    public UserInfoDto getUserInfo(String nickname) {
+        User user = userRepository.findByNickname(nickname);
+        if (user == null) {
+            throw new EntityNotFoundException("사용자를 찾을 수 없습니다");
+        }
+
+        return new UserInfoDto(
+                user.getNickname(),
+                user.getEmail()
+        );
     }
 
 }
