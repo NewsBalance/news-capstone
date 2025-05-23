@@ -149,6 +149,15 @@ public class UserController {
                 .ok(new APIResponse(true, 200, "성공적으로 자기소개를 변경했습니다.", null));
     }
 
+    // 자기소개 테스트
+    @PostMapping("/setBiotest")
+    public ResponseEntity<APIResponse> setBiotest(@RequestBody BioDTO bioDTO) {
+        userService.setBio("test1", bioDTO.getBio());
+
+        return ResponseEntity
+                .ok(new APIResponse(true, 200, "성공적으로 자기소개를 변경했습니다.", null));
+    }
+
     // 생일, 지역 수정 (프론트에서 작업 후 추가예정)
 
 
@@ -167,6 +176,7 @@ public class UserController {
 
         if (deleteuser != null) {
             userService.delete(deleteuser);
+            session.invalidate();
             return ResponseEntity
                     .ok(new APIResponse(true, 200, "회원탈퇴가 완료되었습니다.", null));
         } else {

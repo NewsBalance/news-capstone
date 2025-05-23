@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,6 +40,7 @@ public class User {
     private LocalDateTime modifiedAt;
 
     // 자기소개
+    @Setter
     private String bio = null;
 
     public User(String nickname, String password, String email, LocalDate birth) {
@@ -56,7 +58,4 @@ public class User {
         this.password = password;
     }
 
-    public void setBio(String bid){
-        this.bio = bio;
-    }
 }

@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import Header from '../components/Header';
 import { AuthContext } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -62,6 +63,13 @@ interface User {
   notifications?: Notification[];
 }
 
+// 서버에서 가져온 데이터
+interface userDTO {
+    nickname: string;
+    email: string;
+    bio: string;
+}
+
 export default function MyPage() {
   // 기본 상태
   const [user, setUser] = useState<User | null>(null);
@@ -70,7 +78,9 @@ export default function MyPage() {
   const [tab, setTab] = useState<'analytics'|'security'|'activity'>('analytics');
 
   // 로그인 정보 꺼내기
-  const { isLoggedIn, nickname: loginNickname, email: loginEmail, loading: authLoading} = useContext(AuthContext);
+  const { isLoggedIn, nickname: loginNickname, email: loginEmail, loading: authLoading, logout} = useContext(AuthContext);
+  const [profile, setProfile] = useState<userDTO | null>(null);
+  const navigate = useNavigate();
 
   // 프로필 편집
   const [editingProfile, setEditingProfile] = useState(false);
@@ -153,34 +163,41 @@ export default function MyPage() {
 
   // 사용자 정보 로드 및 타임라인 로드
   useEffect(() => {
+    // AuthContext 에서 닉네임이 준비된 후에만 실행
+    if (authLoading || !isLoggedIn || !loginNickname) return;
+
     setLoading(true);
-    fetchUser()
-      .then(u => {
-        const avatarURL = u.avatar || DEFAULT_AVATAR;
-        const accounts = u.socialAccounts?.map(sa => ({
-          provider: sa.provider,
-          connected: (sa as any).linked
-        }));
-        setUser({ ...u, avatar: avatarURL, socialAccounts: accounts });
+    setError(null);
 
-        if (u.checks >= 100) {
-          setAchievements([{ id: 1, name: '팩트체크 100회 달성', icon: '/icons/check100.png' }]);
-        }
-        setCommentStats({
-          likesReceived: Math.floor(u.likes * 0.5),
-          repliesReceived: Math.floor(u.comments * 0.3),
-        });
-
-        // 타임라인: API 호출
-        setTimelineLoading(true);
-        fetchActivity()
-          .then(data => setTimelineItems(data))
-          .catch(() => setTimelineError('활동 히스토리를 불러올 수 없습니다.'))
-          .finally(() => setTimelineLoading(false));
-      })
-      .catch(() => setError('유저 정보를 불러오지 못했습니다.'))
-      .finally(() => setLoading(false));
-  }, []);
+    fetch(`${URL}/session/Profile/${loginNickname}`, { credentials: 'include' })
+    .then(res => {
+      if (!res.ok) throw new Error(`프로필 조회 실패: ${res.status}`);
+      return res.json() as Promise<{
+        success: boolean;
+        code: number;
+        message: string;
+        result: userDTO | null;
+      }>;
+    })
+    .then(apiRes => {
+      if (!apiRes.success || !apiRes.result) {
+        throw new Error(apiRes.message || '프로필 데이터가 없습니다.');
+      }
+      // User 타입에 맞춰 설정
+      setProfile(apiRes.result);
+      // 편집 폼 초기값
+      setFormNickname(apiRes.result.nickname);
+      setFormBio(apiRes.result.bio);
+      setAvatarPreview(DEFAULT_AVATAR);
+    })
+    .catch(err => {
+      console.error(err);
+      setError(err.message);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, [authLoading, isLoggedIn, loginNickname]);
 
   // Bias 데이터 로드
   useEffect(() => {
@@ -337,11 +354,11 @@ export default function MyPage() {
 
   if (loading) return <div className="spinner">로딩 중…</div>;
   if (error)   return <div className="error">{error}</div>;
-  if (!user)   return null;
+  if (!profile)   return null;
 
-  const sessions      = user.sessions     ?? [];
-  const notifications = user.notifications?? [];
-  const bookmarks     = user.bookmarks;
+  // const sessions      = user.sessions     ?? [];
+  // const notifications = user.notifications?? [];
+  // const bookmarks     = user.bookmarks;
 
   const orderedBiasData = ['진보','중도','보수']
     .map(label => biasData.find(d => d.name === label) || { name: label, value: 0 });
@@ -359,11 +376,11 @@ export default function MyPage() {
           <div className="profile-box">
             <div className="avatar"><img src={avatarPreview} alt="avatar" /></div>
             <h2 className="nickname">{loginNickname}</h2>
-            <p className="bio">{user.bio || '소개 없음'}</p>
-            <div className="follow-info">
+            <p className="bio">{profile?.bio || '소개 없음'}</p>
+            {/* <div className="follow-info">
               <span>👥 {user.followers}</span>
               <span>➡️ {user.following}</span>
-            </div>
+            </div> */}
           </div>
           <nav className="sidebar-nav">
             <button className={tab==='analytics'?'active':''} onClick={()=>setTab('analytics')}>Analytics</button>
@@ -511,7 +528,7 @@ export default function MyPage() {
                     <div className="avatar-large"><img src={avatarPreview} alt="avatar" /></div>
                     <div className="profile-info">
                       <h4 className="profile-name">{loginNickname}</h4>
-                      <p className="profile-bio">{user.bio || '소개가 아직 없습니다.'}</p>
+                      <p className="profile-bio">{profile.bio || '소개가 아직 없습니다.'}</p>
                     </div>
                     <button className="btn btn-edit-profile" onClick={()=>setEditingProfile(true)}>✎ 수정</button>
                   </div>
@@ -551,14 +568,14 @@ export default function MyPage() {
                       />
                     </div>
                     <div className="form-actions">
-                      <button type="button" className="btn cancel" onClick={()=>{ setEditingProfile(false); setAvatarPreview(user.avatar||DEFAULT_AVATAR); }}>취소</button>
+                      <button type="button" className="btn cancel" onClick={()=>{ setEditingProfile(false); setAvatarPreview(DEFAULT_AVATAR); }}>취소</button>
                       <button type="submit" className="btn save">저장</button>
                     </div>
                   </form>
                 )}
               </article>
 
-              <article className="card">
+              {/* <article className="card">
                 <h3>앱 연결</h3>
                 {user.socialAccounts && user.socialAccounts.length > 0 ? (
                   <ul className="apps-list">
@@ -583,16 +600,48 @@ export default function MyPage() {
                 ) : (
                   <p className="empty">연결된 앱이 없습니다.</p>
                 )}
-              </article>
+              </article> */}
 
               <article className="card delete-card">
                 <h3 className="danger">계정 삭제</h3>
-                <p>데이터가 영구 삭제됩니다. 신중히 결정하세요.</p>
-                <button className="btn delete-account" onClick={() => {
-                  if (window.confirm('정말 삭제하시겠습니까?')) {
-                    alert('삭제되었습니다.');
-                  }
-                }}>계정 삭제</button>
+                  <p>데이터가 영구 삭제됩니다. 신중히 결정하세요.</p>
+                  <button
+                    className="btn delete-account"
+                    onClick={async () => {
+                      if (!window.confirm('정말 삭제하시겠습니까?')) return;
+
+                      try {
+                        // 회원 탈퇴퇴
+                        const res = await fetch(`${URL}/user/del`, {
+                          method: 'POST',
+                          credentials: 'include'
+                        });
+                        const apiRes = await res.json()
+
+                        if (!res.ok || !apiRes.isSuccess) {
+                          throw new Error(apiRes.message || `삭제 실패: ${res.status}`);
+                        }
+
+                        // 서버 세션 무효화화
+                        const loRes = await fetch(`${URL}/session/logout`, {
+                          method: 'POST',
+                          credentials: 'include',
+                        });
+                        if(!loRes.ok){
+                          console.warn('서버 로그아웃 실패:', loRes.status);
+                        }
+
+                      } catch (err: any) {
+                        console.error(err);
+                        alert(err.message || '회원 탈퇴 중 오류가 발생했습니다.');
+                      } finally {
+                        logout();
+                        navigate('/', { replace: true });
+                      }
+                    }}
+                  >
+                    계정 삭제
+                  </button>
               </article>
             </div>
           )}
@@ -604,15 +653,15 @@ export default function MyPage() {
                 <h3>활동 요약</h3>
                 <div className="stats-list">
                   <div className="stat-item">
-                    <span className="stat-value">{user.checks}</span>
+                    <span className="stat-value">{0}</span>
                     <span className="stat-label">팩트체크</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-value">{user.comments}</span>
+                    <span className="stat-value">{0}</span>
                     <span className="stat-label">댓글</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-value">{user.likes}</span>
+                    <span className="stat-value">{0}</span>
                     <span className="stat-label">좋아요</span>
                   </div>
                 </div>
@@ -684,7 +733,7 @@ export default function MyPage() {
                 )}
               </article>
 
-              <article className="card bookmark-card">
+              {/* <article className="card bookmark-card">
                 <h3>북마크</h3>
                 {bookmarksLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -693,18 +742,17 @@ export default function MyPage() {
                     : bookmarks.length > 0
                       ? (
                         <ul className="bookmark-list">
-                          {bookmarks.map(b => (
                             <li key={b.id}>
                               <a href={b.url} target="_blank" rel="noopener noreferrer">{b.title}</a>
-                              <span className="text-sub">{formatDate(b.url /* date not available, replace if you have date */)}</span>
+                              <span className="text-sub">{formatDate(b.url)}</span>
                             </li>
                           ))}
                         </ul>
                       )
                       : <p className="empty">북마크한 글이 없습니다.</p>}
-              </article>
+              </article> */}
 
-              <article className="card session-card">
+              {/* <article className="card session-card">
                 <h3>세션</h3>
                 {sessionsLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -722,9 +770,9 @@ export default function MyPage() {
                         </ul>
                       )
                       : <p className="empty">로그인 세션이 없습니다.</p>}
-              </article>
+              </article> */}
 
-              <article className="card notification-card">
+              {/* <article className="card notification-card">
                 <h3>알림</h3>
                 {notificationsLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -742,7 +790,7 @@ export default function MyPage() {
                         </ul>
                       )
                       : <p className="empty">받은 알림이 없습니다.</p>}
-              </article>
+              </article> */}
             </div>
           )}
         </section>
