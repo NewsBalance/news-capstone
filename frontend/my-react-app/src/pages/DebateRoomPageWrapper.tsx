@@ -158,96 +158,147 @@ const DebateRoomPageWrapper: React.FC = () => {
     useEffect(() => {
         if (!roomId || !userName) return;
         
-        const client = new StompJs.Client({
-            webSocketFactory: () => new SockJS(WS_URL),
-            connectHeaders: {
-                // WebSocket 연결에 토큰 헤더 추가
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            debug: (str: string) => {
-                console.log(str);
-            },
-            reconnectDelay: 5000,
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
-        });
-
-        client.onConnect = () => {
-            // 토론 메시지 구독
-            client.subscribe(`/topic/room/${roomId}`, (message: StompJs.IMessage) => {
-                const receivedMsg = JSON.parse(message.body) as Message;
-                
-                // 토론 메시지 처리
-                if (receivedMsg.type === "CHAT") {
-                    setMessages(prev => [...prev, {
-                        speaker: receivedMsg.sender,
-                        text: receivedMsg.content
-                    }]);
-                } 
-                // 시스템 메시지 처리 (START, END 등)
-                else if (["START", "END", "INFO"].includes(receivedMsg.type)) {
-                    setMessages(prev => [...prev, {
-                        speaker: "System",
-                        text: receivedMsg.content
-                    }]);
-                }
-            });
-
-            // 채팅 메시지 구독
-            client.subscribe(`/topic/chat/${roomId}`, (message: StompJs.IMessage) => {
-                const receivedMsg = JSON.parse(message.body) as Message;
-                setChatMessages(prev => [...prev, `${receivedMsg.sender}: ${receivedMsg.content}`]);
-            });
+        const connectWebSocket = () => {
+            console.log('WebSocket 연결 시도...');
             
-            // 에러 메시지 구독
-            client.subscribe(`/topic/error/${roomId}`, (message: StompJs.IMessage) => {
-                const receivedMsg = JSON.parse(message.body) as Message;
-                alert(receivedMsg.content);
+            const client = new StompJs.Client({
+                webSocketFactory: () => new SockJS(WS_URL),
+                connectHeaders: {
+                    // WebSocket 연결에 토큰 헤더 추가
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                debug: (str: string) => {
+                    console.log(str);
+                },
+                reconnectDelay: 5000,
+                heartbeatIncoming: 4000,
+                heartbeatOutgoing: 4000,
             });
-        };
 
-        client.onStompError = (frame: StompJs.IFrame) => {
-            console.error('Broker reported error: ' + frame.headers['message']);
-            console.error('Additional details: ' + frame.body);
-        };
+            client.onConnect = () => {
+                console.log('WebSocket 연결 성공!');
+                
+                // 토론 메시지 구독
+                client.subscribe(`/topic/room/${roomId}`, (message: StompJs.IMessage) => {
+                    const receivedMsg = JSON.parse(message.body) as Message;
+                    
+                    // 토론 메시지 처리
+                    if (receivedMsg.type === "CHAT") {
+                        setMessages(prev => [...prev, {
+                            speaker: receivedMsg.sender,
+                            text: receivedMsg.content
+                        }]);
+                    } 
+                    // 시스템 메시지 처리 (START, END 등)
+                    else if (["START", "END", "INFO"].includes(receivedMsg.type)) {
+                        setMessages(prev => [...prev, {
+                            speaker: "System",
+                            text: receivedMsg.content
+                        }]);
+                    }
+                });
 
-        client.activate();
-        stompClient.current = client;
+                // 채팅 메시지 구독
+                client.subscribe(`/topic/chat/${roomId}`, (message: StompJs.IMessage) => {
+                    const receivedMsg = JSON.parse(message.body) as Message;
+                    setChatMessages(prev => [...prev, `${receivedMsg.sender}: ${receivedMsg.content}`]);
+                });
+                
+                // 에러 메시지 구독
+                client.subscribe(`/topic/error/${roomId}`, (message: StompJs.IMessage) => {
+                    const receivedMsg = JSON.parse(message.body) as Message;
+                    alert(receivedMsg.content);
+                });
+            };
+
+            client.onStompError = (frame: StompJs.IFrame) => {
+                console.error('Broker reported error: ' + frame.headers['message']);
+                console.error('Additional details: ' + frame.body);
+            };
+            
+            client.onWebSocketClose = () => {
+                console.log('WebSocket 연결이 닫혔습니다. 재연결 시도 중...');
+            };
+            
+            client.onWebSocketError = (error) => {
+                console.error('WebSocket 오류:', error);
+            };
+
+            client.activate();
+            stompClient.current = client;
+        };
+        
+        connectWebSocket();
 
         return () => {
-            if (client.connected) {
-                client.deactivate();
+            if (stompClient.current?.connected) {
+                console.log('WebSocket 연결 종료');
+                stompClient.current.deactivate();
             }
         };
     }, [roomId, userName]);
 
     // 토론 메시지 전송
     const handleSendMessage = (text: string) => {
-        if (!stompClient.current?.connected || !roomId) {
+        if (!stompClient.current || !roomId) {
+            console.error("WebSocket 연결 상태:", stompClient.current ? "객체 존재" : "객체 없음");
+            console.error("연결 상태:", stompClient.current?.connected ? "연결됨" : "연결 안됨");
+            console.error("roomId:", roomId);
+            
+            // 연결이 끊어진 경우 재연결 시도
+            if (stompClient.current && !stompClient.current.connected) {
+                console.log("WebSocket 재연결 시도...");
+                stompClient.current.activate();
+                setTimeout(() => {
+                    if (stompClient.current?.connected) {
+                        console.log("재연결 성공, 메시지 재전송 시도");
+                        sendMessage(text);
+                        return;
+                    } else {
+                        alert("서버에 연결할 수 없습니다. 페이지를 새로고침해주세요.");
+                    }
+                }, 1000);
+                return;
+            }
+            
             alert("서버에 연결되어 있지 않습니다. 페이지를 새로고침해주세요.");
             return;
         }
 
-        const message: Message = {
-            type: "CHAT",
-            content: text,
-            sender: userName,
-            roomId: Number(roomId)
-        };
-
-        stompClient.current.publish({
-            destination: '/app/debate',
-            body: JSON.stringify(message)
-        });
+        sendMessage(text);
     };
 
     // 채팅 메시지 전송
     const handleSendChat = (text: string) => {
-        if (!stompClient.current?.connected || !roomId) {
+        if (!stompClient.current || !roomId) {
+            console.error("WebSocket 연결 상태:", stompClient.current ? "객체 존재" : "객체 없음");
+            console.error("연결 상태:", stompClient.current?.connected ? "연결됨" : "연결 안됨");
+            
+            // 연결이 끊어진 경우 재연결 시도
+            if (stompClient.current && !stompClient.current.connected) {
+                console.log("WebSocket 재연결 시도...");
+                stompClient.current.activate();
+                setTimeout(() => {
+                    if (stompClient.current?.connected) {
+                        console.log("재연결 성공, 채팅 메시지 재전송 시도");
+                        sendChatMessage(text);
+                        return;
+                    } else {
+                        alert("서버에 연결할 수 없습니다. 페이지를 새로고침해주세요.");
+                    }
+                }, 1000);
+                return;
+            }
+            
             alert("서버에 연결되어 있지 않습니다. 페이지를 새로고침해주세요.");
             return;
         }
 
+        sendChatMessage(text);
+    };
+
+    // 토론 메시지 전송 로직 분리
+    const sendMessage = (text: string) => {
         const message: Message = {
             type: "CHAT",
             content: text,
@@ -255,10 +306,44 @@ const DebateRoomPageWrapper: React.FC = () => {
             roomId: Number(roomId)
         };
 
-        stompClient.current.publish({
-            destination: '/app/chat',
-            body: JSON.stringify(message)
-        });
+        try {
+            stompClient.current!.publish({
+                destination: '/app/debate',
+                body: JSON.stringify(message)
+            });
+            
+            // 클라이언트 측에서 바로 메시지 추가 (낙관적 UI 업데이트)
+            setMessages(prev => [...prev, {
+                speaker: userName,
+                text: text
+            }]);
+        } catch (error) {
+            console.error("메시지 전송 중 오류:", error);
+            alert("메시지 전송에 실패했습니다. 다시 시도해주세요.");
+        }
+    };
+
+    // 채팅 메시지 전송 로직 분리
+    const sendChatMessage = (text: string) => {
+        const message: Message = {
+            type: "CHAT",
+            content: text,
+            sender: userName,
+            roomId: Number(roomId)
+        };
+
+        try {
+            stompClient.current!.publish({
+                destination: '/app/chat',
+                body: JSON.stringify(message)
+            });
+            
+            // 클라이언트 측에서 바로 메시지 추가 (낙관적 UI 업데이트)
+            setChatMessages(prev => [...prev, `${userName}: ${text}`]);
+        } catch (error) {
+            console.error("채팅 메시지 전송 중 오류:", error);
+            alert("채팅 메시지 전송에 실패했습니다. 다시 시도해주세요.");
+        }
     };
 
     // 준비 상태 변경

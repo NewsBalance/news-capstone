@@ -171,7 +171,7 @@ const Card: React.FC<CardProps> = ({
         </p>
 
         <div>
-          <button onClick={() => navigate(`/debate/${room.id}`)}>참여</button>
+          <button onClick={() => navigate(`/discussion/${room.id}`)}>참여</button>
           {isMine && onDelete && (
               <button onClick={() => onDelete(room.id)}>삭제</button>
           )}

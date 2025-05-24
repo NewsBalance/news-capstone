@@ -8,6 +8,7 @@ import SignupPage from './pages/signup';
 import GoalsPage from './pages/goals';
 import MyPage from './pages/myPage';
 import DiscussionPage from './pages/DiscussionPage';
+import DebateRoomPageWrapper from './pages/DebateRoomPageWrapper';
 import VideosPage from './pages/Videos';
 import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -32,6 +33,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DiscussionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/discussion/:roomId"
+        element={
+          <ProtectedRoute>
+            <DebateRoomPageWrapper />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/debate/:roomId"
+        element={
+          <ProtectedRoute>
+            <DebateRoomPageWrapper />
           </ProtectedRoute>
         }
       />
