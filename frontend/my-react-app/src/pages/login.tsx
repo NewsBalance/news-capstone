@@ -15,6 +15,7 @@ function LoginPage() {
   const [EmailError, setEmailError] = useState('');
   const [passwordError, setpasswordError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailError(''); setpasswordError(''); setSuccessMessage('');
+    setLoading(true);
     let valid = true;
 
     /* 이메일 검사 */
@@ -42,30 +44,67 @@ function LoginPage() {
       setpasswordError('비밀번호는 최소 4자리 이상이어야 합니다.');
       valid = false;
     }
-    if (!valid) return;
+    if (!valid) {
+      setLoading(false);
+      return;
+    }
 
-    try{
-      const response = await fetch(`${URL}/Login/login`, {
+    try {
+      console.log('로그인 API 요청 시작:', `${URL}/api/login`);
+      
+      const response = await fetch(`${URL}/api/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ 
           email,
           password
         }),
         credentials: 'include'
-        });
+      });
 
-        const result = await response.json();
+      console.log('응답 상태:', response.status);
+      
+      // 모든 응답 결과 확인
+      const responseText = await response.text();
+      console.log('응답 텍스트:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('응답 데이터:', result);
+      } catch (e) {
+        console.error('JSON 파싱 오류:', e);
+        result = { message: '서버 응답을 처리할 수 없습니다.' };
+      }
 
       if (response.ok) {
-        login(result.result)
+        // 서버 응답에서 필요한 정보 추출
+        const userData = {
+          nickname: result.nickname || email.split('@')[0], // 닉네임이 없으면 이메일에서 추출
+          id: result.id || 0,
+          role: result.role || 'USER'
+        };
+        
+        // 토큰과 사용자 객체를 login 함수에 전달
+        login(result.token, userData);
+        
+        // 로컬 스토리지에도 저장
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
         navigate('/');
         alert('로그인이 완료되었습니다.');
-    } else {
-      alert(`로그인 실패: ${result.message}`);
-    }
-    } catch(err){
+      } else {
+        alert(`로그인 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
+      }
+    } catch(err) {
+      console.error('로그인 오류:', err);
       alert('서버 통신 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,10 +125,12 @@ function LoginPage() {
               <label htmlFor="email">이메일</label>
               <input
                 id="email"
+                type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="example@email.com"
                 className={EmailError ? 'error' : ''}
+                disabled={loading}
               />
               {EmailError && <div className="error-message">{EmailError}</div>}
             </div>
@@ -104,6 +145,7 @@ function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="비밀번호 입력"
                 className={passwordError ? 'error' : ''}
+                disabled={loading}
               />
               {passwordError && <div className="error-message">{passwordError}</div>}
             </div>
@@ -116,6 +158,7 @@ function LoginPage() {
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={e => setRememberMe(e.target.checked)}
+                  disabled={loading}
                 />
                 <label htmlFor="rememberMe" className="remember-me-label">
                   로그인 상태 유지
@@ -123,7 +166,13 @@ function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" className="submit-btn">로그인</button>
+            <button 
+              type="submit" 
+              className="submit-btn"
+              disabled={loading}
+            >
+              {loading ? '로그인 중...' : '로그인'}
+            </button>
           </form>
 
           {/* 추가 링크 */}

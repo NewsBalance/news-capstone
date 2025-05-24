@@ -284,29 +284,53 @@ function SignupPage() {
     }
 
     try {
-      const response = await fetch(`${URL}/user/regi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      console.log('API 요청 시작:', `${URL}/api/register`);
+      
+      const requestData = {
         nickname,
         password,
         email,
         birth: birthdate
-    })
-    });
-    const result = await response.json();
-
-    if (response.ok) {
-      alert('회원가입이 완료되었습니다.');
-      // 로그인 페이지로 리디렉션 추가 필요
+      };
       
-    } else {
-      alert(`회원가입 실패: ${result.message}`);
+      console.log('요청 데이터:', JSON.stringify(requestData));
+      
+      const response = await fetch(`${URL}/api/register`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      console.log('응답 상태:', response.status);
+      
+      // 모든 응답 결과 확인 (성공이든 실패든)
+      const responseText = await response.text();
+      console.log('응답 텍스트:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('응답 데이터:', result);
+      } catch (e) {
+        console.error('JSON 파싱 오류:', e);
+        result = { message: responseText };
+      }
+
+      if (response.ok) {
+        alert('회원가입이 완료되었습니다.');
+        // 로그인 페이지로 리디렉션 - import { useNavigate } 필요
+        window.location.href = '/login'; // 직접 URL 변경 방식으로 리디렉션
+      } else {
+        alert(`회원가입 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
+      }
+    } catch (error) {
+      console.error('네트워크 오류:', error);
+      alert('서버 통신 중 오류가 발생했습니다.');
     }
-  } catch (error) {
-    alert('서버 통신 중 오류가 발생했습니다.');
-  }
-};
+  };
 
   return (
     <>
