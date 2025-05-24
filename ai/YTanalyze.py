@@ -5,11 +5,14 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import nltk, openai, time, torch
 from nltk.tokenize import sent_tokenize
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 # Setup
 nltk.download("punkt")
-openai.api_key = "키값 입력하기(의진이형꺼)"
-ASSISTANT_ID = "id 입력하"
+openai.api_key = os.getenv("OPENAI_API_KEY")
+ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 
 # 모델 로드
 MODEL_PATH = "./model/kcbert_final_model"
