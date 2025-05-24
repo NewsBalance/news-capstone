@@ -8,6 +8,7 @@ import React, {
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Discussion.css';
+import { useAuth } from '../contexts/AuthContext';
 
 /* ===============================================================
    타입 정의 & 샘플 데이터
@@ -134,68 +135,48 @@ interface CardProps {
   highlight?: string;
 }
 const Card: React.FC<CardProps> = ({
-  room,
-  onJoin,
-  onDelete,
-  isMine,
-  highlight,
-}) => {
+                                     room,
+                                     onJoin,
+                                     onDelete,
+                                     isMine,
+                                     highlight,
+                                   }) => {
+  const navigate = useNavigate();
+
   const hl = (text: string) => {
     if (!highlight) return text;
     const re = new RegExp(`(${highlight})`, 'gi');
     return text.split(re).map((part, i) =>
-      part.toLowerCase() === highlight.toLowerCase() ? (
-        <mark key={i}>{part}</mark>
-      ) : (
-        part
-      ),
+        part.toLowerCase() === highlight.toLowerCase() ? (
+            <mark key={i}>{part}</mark>
+        ) : (
+            part
+        )
     );
   };
 
   return (
-    <div
-      className="dialogue-card"
-      role="region"
-      aria-label={`토론방: ${room.title}`}
-      tabIndex={0}
-    >
-      <h3 className="dialogue-title">{hl(room.title)}</h3>
-      <p className="dialogue-desc">{hl(room.description)}</p>
+      <div className="dialogue-card">
+        <h3>{hl(room.title)}</h3>
+        <p>{hl(room.description)}</p>
 
-      <div className="keyword-tags" aria-label="키워드">
-        {room.keywords.map((k, i) => (
-          <span key={i} className="keyword-tag">
-            #{k}
-          </span>
-        ))}
+        <div>
+          {room.keywords.map((k, i) => (
+              <span key={i}>#{k}</span>
+          ))}
+        </div>
+
+        <p>
+          💬 {room.currentParticipants} 👀 {room.totalVisits} 📅 {room.createdAt}
+        </p>
+
+        <div>
+          <button onClick={() => navigate(`/debate/${room.id}`)}>참여</button>
+          {isMine && onDelete && (
+              <button onClick={() => onDelete(room.id)}>삭제</button>
+          )}
+        </div>
       </div>
-
-      <p className="dialogue-meta">
-        <span className="meta-item">💬 {room.currentParticipants}</span>
-        <span className="meta-item">👀 {room.totalVisits}</span>
-        <span className="meta-item">📅 {room.createdAt}</span>
-      </p>
-
-      <div className="card-actions">
-        <button
-          className="btn-join"
-          onClick={() => onJoin(room.id)}
-          aria-label={`${room.title} 방 참여`}
-        >
-          참여
-        </button>
-
-        {isMine && onDelete && (
-          <button
-            className="btn-delete"
-            onClick={() => onDelete(room.id)}
-            aria-label={`${room.title} 방 삭제`}
-          >
-            삭제
-          </button>
-        )}
-      </div>
-    </div>
   );
 };
 
@@ -333,6 +314,8 @@ export default function DiscussionPage() {
   const scrollKeep = useRef<number>(0);
   const hotRef = useRef<HTMLDivElement>(null);
 
+  const { isAuthenticated, token, checkAuth } = useAuth();
+
   // 스크롤 기억
   useEffect(() => {
     const onScroll = () => {
@@ -416,9 +399,70 @@ export default function DiscussionPage() {
 
     try {
       setIsCreating(true);
-      await delay(500);
+      
+      // 로그인 확인 - 컨텍스트 API 사용
+      if (!isAuthenticated || !token || !checkAuth()) {
+        console.log("인증 상태:", isAuthenticated);
+        console.log("토큰 존재 여부:", !!token);
+        
+        showToast('로그인이 필요한 기능입니다.');
+        navigate('/login', { state: { returnTo: location.pathname } });
+        return;
+      }
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+      
+      // 인증 관련 헤더 설정
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      
+      console.log("요청 헤더:", headers);
+      
+      // 방 생성 요청
+      const response = await fetch(`${apiUrl}/api/debate-rooms`, {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',  // 쿠키 포함
+        body: JSON.stringify({
+          title: t,
+          description: d,
+          keywords: kws,
+        }),
+      });
+      
+      console.log('API 응답 상태:', response.status);
+      
+      // 응답 본문 로깅 (디버깅용)
+      const responseText = await response.text();
+      console.log('API 응답:', responseText);
+      
+      // 응답이 JSON인 경우에만 파싱
+      let data;
+      if (responseText && responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (e) {
+          console.error('JSON 파싱 오류:', e);
+        }
+      }
+      
+      if (response.status === 401 || response.status === 403) {
+        // 로컬 스토리지의 토큰 제거 (만료된 토큰일 수 있음)
+        localStorage.removeItem('token');
+        showToast(data?.message || '로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+        navigate('/login', { state: { returnTo: location.pathname } });
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error(data?.message || '방 생성에 실패했습니다');
+      }
+      
+      // 성공적으로 처리된 경우
       const next: Dialogue = {
-        id: Date.now(),
+        id: data.id || Date.now(),
         title: t,
         description: d,
         currentParticipants: 1,
@@ -426,13 +470,16 @@ export default function DiscussionPage() {
         createdAt: new Date().toISOString().slice(0, 10),
         keywords: kws,
       };
+      
       setMyList((prev) => [next, ...prev]);
       setNewTitle('');
       setNewDesc('');
       setNewKeywords('');
       showToast('토론방이 생성되었습니다!');
-    } catch {
-      showToast('생성 중 오류가 발생했습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '생성 중 오류가 발생했습니다.';
+      showToast(errorMessage);
+      console.error('방 생성 오류:', error);
     } finally {
       setIsCreating(false);
     }
@@ -554,7 +601,7 @@ export default function DiscussionPage() {
 
         {/* ── 검색 결과 Active ────────────────── */}
         {searchTerm ? (
-          <Section title={`“${searchTerm}” 검색 결과`}>
+          <Section title={`"${searchTerm}" 검색 결과`}>
             {isLoadingSearch ? (
               <div className="skeleton-grid">
                 {Array(4)

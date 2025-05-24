@@ -2,7 +2,6 @@ package newsbalance.demo.Service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import newsbalance.demo.DTO.MessageDto;
 import newsbalance.demo.Entity.DebateMessage;
 import newsbalance.demo.Entity.DebateRoom;
 import newsbalance.demo.Entity.Message;
@@ -27,10 +26,8 @@ public class DebateService {
     private final ChatMessageRepository chatMessageRepository;
 
     public void handleMessage(Message message) {
-        User sender = userRepository.findByNickname(message.getSender());
-        if (sender == null) {
-            throw new EntityNotFoundException("사용자를 찾을 수 없습니다: " + message.getSender());
-        }
+        User sender = userRepository.findByNickname(message.getSender())
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + message.getSender()));
         
         DebateRoom room = roomRepository.findById(message.getRoomId())
                 .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + message.getRoomId()));
@@ -175,7 +172,8 @@ public class DebateService {
         DebateRoom room = roomRepository.findById(message.getRoomId())
                 .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + message.getRoomId()));
         
-        User user = userRepository.findByNickname(message.getSender());
+        User user = userRepository.findByNickname(message.getSender())
+                .orElse(null);
         
         // ChatMessage 엔티티에 저장
         if (user != null) {
