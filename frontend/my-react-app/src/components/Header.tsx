@@ -8,16 +8,21 @@ const URL = "http://localhost:8080";
 const Header: React.FC = () => {
   const { pathname } = useLocation();
   const isActive = (path: string) => (pathname === path ? 'active' : '');
-  const { isLoggedIn, nickname, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await fetch(`${URL}/Login/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    logout();          // ★ 컨텍스트 상태 초기화
-    navigate('/');
+    try {
+      await fetch(`${URL}/api/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+    } finally {
+      logout();          // ★ 컨텍스트 상태 초기화
+      navigate('/');
+    }
   };
 
   return (
@@ -31,10 +36,10 @@ const Header: React.FC = () => {
             <li><Link to="/videos" className={isActive('/videos')}>영상분석</Link></li>
             <li><Link to="/mypage" className={isActive('/mypage')}>마이페이지</Link></li>
 
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <li>
-                  <span className="nickname">{nickname}님</span>
+                  <span className="nickname">{user?.nickname}님</span>
                 </li>
                 <li>
                   <button
