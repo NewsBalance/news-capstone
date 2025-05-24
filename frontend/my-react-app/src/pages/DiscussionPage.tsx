@@ -98,10 +98,95 @@ const hotSeed: Dialogue[] = [
   },
 ];
 
+// 모든 토론방을 위한 샘플 데이터
+const allRoomsSeed: Dialogue[] = [
+  ...hotSeed,
+  {
+    id: 9,
+    title: '지방 분권과 지역균형발전',
+    description: '수도권 집중 해소 방안',
+    currentParticipants: 6,
+    totalVisits: 45,
+    createdAt: '2025-04-08',
+    keywords: ['사회', '정책'],
+  },
+  {
+    id: 10,
+    title: '한류 문화와 소프트파워',
+    description: '글로벌 영향력 확대',
+    currentParticipants: 9,
+    totalVisits: 71,
+    createdAt: '2025-04-07',
+    keywords: ['문화', '외교'],
+  },
+  {
+    id: 11,
+    title: '전기차 시장 전망',
+    description: '배터리 기술과 인프라',
+    currentParticipants: 11,
+    totalVisits: 93,
+    createdAt: '2025-04-06',
+    keywords: ['기술', '환경'],
+  },
+  {
+    id: 12,
+    title: '음식물 쓰레기 저감 방안',
+    description: '재활용과 순환경제',
+    currentParticipants: 4,
+    totalVisits: 38,
+    createdAt: '2025-04-05',
+    keywords: ['환경', '생활'],
+  },
+  {
+    id: 13,
+    title: '디지털 리터러시 교육',
+    description: '미디어 비판적 이해',
+    currentParticipants: 7,
+    totalVisits: 61,
+    createdAt: '2025-04-04',
+    keywords: ['교육', '디지털'],
+  },
+  {
+    id: 14,
+    title: '프라이버시와 보안',
+    description: '개인정보 보호 전략',
+    currentParticipants: 8,
+    totalVisits: 67,
+    createdAt: '2025-04-03',
+    keywords: ['IT', '보안'],
+  },
+  {
+    id: 15,
+    title: '식량 안보와 농업 정책',
+    description: '자급률 향상 방안',
+    currentParticipants: 5,
+    totalVisits: 42,
+    createdAt: '2025-04-02',
+    keywords: ['경제', '농업'],
+  },
+  {
+    id: 16,
+    title: '공유 경제 사업 모델',
+    description: '플랫폼과 규제 이슈',
+    currentParticipants: 6,
+    totalVisits: 59,
+    createdAt: '2025-04-01',
+    keywords: ['경제', '사회'],
+  },
+];
+
 /* ===============================================================
-   유틸
+   유틸리티 함수
 ================================================================ */
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+// 모든 토론방 전용 정렬 함수
+const sortRoomsBy = (rooms: Dialogue[], key: 'recent' | 'popular') =>
+  [...rooms].sort((a, b) =>
+    key === 'popular'
+      ? b.currentParticipants - a.currentParticipants
+      : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ===============================================================
    재사용 컴포넌트
@@ -279,16 +364,37 @@ export default function DiscussionPage() {
   const location = useLocation();
 
   /* ----- 상태 -------------------------------------------------- */
-  const [hotList, setHotList] = useState<Dialogue[]>(hotSeed);
+  // HOT 토론방은 항상 인기순 (totalVisits 기준)
+  const [hotList, setHotList] = useState<Dialogue[]>(
+    [...hotSeed].sort((a, b) => b.totalVisits - a.totalVisits)
+  );
+
   const [myList, setMyList] = useState<Dialogue[]>(() => {
     const s = localStorage.getItem('myDiscussionRooms');
     return s ? (JSON.parse(s) as Dialogue[]) : [];
   });
 
+  // 모든 토론방 정렬 기준 (모든 토론방에만 적용)
+  const [allRoomsSortKey, setAllRoomsSortKey] = useState<'recent' | 'popular'>(
+    localStorage.getItem('allRoomsSortKey') === 'popular'
+      ? 'popular'
+      : 'recent',
+  );
+
+  // 모든 토론방 상태 초기화 - 처음에 초기 데이터 로드 (정렬 기준 적용)
+  const [allRooms, setAllRooms] = useState<Dialogue[]>(() => {
+    // 처음 5개 항목만 초기 로드하고 정렬
+    return sortRoomsBy(allRoomsSeed.slice(0, 5), allRoomsSortKey);
+  });
+
+  const [loadingAllRooms, setLoadingAllRooms] = useState(false);
+  const [allRoomsPage, setAllRoomsPage] = useState(0); 
+  const [hasMoreAllRooms, setHasMoreAllRooms] = useState(allRoomsSeed.length > 5);
+
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
-  const [searchPageSize, setSearchPageSize] = useState(4);
+  const [searchPageSize, setSearchPageSize] = useState(5);
 
   const [sortKey, setSortKey] = useState<'recent' | 'popular'>(
     localStorage.getItem('discussionSortKey') === 'popular'
@@ -343,7 +449,30 @@ export default function DiscussionPage() {
     return () => clearTimeout(id);
   }, [toastMsg]);
 
+  // 컴포넌트 마운트 시 초기 데이터 로드 효과
+  useEffect(() => {
+    // 모든 토론방 초기 로딩 효과
+    const loadInitialAllRooms = async () => {
+      setLoadingAllRooms(true);
+      await delay(500); // 로딩 효과를 위한 짧은 지연
+      setLoadingAllRooms(false);
+    };
+    
+    loadInitialAllRooms();
+  }, []);
+
   /* ----- 정렬 & 필터 ------------------------------------------ */
+  // 모든 토론방 정렬 변경 이벤트 핸들러
+  const handleAllRoomsSortChange = (newSortKey: 'recent' | 'popular') => {
+    setAllRoomsSortKey(newSortKey);
+    
+    // 모든 토론방 재정렬
+    setAllRooms(prev => sortRoomsBy(prev, newSortKey));
+    
+    // 로컬 스토리지에 저장
+    localStorage.setItem('allRoomsSortKey', newSortKey);
+  };
+
   const sortRooms = (rooms: Dialogue[]) =>
     [...rooms].sort((a, b) =>
       sortKey === 'popular'
@@ -471,7 +600,12 @@ export default function DiscussionPage() {
         keywords: kws,
       };
       
+      // 내가 만든 토론방 목록에 추가
       setMyList((prev) => [next, ...prev]);
+      
+      // 모든 토론방 목록에도 추가
+      setAllRooms((prev) => [next, ...prev]);
+      
       setNewTitle('');
       setNewDesc('');
       setNewKeywords('');
@@ -492,7 +626,13 @@ export default function DiscussionPage() {
     try {
       setDeletingRoomId(id);
       await delay(300);
+      
+      // 내가 만든 토론방 목록에서 제거
       setMyList((prev) => prev.filter((r) => r.id !== id));
+      
+      // 모든 토론방 목록에서도 제거
+      setAllRooms((prev) => prev.filter((r) => r.id !== id));
+      
       showToast('토론방이 삭제되었습니다.');
     } catch {
       showToast('삭제 중 오류가 발생했습니다.');
@@ -530,6 +670,43 @@ export default function DiscussionPage() {
   const scrollHot = (dir: number) =>
     hotRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
 
+  // 모든 토론방 더 불러오기 - 페이지 크기 5로 변경
+  const loadMoreAllRooms = async () => {
+    if (loadingAllRooms || !hasMoreAllRooms) return;
+    
+    try {
+      setLoadingAllRooms(true);
+      await delay(800);
+      
+      // 페이징 로직
+      const pageSize = 5;
+      const nextPage = allRoomsPage + 1;
+      const startIndex = nextPage * pageSize;
+      const endIndex = startIndex + pageSize;
+      
+      // 샘플 데이터에서 해당 범위의 항목만 가져오기
+      const moreRoomsUnsorted = allRoomsSeed.slice(startIndex, endIndex);
+      
+      // 현재 정렬 설정에 따라 정렬
+      const moreRooms = sortRoomsBy(moreRoomsUnsorted, allRoomsSortKey);
+      
+      // 더 로드할 항목이 있는지 확인
+      const hasMore = endIndex < allRoomsSeed.length;
+      
+      if (moreRooms.length > 0) {
+        setAllRooms(prev => [...prev, ...moreRooms]);
+        setAllRoomsPage(nextPage);
+        setHasMoreAllRooms(hasMore);
+      } else {
+        setHasMoreAllRooms(false);
+      }
+    } catch (error) {
+      console.error('추가 토론방을 불러오는 중 오류가 발생했습니다:', error);
+    } finally {
+      setLoadingAllRooms(false);
+    }
+  };
+
   /* =============================================================
      렌더링
   ============================================================ */
@@ -540,61 +717,34 @@ export default function DiscussionPage() {
       {/* ────────────────── 메인 ────────────────── */}
       <main className="discussion-container container">
         {/* ── 검색 + 정렬 ─────────────────────── */}
-        <form
-          className="search-sort-row"
-          onSubmit={handleSearchSubmit}
-          aria-label="토론방 검색 및 정렬"
-        >
-          {/* 검색바 */}
-          <div className="search-bar">
+        <div className="search-sort-row">
+          <form className="search-bar" onSubmit={handleSearchSubmit}>
             <input
               type="text"
-              placeholder="검색어를 입력하세요..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="토론방 검색..."
             />
-
             {searchInput && (
               <button
                 type="button"
                 className="clear-btn"
-                aria-label="검색어 삭제"
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchTerm('');
-                }}
+                onClick={() => setSearchInput('')}
+                aria-label="검색어 지우기"
               >
                 ×
               </button>
             )}
-
-            <button type="submit" className="search-btn">
-              검색
-            </button>
-          </div>
-
-          {/* 정렬 pill */}
-          <div className="sort-toggle" role="group" aria-label="정렬 옵션">
             <button
-              type="button"
-              className={`sort-pill ${
-                sortKey === 'recent' ? 'active' : ''
-              }`}
-              onClick={() => setSortKey('recent')}
+              type="submit"
+              className="search-btn"
+              disabled={isLoadingSearch}
+              aria-label="검색"
             >
-              최신순
+              🔍
             </button>
-            <button
-              type="button"
-              className={`sort-pill ${
-                sortKey === 'popular' ? 'active' : ''
-              }`}
-              onClick={() => setSortKey('popular')}
-            >
-              인기순
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
         {/* ── 이모지 레전드 ──────────────────── */}
         <EmojiLegend />
@@ -646,7 +796,7 @@ export default function DiscussionPage() {
         ) : (
           <>
             {/* ── Hot한 토론방 ───────────────── */}
-            <Section title="Hot한 토론방">
+            <Section title="인기 토론방">
               <div className="carousel-wrapper">
                 <button
                   className="hot-nav hot-nav--prev"
@@ -677,6 +827,59 @@ export default function DiscussionPage() {
                   ▶
                 </button>
               </div>
+            </Section>
+
+            {/* ── 모든 토론방 ────────────────── */}
+            <Section title="모든 토론방">
+              <div className="section-header-with-sort">
+                <div></div> {/* 빈 div로 왼쪽 공간 유지 */}
+                <div className="sort-controls">
+                  <button
+                    className={allRoomsSortKey === 'recent' ? 'active' : ''}
+                    onClick={() => handleAllRoomsSortChange('recent')}
+                  >
+                    최신순
+                  </button>
+                  <button
+                    className={allRoomsSortKey === 'popular' ? 'active' : ''}
+                    onClick={() => handleAllRoomsSortChange('popular')}
+                  >
+                    참여자순
+                  </button>
+                </div>
+              </div>
+
+              {loadingAllRooms && allRooms.length === 0 ? (
+                <div className="skeleton-grid">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={`skeleton-all-${i}`} className="skeleton-card" />
+                  ))}
+                </div>
+              ) : allRooms.length > 0 ? (
+                <>
+                  <div className="room-grid">
+                    {allRooms.map((room) => (
+                      <Card 
+                        key={`all-${room.id}`} 
+                        room={room} 
+                        onJoin={joinRoom}
+                        highlight={searchTerm} 
+                      />
+                    ))}
+                  </div>
+                  {hasMoreAllRooms && (
+                    <button 
+                      className="load-more" 
+                      onClick={loadMoreAllRooms}
+                      disabled={loadingAllRooms}
+                    >
+                      {loadingAllRooms ? '로딩 중...' : '더 보기'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <EmptyState message="등록된 토론방이 없습니다." />
+              )}
             </Section>
 
             {/* ── 내 방 ──────────────────────── */}
