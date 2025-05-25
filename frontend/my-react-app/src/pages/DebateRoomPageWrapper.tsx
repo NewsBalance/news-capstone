@@ -201,7 +201,17 @@ const DebateRoomPageWrapper: React.FC = () => {
                 // 채팅 메시지 구독
                 client.subscribe(`/topic/chat/${roomId}`, (message: StompJs.IMessage) => {
                     const receivedMsg = JSON.parse(message.body) as Message;
-                    setChatMessages(prev => [...prev, `${receivedMsg.sender}: ${receivedMsg.content}`]);
+                    // 중복 체크를 위한 최신 메시지 확인
+                    setChatMessages(prev => {
+                        const lastMessage = prev[prev.length - 1];
+                        const newMessage = `${receivedMsg.sender}: ${receivedMsg.content}`;
+                        
+                        // 마지막 메시지와 동일한 경우 업데이트하지 않음
+                        if (lastMessage === newMessage) {
+                            return prev;
+                        }
+                        return [...prev, newMessage];
+                    });
                 });
                 
                 // 에러 메시지 구독
@@ -323,7 +333,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         }
     };
 
-    // 채팅 메시지 전송 로직 분리
+    // 채팅 메시지 전송 로직 수정
     const sendChatMessage = (text: string) => {
         const message: Message = {
             type: "CHAT",
@@ -338,8 +348,8 @@ const DebateRoomPageWrapper: React.FC = () => {
                 body: JSON.stringify(message)
             });
             
-            // 클라이언트 측에서 바로 메시지 추가 (낙관적 UI 업데이트)
-            setChatMessages(prev => [...prev, `${userName}: ${text}`]);
+            // 낙관적 UI 업데이트 제거
+            // setChatMessages(prev => [...prev, `${userName}: ${text}`]);
         } catch (error) {
             console.error("채팅 메시지 전송 중 오류:", error);
             alert("채팅 메시지 전송에 실패했습니다. 다시 시도해주세요.");

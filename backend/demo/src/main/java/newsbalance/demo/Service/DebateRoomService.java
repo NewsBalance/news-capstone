@@ -159,6 +159,7 @@ public class DebateRoomService {
 
     @Transactional(readOnly = true)
     public List<String> getChatMessages(Long roomId) {
+        // 이전 채팅 메시지 조회만 수행
         List<ChatMessage> chatMessages = chatMessageRepository.findByDebateRoomIdOrderByCreatedAtAsc(roomId);
         return chatMessages.stream()
                 .map(ChatMessage::getMessage)
@@ -167,19 +168,8 @@ public class DebateRoomService {
 
     @Transactional
     public void saveChatMessage(Long roomId, String messageText, String nickname) {
-        DebateRoom room = debateRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다"));
-
-        User user = userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다"));
-
-        ChatMessage chatMessage = ChatMessage.builder()
-                .message(nickname + ": " + messageText)
-                .debateRoom(room)
-                .user(user)
-                .build();
-
-        chatMessageRepository.save(chatMessage);
+        // WebSocket을 통해서만 처리하도록 변경
+        throw new UnsupportedOperationException("채팅 메시지는 WebSocket을 통해서만 처리됩니다.");
     }
     
     @Transactional

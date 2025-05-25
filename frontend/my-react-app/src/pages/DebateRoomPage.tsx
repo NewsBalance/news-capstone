@@ -91,6 +91,22 @@ const DebateRoomPage: React.FC<Props> = ({
         </div>
     );
     
+    // 채팅 메시지 전송 핸들러 수정
+    const handleSendChat = () => {
+        if (chatInput.trim()) {
+            // WebSocket을 통해서만 메시지 전송
+            onSendChat(chatInput.trim());
+            setChatInput("");
+        }
+    };
+    
+    // 키보드 이벤트 핸들러
+    const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleSendChat();
+        }
+    };
+    
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
             {/* 헤더 섹션 */}
@@ -243,16 +259,12 @@ const DebateRoomPage: React.FC<Props> = ({
                                 <input
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyDown={handleChatKeyDown}
                                     placeholder="메시지를 입력하세요..."
                                     className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 />
                                 <button
-                                    onClick={() => {
-                                        if (chatInput.trim()) {
-                                            onSendChat(chatInput.trim());
-                                            setChatInput("");
-                                        }
-                                    }}
+                                    onClick={handleSendChat}
                                     className="send-button bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 transition-colors"
                                 >
                                     채팅

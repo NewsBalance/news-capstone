@@ -175,19 +175,39 @@ public class DebateService {
         User user = userRepository.findByNickname(message.getSender())
                 .orElse(null);
         
-        // ChatMessage 엔티티에 저장
-        if (user != null) {
-            newsbalance.demo.Entity.ChatMessage chatMessage = newsbalance.demo.Entity.ChatMessage.builder()
-                    .message(message.getSender() + ": " + message.getContent())
-                    .debateRoom(room)
-                    .user(user)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            
-            chatMessageRepository.save(chatMessage);
-        }
+        // 1. 로그 추가
+        System.out.println("WebSocket Chat 메시지 처리: " + message.getContent() + " 보낸이: " + message.getSender());
         
-        // 실시간 전송
-        messagingTemplate.convertAndSend("/topic/chat/" + room.getId(), message);
+        // 2. ChatMessage 엔티티에 저장 및 WebSocket 전송
+        if (user != null) {
+            // 이미 존재하는 메시지인지 확인
+            String fullMessage = message.getSender() + ": " + message.getContent();
+            boolean messageExists = chatMessageRepository.existsByMessageAndDebateRoomIdAndUserIdAndCreatedAtBetween(
+                    fullMessage,
+                    room.getId(),
+                    user.getId(),
+                    LocalDateTime.now().minusSeconds(3),
+                    LocalDateTime.now());
+            
+            if (!messageExists) {
+                try {
+                    newsbalance.demo.Entity.ChatMessage chatMessage = newsbalance.demo.Entity.ChatMessage.builder()
+                            .message(fullMessage)
+                            .debateRoom(room)
+                            .user(user)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    
+                    chatMessageRepository.save(chatMessage);    
+                    
+                    // 저장 성공 시에만 WebSocket으로 전송
+                    messagingTemplate.convertAndSend("/topic/chat/" + room.getId(), message);
+                } catch (Exception e) {
+                    System.err.println("채팅 메시지 처리 중 오류 발생: " + e.getMessage());
+                }
+            } else {
+                System.out.println("중복 메시지 감지됨: " + fullMessage);
+            }
+        }
     }
 }
