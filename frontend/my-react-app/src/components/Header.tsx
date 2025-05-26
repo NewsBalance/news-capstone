@@ -8,7 +8,7 @@ const URL = "http://localhost:8080";
 const Header: React.FC = () => {
   const { pathname } = useLocation();
   const isActive = (path: string) => (pathname === path ? 'active' : '');
-  const { isLoggedIn, nickname, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -32,10 +32,10 @@ const Header: React.FC = () => {
             <li><Link to="/videos" className={isActive('/videos')}>영상분석</Link></li>
             <li><Link to="/mypage" className={isActive('/mypage')}>마이페이지</Link></li>
 
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <li>
-                  <span className="nickname">{nickname}님</span>
+                  <span className="nickname">{user?.nickname}님</span>
                 </li>
                 <li>
                   <button

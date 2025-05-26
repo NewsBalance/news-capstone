@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Index.css';
 
+const URL = 'http://localhost:8080';
+
 export default function IndexPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
