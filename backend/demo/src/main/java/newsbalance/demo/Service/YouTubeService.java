@@ -47,7 +47,7 @@ public class YouTubeService {
         for (String channelId : channelIds) {
             String url = "https://www.googleapis.com/youtube/v3/search?part=snippet" +
                     "&channelId=" + channelId +
-                    "&maxResults=50&order=date&type=video" +
+                    "&maxResults=5&order=date&type=video" +
                     "&publishedAfter=" + afterDate +
                     "&key=" + apiKey;
 
