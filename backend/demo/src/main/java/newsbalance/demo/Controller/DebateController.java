@@ -10,19 +10,20 @@ import newsbalance.demo.DTO.MessageRequestDto;
 import newsbalance.demo.DTO.UserInfoDto;
 import newsbalance.demo.Service.DebateRoomService;
 import newsbalance.demo.Service.UserService;
+import newsbalance.demo.Service.DebateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.AllArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import java.util.Enumeration;
 
 @RestController
 @RequestMapping("/api")
@@ -33,6 +34,23 @@ public class DebateController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private SimpMessagingTemplate template;
+
+    @Autowired
+    private DebateService debateService;
+
+    // Message 클래스 정의 (이미 있다면 import만 추가)
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class Message {
+        private String type;
+        private String content;
+        private String sender;
+        private Long roomId;
+    }
 
     // 사용자 정보 조회 
     @GetMapping("/user/info")
@@ -57,72 +75,12 @@ public class DebateController {
 
     // 토론방 생성
     @PostMapping("/debate-rooms")
-    public ResponseEntity<?> createDebateRoom(@RequestBody CreateRoomRequestDto request, HttpServletRequest httpRequest) {
-        // 상세 디버깅 로그 추가
+    public ResponseEntity<DebateRoomDto> createDebateRoom(@RequestBody CreateRoomRequestDto request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String nickname = extractNickname(auth);
         
-        // 세션 정보 확인
-        HttpSession session = httpRequest.getSession(false);
-        System.out.println("세션 ID: " + (session != null ? session.getId() : "null"));
-        System.out.println("세션 속성들: " + (session != null ? session.getAttributeNames() : "null"));
-        
-        if (session != null) {
-            Enumeration<String> attributeNames = session.getAttributeNames();
-            while (attributeNames.hasMoreElements()) {
-                String name = attributeNames.nextElement();
-                System.out.println("세션 속성: " + name + " = " + session.getAttribute(name));
-            }
-        }
-        
-        // 인증 정보 상세 출력
-        System.out.println("Authentication: " + (auth != null ? auth.toString() : "null"));
-        System.out.println("Authentication 클래스: " + (auth != null ? auth.getClass().getName() : "null"));
-        System.out.println("IsAuthenticated: " + (auth != null ? auth.isAuthenticated() : "null"));
-        System.out.println("Principal: " + (auth != null ? auth.getPrincipal() : "null"));
-        System.out.println("Principal 클래스: " + (auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass().getName() : "null"));
-        System.out.println("Authorities: " + (auth != null ? auth.getAuthorities() : "null"));
-        
-        // 쿠키 정보 확인
-        Cookie[] cookies = httpRequest.getCookies();
-        System.out.println("쿠키: " + (cookies != null ? cookies.length : "null"));
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                System.out.println("쿠키 이름: " + cookie.getName() + ", 값: " + cookie.getValue());
-            }
-        }
-        
-        // 요청 헤더 확인
-        Enumeration<String> headerNames = httpRequest.getHeaderNames();
-        System.out.println("요청 헤더:");
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            System.out.println(headerName + ": " + httpRequest.getHeader(headerName));
-        }
-        
-        // 인증 여부 확인 - 임시 사용자 허용하지 않음
-        if (auth == null || !auth.isAuthenticated() || 
-            auth.getPrincipal() == null || "anonymousUser".equals(auth.getPrincipal().toString())) {
-            
-            System.out.println("인증되지 않은 사용자의 방 생성 시도");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "로그인이 필요한 기능입니다."));
-        }
-        
-        try {
-            // Principal에서 nickname을 가져오는 로직
-            String nickname = extractNickname(auth);
-            System.out.println("인증된 사용자: " + nickname);
-            
-            // 방 생성 로직 실행
-            DebateRoomDto room = debateRoomService.createDebateRoom(request, nickname);
-            return ResponseEntity.status(HttpStatus.CREATED).body(room);
-            
-        } catch (Exception e) {
-            System.err.println("방 생성 오류: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "방 생성 중 오류가 발생했습니다: " + e.getMessage()));
-        }
+        DebateRoomDto createdRoom = debateRoomService.createDebateRoom(request, nickname);
+        return ResponseEntity.ok(createdRoom);  // DTO에 id가 포함되어 있어야 함
     }
 
     // 특정 토론방 조회
@@ -173,25 +131,30 @@ public class DebateController {
     @PostMapping("/debate-rooms/{roomId}/join")
     public ResponseEntity<DebateRoomDto> joinDebateRoom(@PathVariable Long roomId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal().toString())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        String nickname = extractNickname(auth);
+        
+        DebateRoomDto room = debateRoomService.joinRoom(roomId, nickname);
+        
+        // 토론자B로 참여한 경우에만 입장 메시지 전송
+        if (room.getDebaterB() != null && room.getDebaterB().equals(nickname)) {
+            template.convertAndSend("/topic/room/" + roomId,
+                new Message("SYSTEM", nickname + "님이 토론자로 입장하셨습니다.", nickname, roomId));
         }
         
-        String nickname = extractNickname(auth);
-        DebateRoomDto room = debateRoomService.joinDebateRoom(roomId, nickname);
         return ResponseEntity.ok(room);
     }
     
     // 준비 상태 변경 엔드포인트 
     @PostMapping("/debate-rooms/{roomId}/ready")
-    public ResponseEntity<DebateRoomDto> setReady(@PathVariable Long roomId) {
+    public ResponseEntity<DebateRoomDto> toggleReady(@PathVariable Long roomId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal().toString())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        
         String nickname = extractNickname(auth);
-        DebateRoomDto room = debateRoomService.setReady(roomId, nickname);
+        
+        DebateRoomDto room = debateRoomService.toggleReady(roomId, nickname);
+        
+        // WebSocket을 통해 상태 변경 알림
+        template.convertAndSend("/topic/room/" + roomId + "/status", room);
+        
         return ResponseEntity.ok(room);
     }
     
@@ -208,5 +171,75 @@ public class DebateController {
             // 기본 동작
             return auth.getName();
         }
+    }
+
+    // 인기 토론방 조회
+    @GetMapping("/debate-rooms/hot")
+    public ResponseEntity<List<DebateRoomDto>> getHotDebateRooms() {
+        List<DebateRoomDto> rooms = debateRoomService.getHotDebateRooms();
+        return ResponseEntity.ok(rooms);
+    }
+
+    // 내 토론방 조회
+    @GetMapping("/debate-rooms/my")
+    public ResponseEntity<List<DebateRoomDto>> getMyDebateRooms() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String nickname = extractNickname(auth);
+        List<DebateRoomDto> rooms = debateRoomService.getMyDebateRooms(nickname);
+        return ResponseEntity.ok(rooms);
+    }
+
+    @PostMapping("/debate-rooms/{roomId}/leave")
+    public ResponseEntity<?> leaveRoom(@PathVariable Long roomId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String nickname = extractNickname(auth);
+        
+        boolean isHost = debateRoomService.isRoomHost(roomId, nickname);
+        if (isHost) {
+            // 방장이 나가는 경우 방 삭제
+            debateRoomService.deleteRoom(roomId, nickname);
+            template.convertAndSend("/topic/room/" + roomId, 
+                new Message("SYSTEM", "토론 주최자가 퇴장하였습니다. 방이 제거됩니다.", nickname, roomId));
+        } else {
+            // 일반 참가자가 나가는 경우
+            DebateRoomDto room = debateRoomService.leaveRoom(roomId, nickname);
+            
+            // 토론자B가 나가는 경우 토론 서비스를 통해 처리
+            if (room.getDebaterB() == null) {  // debaterB가 null이면 방금 나간 것
+                debateService.handleDebaterBLeave(roomId, nickname);
+            }
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    // 토론자 B로 등록
+    @PostMapping("/debate-rooms/{roomId}/register-as-debater-b")
+    public ResponseEntity<DebateRoomDto> registerAsDebaterB(@PathVariable Long roomId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String nickname = extractNickname(auth);
+        
+        DebateRoomDto room = debateRoomService.joinDebateRoom(roomId, nickname);
+        
+        // WebSocket을 통해 입장 메시지 전송
+        template.convertAndSend("/topic/room/" + roomId,
+            new Message("SYSTEM", nickname + "님이 토론자 B로 입장하셨습니다.", "System", roomId));
+        
+        return ResponseEntity.ok(room);
+    }
+
+    @PostMapping("/debate-rooms/{roomId}/join-as-debater-b")
+    public ResponseEntity<DebateRoomDto> joinAsDebaterB(@PathVariable Long roomId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String nickname = extractNickname(auth);
+        
+        DebateRoomDto room = debateRoomService.joinAsDebaterB(roomId, nickname);
+        
+        // WebSocket을 통해 상태 변경 알림
+        template.convertAndSend("/topic/room/" + roomId + "/status", room);
+        
+        return ResponseEntity.ok(room);
     }
 }

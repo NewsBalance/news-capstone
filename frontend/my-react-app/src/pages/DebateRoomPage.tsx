@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import '../styles/DebateRoom.css';
+import { useNavigate } from "react-router-dom";
+
+// API URL 상수 추가
+const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.41.157:8080';
 
 interface DebateMessage {
     speaker: string;
@@ -17,6 +21,15 @@ interface Props {
     roomTitle: string;
     roomDescription: string;
     onReady: () => void;
+    roomId: string | undefined;
+    debaterA: string | null;
+    debaterB: string | null;
+    debaterAReady: boolean;
+    debaterBReady: boolean;
+    spectatorCount: number;
+    isLoggedIn: boolean;
+    onJoinAsDebaterB: () => void;
+    onLeave: () => void;
 }
 
 // 메시지 목록 컴포넌트 - 빈 메시지 처리 추가
@@ -56,6 +69,15 @@ const DebateRoomPage: React.FC<Props> = ({
     roomTitle,
     roomDescription,
     onReady,
+    roomId,
+    debaterA,
+    debaterB,
+    debaterAReady,
+    debaterBReady,
+    spectatorCount,
+    isLoggedIn,
+    onJoinAsDebaterB,
+    onLeave,
 }) => {
     const [input, setInput] = useState("");
     const [chatInput, setChatInput] = useState("");
@@ -63,6 +85,8 @@ const DebateRoomPage: React.FC<Props> = ({
     
     const debateMessagesRef = useRef<HTMLDivElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
+    
+    const navigate = useNavigate();
     
     // 새 메시지가 추가될 때마다 스크롤을 아래로 이동
     useEffect(() => {
@@ -80,16 +104,28 @@ const DebateRoomPage: React.FC<Props> = ({
     // 준비 버튼 핸들러
     const handleReady = () => {
         onReady();
-        setIsReady(true);
+        setIsReady(!isReady);
     };
 
     // 인증 상태 표시
-    const AuthStatus = () => (
-        <div className="auth-status text-gray-700">
-            {userName ? `로그인: ${userName}` : '로그인되지 않음'} | 
-            역할: {role === 'debater' ? '토론자' : '관전자'}
-        </div>
-    );
+    const AuthStatus = () => {
+        if (!isLoggedIn) {
+            return (
+                <div className="auth-status text-sm text-red-500">
+                    <span>로그인 필요</span>
+                </div>
+            );
+        }
+        
+        const roleText = role === 'debater' ? '토론자' : '관전자';
+        
+        return (
+            <div className="auth-status text-sm">
+                <span className="text-purple-600 font-medium">{userName}</span>
+                <span className="text-gray-500 ml-1">({roleText})</span>
+            </div>
+        );
+    };
     
     // 채팅 메시지 전송 핸들러 수정
     const handleSendChat = () => {
@@ -107,6 +143,58 @@ const DebateRoomPage: React.FC<Props> = ({
         }
     };
     
+    const handleLeave = async () => {
+        if (!roomId) {
+            console.error('Room ID is undefined');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/debate-rooms/${roomId}/leave`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('퇴장 처리 중 오류가 발생했습니다');
+            }
+
+            navigate('/discussion');
+        } catch (error) {
+            console.error('Error leaving room:', error);
+            alert(error instanceof Error ? error.message : '오류가 발생했습니다');
+        }
+    };
+    
+    // 참가자 정보 컴포넌트 추출
+    const ParticipantInfo = () => (
+        <div className="info-section mb-4">
+            <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참가자</h3>
+            <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-pink-600">토론자 A: {debaterA || ''}</span>
+                    <span className={`${debaterAReady ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-800'} text-xs px-2 py-1 rounded`}>
+                        {debaterAReady ? '준비완료' : '대기중'}
+                    </span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-blue-600">토론자 B: {debaterB || ''}</span>
+                    <span className={`${debaterBReady ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'} text-xs px-2 py-1 rounded`}>
+                        {debaterBReady ? '준비완료' : '대기중'}
+                    </span>
+                </div>
+                <div className="mt-2 text-xs text-gray-500 text-center">
+                    관전자: {spectatorCount}명
+                </div>
+            </div>
+        </div>
+    );
+    
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
             {/* 헤더 섹션 */}
@@ -116,17 +204,22 @@ const DebateRoomPage: React.FC<Props> = ({
                         <h1 className="room-title text-2xl font-bold text-purple-600">{roomTitle || '제목 없음'}</h1>
                         <p className="room-description text-sm text-gray-600">{roomDescription || '설명 없음'}</p>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center gap-4">
                         <AuthStatus />
                         {role === 'debater' && (
                             <button
                                 onClick={handleReady}
-                                className={`ready-button ${isReady ? 'bg-purple-100 text-purple-700' : 'bg-purple-600 text-white'} px-4 py-2 rounded shadow-sm`}
-                                disabled={isReady}
+                                className={`ready-button ${isReady ? 'bg-red-500' : 'bg-purple-600'} text-white px-4 py-2 rounded shadow-sm`}
                             >
-                                {isReady ? '준비완료' : '준비'}
+                                {isReady ? '준비 취소' : '준비'}
                             </button>
                         )}
+                        <button
+                            onClick={handleLeave}
+                            className="leave-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow-sm"
+                        >
+                            나가기
+                        </button>
                     </div>
                 </div>
             </div>
@@ -193,35 +286,24 @@ const DebateRoomPage: React.FC<Props> = ({
                                             <li>주제에서 벗어나지 않도록 합니다.</li>
                                             <li>각 발언은 300자 이내로 제한됩니다.</li>
                                             <li>상대방의 발언이 끝날 때까지 기다립니다.</li>
+                                            <li>욕설, 비방은 제재당할 수 있습니다.</li>
                                         </ul>
                                     </div>
                                 </div>
                                 
-                                <div className="info-section mb-4">
-                                    <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참가자</h3>
-                                    <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-pink-600">토론자 A</span>
-                                            <span className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded">준비완료</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-blue-600">토론자 B</span>
-                                            <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">대기중</span>
-                                        </div>
-                                        <div className="mt-2 text-xs text-gray-500 text-center">관전자: 3명</div>
-                                    </div>
-                                </div>
+                                {/* 참가자 정보 컴포넌트 사용 */}
+                                <ParticipantInfo />
                                 
                                 <div className="info-section">
                                     <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">토론 실시간 요약</h3>
                                     <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                                         <div className="text-sm text-gray-700">
                                             <p className="mb-2 text-center"><span className="text-purple-600 font-semibold">현재 쟁점:</span></p>
-                                            <p className="mb-3 text-center">자율주행 자동차의 윤리적 결정에 관한 법적 책임 소재</p>
-                                            <p className="mb-2"><span className="text-pink-600 font-semibold">토론자 A:</span> 자율주행 시스템 개발사가 알고리즘 결정에 대한 최종 책임을 져야 한다고 주장</p>
-                                            <p className="mb-2"><span className="text-blue-600 font-semibold">토론자 B:</span> 사용자와 개발사의 공동 책임이 필요하며 새로운 법적 프레임워크 구축을 강조</p>
+                                            <p className="mb-3 text-center">{roomDescription}</p>
+                                            <p className="mb-2"><span className="text-pink-600 font-semibold">토론자 A:</span> {messages.filter(m => m.speaker === debaterA).slice(-1)[0]?.text || '아직 발언이 없습니다'}</p>
+                                            <p className="mb-2"><span className="text-blue-600 font-semibold">토론자 B:</span> {messages.filter(m => m.speaker === debaterB).slice(-1)[0]?.text || '아직 발언이 없습니다'}</p>
                                             <div className="mt-3 pt-2 border-t border-gray-200">
-                                                <p className="text-xs text-gray-500 italic text-center">마지막 업데이트: 2분 전</p>
+                                                <p className="text-xs text-gray-500 italic text-center">마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}</p>
                                             </div>
                                         </div>
                                     </div>

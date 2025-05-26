@@ -53,4 +53,27 @@ public class DebateRoom {
     @Builder.Default
     @OneToMany(mappedBy = "debateRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Keyword> keywords = new ArrayList<>();
+
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int currentParticipants = 0;
+    
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int totalVisits = 0;
+    
+    private boolean scheduledForDeletion = false;
+    private LocalDateTime deletionTime;
+    
+    public void incrementCurrentParticipants() {
+        this.currentParticipants++;
+    }
+    
+    public void decrementCurrentParticipants() {
+        if (this.currentParticipants > 0) {
+            this.currentParticipants--;
+        }
+    }
+    
+    public void incrementTotalVisits() {
+        this.totalVisits++;
+    }
 }

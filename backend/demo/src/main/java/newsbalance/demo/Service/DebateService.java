@@ -2,6 +2,7 @@ package newsbalance.demo.Service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import newsbalance.demo.DTO.DebateRoomDto;
 import newsbalance.demo.Entity.DebateMessage;
 import newsbalance.demo.Entity.DebateRoom;
 import newsbalance.demo.Entity.Message;
@@ -24,6 +25,7 @@ public class DebateService {
     private final DebateRoomRepository roomRepository;
     private final DebateMessageRepository messageRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final DebateRoomService debateRoomService;
 
     public void handleMessage(Message message) {
         User sender = userRepository.findByNickname(message.getSender())
@@ -208,6 +210,27 @@ public class DebateService {
             } else {
                 System.out.println("중복 메시지 감지됨: " + fullMessage);
             }
+        }
+    }
+
+    public void handleDebaterBLeave(Long roomId, String nickname) {
+        // 토론방 정보 가져오기
+        DebateRoomDto room = debateRoomService.leaveRoom(roomId, nickname);
+        
+        if (room.isStarted()) {
+            // 토론 종료 메시지 전송
+            messagingTemplate.convertAndSend("/topic/room/" + roomId, 
+                new Message("SYSTEM", 
+                    String.format("토론자B: %s님이 나가셨습니다. 토론이 종료됩니다. 3분 후 방이 삭제됩니다.", nickname),
+                    "System",
+                    roomId));
+            
+            // 토론 종료 메시지 추가
+            messagingTemplate.convertAndSend("/topic/room/" + roomId, 
+                new Message("INFO", 
+                    "토론이 종료되었습니다.",
+                    "System",
+                    roomId));
         }
     }
 }

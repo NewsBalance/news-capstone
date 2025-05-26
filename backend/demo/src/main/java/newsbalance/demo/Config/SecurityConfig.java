@@ -1,6 +1,6 @@
 package newsbalance.demo.Config;
 
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,10 +66,13 @@ public class SecurityConfig {
         log.info("SecurityConfig: Configuring CORS");
         
         CorsConfiguration configuration = new CorsConfiguration();
-        // 와일드카드(*) 대신 명시적인 오리진 설정
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // 여러 오리진 허용
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000", 
+            "http://192.168.41.157:3000"  // ngrok URL로 교체하세요
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Accept", "X-Requested-With"));
         // credentials을 true로 설정 (쿠키 전송 허용)
         configuration.setAllowCredentials(true);
         

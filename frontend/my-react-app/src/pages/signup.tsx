@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Signup.css';
 
-const URL = 'http://localhost:8080';
+const URL = 'http://192.168.41.157:8080';
 
 function SignupPage() {
   // ---- 폼 필드 상태 ----

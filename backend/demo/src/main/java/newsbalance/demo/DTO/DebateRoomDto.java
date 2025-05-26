@@ -1,25 +1,25 @@
 package newsbalance.demo.DTO;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class DebateRoomDto {
     private Long id;
     private String title;
     private String topic;
     private boolean active;
-    private LocalDateTime createdAt;
+    private String createdAt;
     private String debaterA;
     private String debaterB;
     private boolean debaterAReady;
     private boolean debaterBReady;
     private boolean started;
     private List<String> keywords;
+    private int currentParticipants;
+    private int totalVisits;
+    private String creator;
 }

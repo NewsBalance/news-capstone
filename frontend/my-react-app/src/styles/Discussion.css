@@ -433,10 +433,20 @@ button:focus-visible {
   text-align: center;
   color: #666;
   padding: 2rem 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 .empty-illu {
   font-size: 3rem;
   margin-bottom: 1rem;
+  opacity: 0.7;
 }
 
 /* 스켈레톤 */
@@ -536,6 +546,7 @@ button:focus-visible {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 0.5rem 0;
 }
 
 .section-header-with-sort .section-title {
@@ -567,4 +578,102 @@ button:focus-visible {
   background: #5F3DC4;
   color: white;
   border-color: #5F3DC4;
+}
+
+.hot-rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  min-height: 200px;
+}
+
+/* 인기 토론방 섹션 스타일 수정 */
+.room-section[aria-labelledby="section-HOT한 토론방"] .empty-state {
+  grid-column: 1 / -1;
+  margin: 0 auto;
+  max-width: 400px;
+}
+
+/* 기존의 carousel 관련 스타일은 제거 */
+
+/* 새 토론방 생성 버튼 */
+.btn-create-room {
+  background: #5F3DC4;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create-room:hover {
+  background: #4D2F9A;
+}
+
+/* 토론방 생성 폼 */
+.create-room-form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #5F3DC4;
+  box-shadow: 0 0 0 2px rgba(95, 61, 196, 0.1);
+}
+
+.form-group input.error,
+.form-group textarea.error {
+  border-color: #dc3545;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.btn-submit {
+  background: #5F3DC4;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-submit:hover {
+  background: #4D2F9A;
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }

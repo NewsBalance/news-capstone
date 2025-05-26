@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import Header from '../components/Header';          // ★ 공통 헤더
 import '../styles/Login.css';
-const URL = 'http://localhost:8080';
+const URL = 'http://192.168.41.157:8080';
 
 function LoginPage() {
   /* -------------------- 상태 -------------------- */
