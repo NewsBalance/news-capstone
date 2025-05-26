@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import newsbalance.demo.Configuration.SessionConst;
 
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,6 +29,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.debug("JwtAuthenticationFilter: Processing request for path: {}", path);
         
         try {
+            // 세션이 이미 있는지 확인
+            if (request.getSession(false) != null && 
+                request.getSession().getAttribute(SessionConst.Login_email) != null) {
+                log.debug("JwtAuthenticationFilter: Session already exists for user: {}", 
+                        request.getSession().getAttribute(SessionConst.Login_email));
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             // 공개 엔드포인트는 토큰 검증 없이 통과
             if (isPublicEndpoint(path)) {
                 log.debug("JwtAuthenticationFilter: Skipping token validation for public endpoint: {}", path);
@@ -41,6 +51,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (token != null && jwtTokenProvider.validateToken(token)) {
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                
+                // JWT 인증 성공 시 세션에 사용자 정보 저장
+                String username = jwtTokenProvider.getUsername(token);
+                request.getSession().setAttribute(SessionConst.Login_email, username);
+                
                 log.debug("JwtAuthenticationFilter: Authentication set for user: {}", 
                         auth.getName());
             } else {
