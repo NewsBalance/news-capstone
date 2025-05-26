@@ -14,64 +14,26 @@ interface YTVideo {
   bias: Bias;
 }
 
+// 서버 원본 데이터 타입
+interface RawVideo {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnail: string;
+  bias: number;      // –2.0 ~ 2.0
+}
+
+// 숫자 bias → 카테고리 매핑
+const mapBias = (value: number): Bias => {
+  if (value < -0.5) return 'left';
+  if (value <= 0.5) return 'center';
+  return 'right';
+};
+
 const LABEL: Record<Bias, string> = {
   left: '진보',
   center: '중도',
   right: '보수',
-};
-
-// 프로토타입용 하드코딩 데이터 (키: '대선')
-const HARD_CODED_VIDEOS: Record<string, Record<Bias, YTVideo[]>> = {
-  '대선': {
-    left: [
-      {
-        videoId: '4jnnpkBBCcM',
-        title: 'LIVE] 진보당 김재연 대선 후보, KBS 인터뷰 풀영상/2025년 4월 24일',
-        channel: 'KBS사사건건',
-        thumbnail: 'https://img.youtube.com/vi/4jnnpkBBCcM/mqdefault.jpg',
-        bias: 'left',
-      }, // 
-      {
-        videoId: 'kteQm8O3A_4',
-        title: '새로운 대한민국 [진보당 2025 대통령후보 선출선거 온라인 토론회]',
-        channel: '진보당',
-        thumbnail: 'https://img.youtube.com/vi/kteQm8O3A_4/mqdefault.jpg',
-        bias: 'left',
-      }, // 
-    ],
-    center: [
-      {
-        videoId: 'FyVCNmxR2G8',
-        title: '[다시보기] 제21대 대통령선거 후보자 토론회 | 2025년 5월 18일',
-        channel: '중앙선거관리위원회',
-        thumbnail: 'https://img.youtube.com/vi/FyVCNmxR2G8/mqdefault.jpg',
-        bias: 'center',
-      }, // :contentReference[oaicite:2]{index=2}
-      {
-        videoId: 'k8fXryqIUms',
-        title: '[다시보기] 논/쟁｜미리 보는 대선 2차 토론 (25.5.21) / JTBC News',
-        channel: 'JTBC News',
-        thumbnail: 'https://img.youtube.com/vi/k8fXryqIUms/mqdefault.jpg',
-        bias: 'center',
-      }, // :contentReference[oaicite:3]{index=3}
-    ],
-    right: [
-      {
-        videoId: '1rZTj857DiU',
-        title: "LIVE] 국민의힘 김문수 대선후보 '경제 공약' 발표 생중계/2025년 5월",
-        channel: '국민의힘',
-        thumbnail: 'https://img.youtube.com/vi/1rZTj857DiU/mqdefault.jpg',
-        bias: 'right',
-      }, // :contentReference[oaicite:4]{index=4}
-      {
-        videoId: 'zdayE5-7jkw',
-        title: "이재명·김문수, 집중 유세…이준석 '단일화 없다' / 연합뉴스",
-        channel: '연합뉴스TV',
-        thumbnail: 'https://img.youtube.com/vi/zdayE5-7jkw/mqdefault.jpg',
-        bias: 'right',
-      }, // :contentReference[oaicite:5]{index=5}
-    ],
-  },
 };
 
 export default function VideosPage() {
@@ -84,13 +46,43 @@ export default function VideosPage() {
     left: [], center: [], right: [],
   });
 
-  // URL 파라미터(search)가 바뀌면 하드코딩된 데이터 로드
   useEffect(() => {
-    if (param) {
-      setQuery(param);
-      setSearched(true);
-      setVideos(HARD_CODED_VIDEOS[param] ?? { left: [], center: [], right: [] });
-    }
+    if (!param) return;
+    setQuery(param);
+    setSearched(true);
+
+    const fetchVideos = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8080/search?query=${encodeURIComponent(param)}`
+        );
+        if (!res.ok) throw new Error(res.statusText);
+
+        // 1) 서버에서 숫자 bias로 된 배열을 받는다
+        const rawData: RawVideo[] = await res.json();
+
+        // 2) mapBias로 변환
+        const converted: YTVideo[] = rawData.map(v => ({
+          videoId:   v.videoId,
+          title:     v.title,
+          channel:   v.channel,
+          thumbnail: v.thumbnail,
+          bias:      mapBias(v.bias),
+        }));
+
+        // 3) 편향별로 그룹핑
+        setVideos({
+          left:   converted.filter(v => v.bias === 'left'),
+          center: converted.filter(v => v.bias === 'center'),
+          right:  converted.filter(v => v.bias === 'right'),
+        });
+      } catch (err) {
+        console.error('검색 중 에러 발생:', err);
+        setVideos({ left: [], center: [], right: [] });
+      }
+    };
+
+    fetchVideos();
   }, [param]);
 
   // 폼 제출 → URL 파라미터 갱신
