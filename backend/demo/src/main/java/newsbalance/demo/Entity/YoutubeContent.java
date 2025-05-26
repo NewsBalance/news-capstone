@@ -1,6 +1,7 @@
 package newsbalance.demo.Entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +16,8 @@ public class YoutubeContent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String url;
+
+    private String VideoUrl;
     private Double biasScore;
 
 

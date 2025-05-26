@@ -1,13 +1,9 @@
 package newsbalance.demo.Repository;
 
-import newsbalance.demo.Entity.VideoTitleDoc;
+import newsbalance.demo.Entity.YoutubeContent;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-
-import java.util.List;
-
 @EnableElasticsearchRepositories
-public interface VideoTitleElasticRepository extends ElasticsearchRepository<VideoTitleDoc, String> {
-    List<VideoTitleDoc> findByTitleContaining(String title);
+public interface YoutubeContentElasticRepository extends ElasticsearchRepository<YoutubeContent, Long> {
 }

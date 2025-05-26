@@ -3,6 +3,7 @@ package newsbalance.demo.Service;
 import newsbalance.demo.Configuration.YouTubeConfig;
 import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YouTubeVideo;
+import newsbalance.demo.Repository.UrlOnly;
 import newsbalance.demo.Repository.VideoTitleElasticRepository;
 import newsbalance.demo.Repository.YouTubeVideoRepository;
 import org.json.JSONObject;
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class YouTubeService {
 
@@ -135,4 +138,13 @@ public class YouTubeService {
     private String fetchAutoCaption(String videoId) {
         return "";
     }
+
+    public List<String> getAllUrl(){
+        return videoRepo.findAllProjectedBy()
+                .stream()
+                .map(UrlOnly::getVideoUrl)
+                .collect(Collectors.toList());
+    }
+
+
 }
