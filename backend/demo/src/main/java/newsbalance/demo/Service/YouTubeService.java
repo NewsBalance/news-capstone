@@ -78,7 +78,7 @@ public class YouTubeService {
                     video.setCaption(caption);
 
                     videoRepo.save(video);
-                    elasticRepo.save(new VideoTitleDoc(videoId, title));
+                    elasticRepo.save(new VideoTitleDoc(videoId, title, videoUrl));
                 }
             }
         }
@@ -124,7 +124,7 @@ public class YouTubeService {
                 video.setCaption(caption);
 
                 videoRepo.save(video);
-                elasticRepo.save(new VideoTitleDoc(videoId, title));
+                elasticRepo.save(new VideoTitleDoc(videoId, title, videoUrl));
                 savedCount++;
             }
         }

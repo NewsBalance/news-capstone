@@ -14,4 +14,5 @@ public class VideoTitleDoc {
     @Id
     private String videoId;
     private String title;
+    private String videoUrl;
 }

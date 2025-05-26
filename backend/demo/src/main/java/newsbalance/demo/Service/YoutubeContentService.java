@@ -1,0 +1,40 @@
+package newsbalance.demo.Service;
+
+import jakarta.transaction.Transactional;
+import newsbalance.demo.Entity.SummarySentence;
+import newsbalance.demo.Entity.YoutubeContent;
+import newsbalance.demo.Repository.YoutubeContentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class YoutubeContentService {
+
+    @Autowired
+    private YoutubeContentRepository youtubeContentRepository;
+
+    @Transactional
+    public void saveContent(YoutubeContentRequestDTO dto) {
+        YoutubeContent content = new YoutubeContent();
+        content.setUrl(dto.getUrl());
+        content.setBiasScore(dto.getBiasScore());
+
+        List<SummarySentence> sentences = dto.getSummarySentences().stream()
+                .map(s -> {
+                    SummarySentence sentence = new SummarySentence();
+                    sentence.setContent(s.getContent());
+                    sentence.setScore(s.getScore());
+                    sentence.setVideoSummary(content);
+                    return sentence;
+                })
+                .collect(Collectors.toList());
+
+        content.setSentencesScore(sentences);
+        youtubeContentRepository.save(content);
+    }
+
+}

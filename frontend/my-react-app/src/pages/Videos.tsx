@@ -1,18 +1,8 @@
 // src/pages/Videos.tsx
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Videos.css';
-
-/* -------------------------------------------------- */
-/*  환경 변수 : YouTube API KEY                       */
-/* -------------------------------------------------- */
-const API_KEY: string =
-  //  Vite / CRA 어느 쪽이든 동작하도록 처리
-  //  @ts-ignore
-  (import.meta as any)?.env?.VITE_YT_API_KEY ??
-  process.env.REACT_APP_YT_API_KEY ??
-  '';
 
 type Bias = 'left' | 'center' | 'right';
 
@@ -24,94 +14,94 @@ interface YTVideo {
   bias: Bias;
 }
 
-/* 간단 편향 분류 */
-const classifyBias = ({ title }: Pick<YTVideo, 'title'>): Bias => {
-  const t = title.toLowerCase();
-  if (/(progressive|민주|진보|left|bernie|복지)/.test(t)) return 'left';
-  if (/(conservative|보수|trump|우파|gop|market)/.test(t)) return 'right';
-  return 'center';
+const LABEL: Record<Bias, string> = {
+  left: '진보',
+  center: '중도',
+  right: '보수',
 };
 
-const LABEL: Record<Bias, string> = {
-  left: '좌파',
-  center: '중도',
-  right: '우파',
+// 프로토타입용 하드코딩 데이터 (키: '대선')
+const HARD_CODED_VIDEOS: Record<string, Record<Bias, YTVideo[]>> = {
+  '대선': {
+    left: [
+      {
+        videoId: '4jnnpkBBCcM',
+        title: 'LIVE] 진보당 김재연 대선 후보, KBS 인터뷰 풀영상/2025년 4월 24일',
+        channel: 'KBS사사건건',
+        thumbnail: 'https://img.youtube.com/vi/4jnnpkBBCcM/mqdefault.jpg',
+        bias: 'left',
+      }, // 
+      {
+        videoId: 'kteQm8O3A_4',
+        title: '새로운 대한민국 [진보당 2025 대통령후보 선출선거 온라인 토론회]',
+        channel: '진보당',
+        thumbnail: 'https://img.youtube.com/vi/kteQm8O3A_4/mqdefault.jpg',
+        bias: 'left',
+      }, // 
+    ],
+    center: [
+      {
+        videoId: 'FyVCNmxR2G8',
+        title: '[다시보기] 제21대 대통령선거 후보자 토론회 | 2025년 5월 18일',
+        channel: '중앙선거관리위원회',
+        thumbnail: 'https://img.youtube.com/vi/FyVCNmxR2G8/mqdefault.jpg',
+        bias: 'center',
+      }, // :contentReference[oaicite:2]{index=2}
+      {
+        videoId: 'k8fXryqIUms',
+        title: '[다시보기] 논/쟁｜미리 보는 대선 2차 토론 (25.5.21) / JTBC News',
+        channel: 'JTBC News',
+        thumbnail: 'https://img.youtube.com/vi/k8fXryqIUms/mqdefault.jpg',
+        bias: 'center',
+      }, // :contentReference[oaicite:3]{index=3}
+    ],
+    right: [
+      {
+        videoId: '1rZTj857DiU',
+        title: "LIVE] 국민의힘 김문수 대선후보 '경제 공약' 발표 생중계/2025년 5월",
+        channel: '국민의힘',
+        thumbnail: 'https://img.youtube.com/vi/1rZTj857DiU/mqdefault.jpg',
+        bias: 'right',
+      }, // :contentReference[oaicite:4]{index=4}
+      {
+        videoId: 'zdayE5-7jkw',
+        title: "이재명·김문수, 집중 유세…이준석 '단일화 없다' / 연합뉴스",
+        channel: '연합뉴스TV',
+        thumbnail: 'https://img.youtube.com/vi/zdayE5-7jkw/mqdefault.jpg',
+        bias: 'right',
+      }, // :contentReference[oaicite:5]{index=5}
+    ],
+  },
 };
 
 export default function VideosPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const param = searchParams.get('search') || '';
 
-  /* ------------------------- 상태 ------------------------- */
-  const [query, setQuery]       = useState(param);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [query, setQuery] = useState(param);
   const [searched, setSearched] = useState(false);
-  const [videos, setVideos]     = useState<Record<Bias, YTVideo[]>>({
-    left:   [],
-    center: [],
-    right:  [],
+  const [videos, setVideos] = useState<Record<Bias, YTVideo[]>>({
+    left: [], center: [], right: [],
   });
 
-  /* ------------------------- API 호출 ------------------------- */
-  const fetchVideos = async (q: string) => {
-    setLoading(true);
-    setError('');
-    setSearched(true);
-
-    if (!API_KEY) {
-      setError('YouTube API 키가 설정되지 않았습니다.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const url =
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=30` +
-        `&q=${encodeURIComponent(q)}&key=${API_KEY}`;
-      const data = await (await fetch(url)).json();
-      if (data.error) throw new Error(data.error.message);
-
-      const bucket: Record<Bias, YTVideo[]> = { left: [], center: [], right: [] };
-      data.items.forEach((it: any) => {
-        const v: YTVideo = {
-          videoId:   it.id.videoId,
-          title:     it.snippet.title,
-          channel:   it.snippet.channelTitle,
-          thumbnail: it.snippet.thumbnails.medium.url,
-          bias:      classifyBias(it.snippet),
-        };
-        bucket[v.bias].push(v);
-      });
-      setVideos(bucket);
-    } catch (err: any) {
-      setError(err.message || '오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* -------------------- URL 파라미터 감지 -------------------- */
+  // URL 파라미터(search)가 바뀌면 하드코딩된 데이터 로드
   useEffect(() => {
     if (param) {
-      // URL 쿼리(search) 가 변경되면 API 재호출
       setQuery(param);
-      fetchVideos(param);
+      setSearched(true);
+      setVideos(HARD_CODED_VIDEOS[param] ?? { left: [], center: [], right: [] });
     }
   }, [param]);
 
-  /* ------------------------- 검색 폼 ------------------------- */
+  // 폼 제출 → URL 파라미터 갱신
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) return;
-    // URL 쿼리 갱신 → useEffect 에서 fetchVideos 호출
-    setSearchParams({ search: trimmed });
-    // (원한다면 navigate(`/videos?search=${encodeURIComponent(trimmed)}`); 로도 가능)
+    const t = query.trim();
+    if (!t) return;
+    setSearchParams({ search: t });
   };
 
-  /* ------------------------- 카드 ------------------------- */
+  // 영상 카드 컴포넌트
   const Card = ({ v }: { v: YTVideo }) => (
     <a
       href={`https://youtu.be/${v.videoId}`}
@@ -127,42 +117,19 @@ export default function VideosPage() {
     </a>
   );
 
-  /* ---------------------- 스켈레톤 ----------------------- */
-  const Skeleton = () => (
-    <div className="video-card skeleton">
-      <div className="thumb" />
-      <div className="info">
-        <div className="line w80" />
-        <div className="line w50" />
-      </div>
-    </div>
-  );
-
-  /* ------------------------- 컬럼 ------------------------ */
+  // 편향별 컬럼 렌더링
   const Column = ({ bias }: { bias: Bias }) => (
     <section className={`col ${bias}`} aria-labelledby={`${bias}-heading`}>
-      <h2 id={`${bias}-heading`} className="col-heading">
-        {LABEL[bias]}
-      </h2>
-
-      {loading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} />)}
-
-      {!loading && videos[bias].length === 0 && searched && (
-        <p className="msg empty">결과 없음</p>
-      )}
-
-      {!loading &&
-        videos[bias].map((v) => (
-          <Card key={v.videoId} v={v} />
-        ))}
+      <h2 id={`${bias}-heading`} className="col-heading">{LABEL[bias]}</h2>
+      {!searched && <p className="msg empty">검색어를 입력하세요.</p>}
+      {searched && videos[bias].length === 0 && <p className="msg empty">결과 없음</p>}
+      {videos[bias].map((v) => <Card key={v.videoId} v={v} />)}
     </section>
   );
 
-  /* -------------------------- UI ------------------------- */
   return (
     <>
       <Header />
-
       <main className="videos-page">
         {/* 검색창 */}
         <div className="container hero-middle">
@@ -174,20 +141,11 @@ export default function VideosPage() {
               onChange={(e) => setQuery(e.target.value)}
               aria-label="동영상 검색어 입력"
             />
-            <button type="submit" disabled={loading}>
-              {loading ? '검색 중…' : '검색'}
-            </button>
+            <button type="submit">조회</button>
           </form>
         </div>
-
         {/* 결과 영역 */}
         <div className="container">
-          {error && (
-            <p className="msg error" role="alert">
-              {error}
-            </p>
-          )}
-
           <div className="grid">
             {(['left', 'center', 'right'] as Bias[]).map((b) => (
               <Column bias={b} key={b} />

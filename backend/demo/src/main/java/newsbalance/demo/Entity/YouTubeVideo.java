@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Table(name = "youtube_videos")
 public class YouTubeVideo {
     // PostgreSQL에 저장될 유튜브 영상 정보
-
     @Id
     private String videoId;
 

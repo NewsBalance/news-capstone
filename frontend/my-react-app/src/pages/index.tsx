@@ -18,7 +18,7 @@ export default function IndexPage() {
     }
   };
 
-  const hotKeywords = ['정치', '경제', '선거', '탄핵', '관세', '노마크'];
+  const hotKeywords = ['정치', '경제', '선거', '탄핵'];
 
   return (
     <>
