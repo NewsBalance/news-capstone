@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,10 +26,14 @@ public class YoutubeContentService {
 
 
     @Transactional
-    public void saveContent(YoutubeContentRequestDTO dto) {
+    public void saveContent(YoutubeContentRequestDTO dto, String title, LocalDateTime publishedAt) {
         YoutubeContent content = new YoutubeContent();
         content.setVideoUrl(dto.getUrl());
         content.setBiasScore(dto.getBiasScore());
+        content.setTitle(title);
+        content.setPublishedAt(publishedAt);
+
+        youtubeContentElasticRepository.save(content);
 
         List<SummarySentence> sentences = dto.getSummarySentences().stream()
                 .map(s -> {
@@ -42,9 +47,6 @@ public class YoutubeContentService {
 
         content.setSentencesScore(sentences);
         youtubeContentRepository.save(content);
-//        youtubeContentElasticRepository.save(content);
     }
-
-
 
 }

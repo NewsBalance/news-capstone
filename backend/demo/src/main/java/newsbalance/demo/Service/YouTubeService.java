@@ -1,6 +1,7 @@
 package newsbalance.demo.Service;
 
 import newsbalance.demo.Configuration.YouTubeConfig;
+import newsbalance.demo.Entity.VideoInfo;
 import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YouTubeVideo;
 import newsbalance.demo.Repository.UrlOnly;
@@ -139,12 +140,15 @@ public class YouTubeService {
         return "";
     }
 
-    public List<String> getAllUrl(){
+    public List<VideoInfo> getAllVideoInfo() {
         return videoRepo.findAllProjectedBy()
                 .stream()
-                .map(UrlOnly::getVideoUrl)
+                .map(p -> new VideoInfo(
+                        p.getVideoUrl(),
+                        p.getTitle(),
+                        p.getPublishedAt()
+                ))
                 .collect(Collectors.toList());
     }
-
 
 }

@@ -2,6 +2,7 @@ package newsbalance.demo.Controller;
 
 import lombok.RequiredArgsConstructor;
 import newsbalance.demo.DTO.Request.URLDTO;
+import newsbalance.demo.Entity.VideoInfo;
 import newsbalance.demo.Service.YouTubeService;
 import newsbalance.demo.Service.YoutubeContentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,38 +29,19 @@ public class ApiController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @PostMapping("/process")
-    public ResponseEntity<String> processYoutubeUrl(@RequestBody URLDTO url) {
-        String pythonApiUrl = "http://localhost:5000/summarize"; // 파이썬 서버 주소
-        String geturl = url.getUrl();
-
-        // 파이썬 서버로 보낼 JSON
-        Map<String, String> request = new HashMap<>();
-        request.put("url", geturl);
-
-        // POST 요청 보내고 결과 받기
-        ResponseEntity<YoutubeContentRequestDTO> response =
-                restTemplate.postForEntity(pythonApiUrl, request, YoutubeContentRequestDTO.class);
-
-        if (response.getStatusCode().is2xxSuccessful()) {
-            youtubeContentService.saveContent(response.getBody());
-            return ResponseEntity.ok("처리 및 저장 완료");
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("파이썬 서버 오류");
-        }
-    }
 
     // 기존 단일 URL 처리 엔드포인트는 그대로 두고,
     // 모든 URL을 한 번에 처리하는 엔드포인트를 추가
     @PostMapping("/process-all")
     public ResponseEntity<String> processAllYoutubeUrls() {
         // 1) DB에서 URL 리스트 조회
-        List<String> urls = youTubeService.getAllUrl();
+        List<VideoInfo> videoInfos = youTubeService.getAllVideoInfo();
 
         // 2) 각 URL마다 Python 서버에 POST 요청
-        for (String geturl : urls) {
+        for (VideoInfo info : videoInfos) {
             Map<String, String> request = new HashMap<>();
-            request.put("url", geturl);
+            request.put("url", info.videoUrl());
+
 
             try {
                 ResponseEntity<YoutubeContentRequestDTO> response =
@@ -70,14 +52,14 @@ public class ApiController {
                         );
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    youtubeContentService.saveContent(response.getBody());
+                    youtubeContentService.saveContent(response.getBody(), info.title(), info.publishedAt());
                 } else {
                     // 로그 남기거나, 실패 URL 리스트에 추가
-                    System.err.println("파이썬 서버 오류: " + geturl);
+                    System.err.println("파이썬 서버 오류: " + info.videoUrl());
                 }
             } catch (Exception e) {
                 // 예외 발생 시 로그
-                System.err.println("처리 중 예외 발생: " + geturl + " / " + e.getMessage());
+                System.err.println("처리 중 예외 발생: " + info.videoUrl() + " / " + e.getMessage());
             }
         }
 
