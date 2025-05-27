@@ -1,4 +1,4 @@
-package newsbalance.demo.Repository;
+package newsbalance.demo.Repository.Elasticsearch;
 
 import newsbalance.demo.Entity.VideoTitleDoc;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;

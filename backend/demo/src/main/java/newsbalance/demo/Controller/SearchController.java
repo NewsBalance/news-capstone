@@ -2,8 +2,8 @@ package newsbalance.demo.Controller;
 
 import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YouTubeVideo;
-import newsbalance.demo.Repository.VideoTitleElasticRepository;
-import newsbalance.demo.Repository.YouTubeVideoRepository;
+import newsbalance.demo.Repository.Elasticsearch.VideoTitleElasticRepository;
+import newsbalance.demo.Repository.JPA.YouTubeVideoRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

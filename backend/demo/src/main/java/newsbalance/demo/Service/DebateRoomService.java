@@ -3,7 +3,7 @@ package newsbalance.demo.Service;
 import jakarta.persistence.EntityNotFoundException;
 import newsbalance.demo.DTO.*;
 import newsbalance.demo.Entity.*;
-import newsbalance.demo.Repository.*;
+import newsbalance.demo.Repository.JPA.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;

@@ -1,4 +1,4 @@
-package newsbalance.demo.Repository;
+package newsbalance.demo.Repository.JPA;
 
 import newsbalance.demo.Entity.DebateRoom;
 import newsbalance.demo.Entity.User;

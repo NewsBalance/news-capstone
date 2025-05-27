@@ -3,18 +3,14 @@ package newsbalance.demo.Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import newsbalance.demo.Entity.SummarySentence;
-import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YoutubeContent;
-import newsbalance.demo.Repository.*;
+import newsbalance.demo.Repository.Elasticsearch.YoutubeContentElasticRepository;
+import newsbalance.demo.Repository.JPA.YoutubeContentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service

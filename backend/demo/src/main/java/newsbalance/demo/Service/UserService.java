@@ -3,7 +3,7 @@ package newsbalance.demo.Service;
 import jakarta.persistence.EntityNotFoundException;
 import newsbalance.demo.DTO.UserInfoDto;
 import newsbalance.demo.Entity.User;
-import newsbalance.demo.Repository.UserRepository;
+import newsbalance.demo.Repository.JPA.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Collections;
-import java.util.Optional;
 
 @Service
 public class UserService implements UserDetailsService {
