@@ -1,6 +1,5 @@
 package newsbalance.demo.Controller;
 
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import newsbalance.demo.Configuration.SessionConst;
@@ -16,69 +15,81 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/session")
 public class SessionController {
+
     @Autowired
     private UserService userService;
+
     @Autowired
     private MailService mailService;
 
     // 로그인
     @PostMapping("/login")
     public ResponseEntity<APIResponse> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+        String email = loginDTO.getEmail();
+        String password = loginDTO.getPassword();
+
         try {
-            String email = loginDTO.getEmail();
-            String password = loginDTO.getPassword();
-
-            boolean isAuthenticated = userService.login(email, password); // 로그인 결과 true/false로 반환하도록 설계
-
+            boolean isAuthenticated = userService.login(email, password);
+            
             if (!isAuthenticated) {
-                return ResponseEntity
-                        .status(HttpStatus.UNAUTHORIZED)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new APIResponse(false, 401, "이메일 또는 비밀번호가 올바르지 않습니다.", null));
             }
 
             User user = userService.getUserbyEmail(email);
 
-            HttpSession session = request.getSession();
-            session.setAttribute(SessionConst.Login_email, email);
+            HttpSession session = request.getSession(true);
+            session.setAttribute("userEmail", email);
+            session.setAttribute("userNickname", user.getNickname());
+            session.setAttribute("userId", user.getId());
             session.setAttribute(SessionConst.Login_nickname, user.getNickname());
 
-            return ResponseEntity
-                    .ok(new APIResponse(true, 200, "로그인 성공", user.getNickname()));
+            // 프론트엔드가 기대하는 형식으로 데이터 구성
+            HashMap<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("nickname", user.getNickname());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("role", "USER"); // 역할 정보 추가
+
+            return ResponseEntity.ok(new APIResponse(true, 200, "로그인 성공", userInfo));
         } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new APIResponse(false, 500, "로그인 중 오류 발생", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new APIResponse(false, 500, "로그인 처리 중 오류가 발생했습니다: " + e.getMessage(), null));
         }
     }
 
     // 내 세션 확인
     @GetMapping("/my")
     public ResponseEntity<APIResponse> checkSession(HttpServletRequest request) {
-        HttpSession session = request.getSession(false); // 세션이 없으면 null 반환
-
-        if (session != null) {
-            String loginEmail = (String) session.getAttribute(SessionConst.Login_email);
-            String loginNickname = (String) session.getAttribute(SessionConst.Login_nickname);
-            if (loginEmail != null) {
-                SessionInfo info = new SessionInfo(loginEmail, loginNickname);
-                return ResponseEntity
-                        .ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", info));
-            }
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userEmail") == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new APIResponse(false, 401, "로그인 상태가 아닙니다.", null));
         }
-
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new APIResponse(false, 401, "로그인 상태가 아닙니다.", null));
+    
+        String email = (String) session.getAttribute("userEmail");
+        String nickname = (String) session.getAttribute("userNickname");
+        Long userId = (Long) session.getAttribute("userId");
+    
+        // 프론트엔드가 기대하는 형식으로 데이터 구성
+        HashMap<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", userId);
+        userInfo.put("nickname", nickname);
+        userInfo.put("email", email);
+        userInfo.put("role", "USER"); // 역할 정보 추가
+    
+        return ResponseEntity.ok(new APIResponse(true, 200, "현재 로그인 상태입니다.", userInfo));
     }
 
-    // 다른 사람 프로필 조회
+    // 프로필 조회
     @GetMapping("/Profile/{nickname}")
-    public ResponseEntity<APIResponse> getuserProfile(@PathVariable String nickname){
+    public ResponseEntity<APIResponse> getuserProfile(@PathVariable String nickname) {
         User user = userService.getUserbyNickname(nickname);
 
         if (user == null) {
@@ -100,23 +111,11 @@ public class SessionController {
     // 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<APIResponse> logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false); // 세션이 없으면 null
-
+        HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
-            return ResponseEntity
-                    .ok(new APIResponse(true, 200, "로그아웃 성공", null));
-        } else {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new APIResponse(false, 400, "로그인 상태가 아닙니다.", null));
         }
-    }
 
-//    // 비밀번호 찾기(이메일 입력)
-//    @PostMapping("/findPassword")
-//    public ResponseEntity<APIResponse> findPassword(@RequestBody EmailDTO emailDTO) {
-//        // 이메일로 인증번호를 보냄
-//        // 입력받은 번호가 맞는 지 확인
-//    }
+        return ResponseEntity.ok(new APIResponse(true, 200, "로그아웃 성공", null));
+    }
 }

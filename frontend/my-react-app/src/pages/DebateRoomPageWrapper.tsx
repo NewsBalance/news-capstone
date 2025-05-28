@@ -3,9 +3,10 @@ import DebateRoomPage from './DebateRoomPage';
 import { useEffect, useState, useRef } from 'react';
 import * as StompJs from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.41.157:8080/api';
-const WS_URL = process.env.REACT_APP_WS_URL || 'http://192.168.41.157:8080/ws';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:8080/ws';
 
 interface DebateMessage {
     speaker: string;
@@ -23,7 +24,7 @@ interface Message {
 interface RoomData {
     id: number;
     title: string;
-    description: string;
+    topic: string;
     started: boolean;
     debaterAReady: boolean;
     debaterBReady: boolean;
@@ -36,6 +37,7 @@ interface RoomData {
 const DebateRoomPageWrapper: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const navigate = useNavigate();
+    const { user } = useAuth();
     
     // 상태 관리
     const [userName, setUserName] = useState<string>('');
@@ -44,18 +46,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     const [chatMessages, setChatMessages] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [roomData, setRoomData] = useState<{
-        id: number;
-        title: string;
-        description: string;
-        started: boolean;
-        debaterAReady: boolean;
-        debaterBReady: boolean;
-        currentParticipants: number;
-        totalVisits: number;
-        debaterA: string | null;
-        debaterB: string | null;
-    } | null>(null);
+    const [roomData, setRoomData] = useState<RoomData | null>(null);
 
     // WebSocket 클라이언트 참조
     const stompClient = useRef<any>(null);
@@ -68,59 +59,30 @@ const DebateRoomPageWrapper: React.FC = () => {
         console.log('현재 사용자 이름:', userName);
     }, [loading, error, roomData, userName]);
 
-    // 중요: 이 useEffect를 컴포넌트 최상단으로 이동
-    // 사용자 정보가 로드되면 다른 작업을 진행하도록 순서 보장
+    // 사용자 정보 설정
     useEffect(() => {
-        // 로컬 스토리지에서 사용자 정보 직접 확인
-        const localUserName = localStorage.getItem('userName');
-        if (localUserName) {
-            console.log('로컬 스토리지에서 사용자 이름을 가져왔습니다:', localUserName);
-            setUserName(localUserName);
+        if (user && user.nickname) {
+            console.log('Auth 컨텍스트에서 사용자 이름 설정:', user.nickname);
+            setUserName(user.nickname);
             return;
         }
         
-        // 토큰에서 사용자 정보 추출 시도
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const parts = token.split('.');
-                if (parts.length === 3) {
-                    const payload = JSON.parse(atob(parts[1]));
-                    console.log('토큰 페이로드:', payload);
-                    
-                    // 다양한 필드 이름 시도
-                    const extractedName = payload.nickname || payload.name || payload.username || payload.sub;
-                    
-                    if (extractedName) {
-                        console.log('토큰에서 사용자 이름을 찾았습니다:', extractedName);
-                        setUserName(extractedName);
-                        // 추후 사용을 위해 로컬 스토리지에 저장
-                        localStorage.setItem('userName', extractedName);
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.error('토큰 디코딩 오류:', e);
-            }
-        }
-        
-        // API 호출을 통한 사용자 정보 가져오기는 생략 (필요시 추가)
-        
-        if (!token) {
-            console.error('토큰이 없습니다');
+        // 인증 정보가 없는 경우
+        if (!user) {
+            console.error('사용자 인증 정보가 없습니다');
             setError('로그인이 필요합니다.');
             setLoading(false);
+            return;
         }
-    }, []); // 컴포넌트 마운트 시 한 번만 실행
+    }, [user]);
 
     // WebSocket 연결 설정
     useEffect(() => {
         if (!roomId || !userName) return;
 
         const client = new StompJs.Client({
-            webSocketFactory: () => new SockJS(WS_URL),
+            webSocketFactory: () => new SockJS(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/ws`),
             connectHeaders: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
                 userName: userName // 사용자 이름을 헤더에 추가
             },
             debug: str => console.log('STOMP:', str),
@@ -137,6 +99,8 @@ const DebateRoomPageWrapper: React.FC = () => {
             client.subscribe(`/topic/room/${roomId}/status`, message => {
                 try {
                     const roomStatus = JSON.parse(message.body);
+                    console.log('받은 룸 상태 데이터:', roomStatus); // 디버깅 로그 추가
+                    
                     setRoomData(prevData => {
                         // 토론 시작 상태가 변경되었을 때 시스템 메시지 추가
                         if (roomStatus.started && !prevData?.started) {
@@ -146,11 +110,11 @@ const DebateRoomPageWrapper: React.FC = () => {
                             }]);
                         }
 
-                        // 전체 방 상태를 한 번에 업데이트
+                        // topic 값 처리 수정
                         return {
                             ...prevData!,
                             ...roomStatus,
-                            description: roomStatus.description || roomStatus.topic || '설명 없음'
+                            topic: roomStatus.topic || prevData?.topic || '설명 없음' // topic 우선 사용
                         };
                     });
                 } catch (err) {
@@ -224,12 +188,11 @@ const DebateRoomPageWrapper: React.FC = () => {
         // 먼저 방 참여 처리
         joinRoom().then(() => {
             // 방 정보 조회
-            fetch(`${API_URL}/debate-rooms/${roomId}`, {
+            fetch(`/api/debate-rooms/${roomId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include',
+                credentials: 'include'
             })
             .then(res => {
                 if (!res.ok) throw new Error('토론방 정보를 가져올 수 없습니다');
@@ -239,7 +202,7 @@ const DebateRoomPageWrapper: React.FC = () => {
                 // 방 데이터 설정
                 setRoomData({
                     ...data,
-                    description: data.description || data.topic || '설명 없음'
+                    topic: data.topic || '설명 없음' 
                 });
                 
                 setMessages(data.messages?.map((msg: any) => ({
@@ -248,11 +211,12 @@ const DebateRoomPageWrapper: React.FC = () => {
                     summary: msg.summary
                 })) || []);
                 
-                // 역할 설정 - 오직 debaterA만 체크
+                // 역할 설정
                 const isDebaterA = data.debaterA === userName;
+                const isDebaterB = data.debaterB === userName;
                 
-                if (isDebaterA) {
-                    console.log(`사용자 ${userName}이(가) 토론자A로 설정됨`);
+                if (isDebaterA || isDebaterB) {
+                    console.log(`사용자 ${userName}이(가) 토론자로 설정됨`);
                     setRole('debater');
                 } else {
                     console.log(`사용자 ${userName}이(가) 관전자로 설정됨`);
@@ -368,9 +332,6 @@ const DebateRoomPageWrapper: React.FC = () => {
                 destination: '/app/chat',
                 body: JSON.stringify(message)
             });
-            
-            // 낙관적 UI 업데이트 제거
-            // setChatMessages(prev => [...prev, `${userName}: ${text}`]);
         } catch (error) {
             console.error("채팅 메시지 전송 중 오류:", error);
             alert("채팅 메시지 전송에 실패했습니다. 다시 시도해주세요.");
@@ -380,10 +341,9 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 준비 상태 변경 함수 수정
     const handleReady = async () => {
         try {
-            const response = await fetch(`${API_URL}/debate-rooms/${roomId}/ready`, {
+            const response = await fetch(`/api/debate-rooms/${roomId}/ready`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include'
@@ -406,20 +366,13 @@ const DebateRoomPageWrapper: React.FC = () => {
         
         console.log('토론자 A 등록 API 호출...');
         
-        const token = localStorage.getItem('token');
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        
         // 토론자 A로 등록 API 호출
-        fetch(`${API_URL}/debate-rooms/${roomId}/register-as-debater-a`, {
+        fetch(`/debate-rooms/${roomId}/register-as-debater-a`, {
             method: 'POST',
-            headers: headers,
-            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
         })
         .then(res => {
             if (!res.ok) {
@@ -450,10 +403,9 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론자 B로 참여하는 함수 추가
     const joinAsDebaterB = async () => {
         try {
-            const response = await fetch(`${API_URL}/debate-rooms/${roomId}/join-as-debater-b`, {
+            const response = await fetch(`/debate-rooms/${roomId}/join-as-debater-b`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include'
@@ -474,7 +426,10 @@ const DebateRoomPageWrapper: React.FC = () => {
 
     // 토론방 나가기 처리
     const handleLeave = async () => {
-        if (!roomId) return;
+        if (!roomId) {
+            console.error('Room ID is undefined');
+            return;
+        }
 
         try {
             // WebSocket 연결 종료
@@ -496,10 +451,9 @@ const DebateRoomPageWrapper: React.FC = () => {
             }
 
             // API 호출
-            const response = await fetch(`${API_URL}/debate-rooms/${roomId}/leave`, {
+            const response = await fetch(`/api/debate-rooms/${roomId}/leave`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include'
@@ -512,8 +466,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             navigate('/discussion');
         } catch (error) {
             console.error('Error leaving room:', error);
-            // 오류가 발생해도 페이지 이동
-            navigate('/discussion');
+            alert(error instanceof Error ? error.message : '오류가 발생했습니다');
         }
     };
 
@@ -522,11 +475,9 @@ const DebateRoomPageWrapper: React.FC = () => {
         if (!roomId || !userName) return;
         
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/debate-rooms/${roomId}/join`, {
+            const response = await fetch(`/api/debate-rooms/${roomId}/join`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include'
@@ -603,9 +554,8 @@ const DebateRoomPageWrapper: React.FC = () => {
     // fetchRoomData 함수 추가
     const fetchRoomData = async () => {
         try {
-            const response = await fetch(`${API_URL}/debate-rooms/${roomId}`, {
+            const response = await fetch(`/api/debate-rooms/${roomId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include'
@@ -647,7 +597,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             chatMessages={chatMessages}
             onSendChat={handleSendChat}
             roomTitle={roomData.title}
-            roomDescription={roomData.description}
+            roomTopic={roomData.topic}
             onReady={handleReady}
             roomId={roomId}
             debaterA={roomData.debaterA}

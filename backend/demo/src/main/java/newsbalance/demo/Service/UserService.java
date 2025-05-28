@@ -5,54 +5,36 @@ import newsbalance.demo.DTO.UserInfoDto;
 import newsbalance.demo.Entity.User;
 import newsbalance.demo.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Optional;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // @Lazy를 사용하여 순환 참조 해결
     @Autowired
     public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // 로그인 메서드 - 이메일과 비밀번호 검증
     public boolean login(String email, String password) {
         try {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다"));
 
-            // 비밀번호 검증
             return passwordEncoder.matches(password, user.getPassword());
         } catch (Exception e) {
             return false;
         }
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String nickname) throws UsernameNotFoundException {
-        User user = userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with nickname: " + nickname));
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getNickname(),
-                user.getPassword(),
-                Collections.emptyList()
-        );
     }
 
     public User validateUser(String email, String password) {
@@ -141,5 +123,10 @@ public class UserService implements UserDetailsService {
         // 필요한 다른 정보들 설정
         
         return userInfoDto;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

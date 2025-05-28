@@ -31,7 +31,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setError('');
     
     try {
-      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/login`;
+      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/session/login`;
       console.log('로그인 요청 시작:', apiUrl);
       
       const response = await fetch(apiUrl, {
@@ -40,17 +40,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // 쿠키 전송 허용 (CORS 설정과 일치해야 함)
+        credentials: 'include',
         body: JSON.stringify({
           email: username,
           password,
         }),
       });
       
-      // 응답 로깅
       console.log('로그인 응답 상태:', response.status);
       
-      // 모든 응답 데이터 확인
       const responseText = await response.text();
       console.log('응답 원본:', responseText);
       
@@ -67,27 +65,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         throw new Error(data.message || '로그인에 실패했습니다');
       }
       
-      // 토큰 저장 - 명확하게 tokenKey와 토큰 값을 확인
-      if (data.token) {
-        console.log('토큰 저장:', data.token.substring(0, 10) + '...');
-        
-        // 사용자 정보 객체 생성
-        const userObj = {
-          nickname: data.nickname || username,
-          id: data.id || 0,
-          email: data.email || null,
-          role: data.role || 'USER'
-        };
-        
-        // 전역 인증 상태에 저장 - 두 개의 인자 전달
-        auth.login(data.token, userObj);
-        
-        // 로컬 스토리지에도 저장
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(userObj));
-      } else {
-        console.error('토큰 없음! 응답 데이터:', data);
-      }
+      // 사용자 정보 객체 생성
+      const userObj = {
+        nickname: data.result?.nickname || username,
+        id: data.result?.id || 0,
+        email: data.result?.email || username,
+        role: data.result?.role || 'USER'
+      };
+      
+      // 전역 인증 상태에 저장 - 토큰 없이 사용자 정보만 전달
+      auth.login(userObj);
       
       // 로그인 성공 콜백 실행
       if (onLoginSuccess) {

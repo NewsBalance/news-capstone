@@ -3,7 +3,7 @@ import '../styles/DebateRoom.css';
 import { useNavigate } from "react-router-dom";
 
 // API URL 상수 추가
-const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.41.157:8080';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 interface DebateMessage {
     speaker: string;
@@ -19,7 +19,7 @@ interface Props {
     chatMessages: string[];
     onSendChat: (text: string) => void;
     roomTitle: string;
-    roomDescription: string;
+    roomTopic: string;
     onReady: () => void;
     roomId: string | undefined;
     debaterA: string | null;
@@ -67,7 +67,7 @@ const DebateRoomPage: React.FC<Props> = ({
     chatMessages,
     onSendChat,
     roomTitle,
-    roomDescription,
+    roomTopic,
     onReady,
     roomId,
     debaterA,
@@ -150,14 +150,12 @@ const DebateRoomPage: React.FC<Props> = ({
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/debate-rooms/${roomId}/leave`, {
+            const response = await fetch(`/api/debate-rooms/${roomId}/leave`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include'
+                credentials: 'include' // 세션 쿠키 포함
             });
 
             if (!response.ok) {
@@ -202,7 +200,7 @@ const DebateRoomPage: React.FC<Props> = ({
                 <div className="container mx-auto flex justify-between items-center">
                     <div className="room-info">
                         <h1 className="room-title text-2xl font-bold text-purple-600">{roomTitle || '제목 없음'}</h1>
-                        <p className="room-description text-sm text-gray-600">{roomDescription || '설명 없음'}</p>
+                        <p className="room-topic text-sm text-gray-600">{roomTopic || '주제 없음'}</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <AuthStatus />
@@ -298,8 +296,6 @@ const DebateRoomPage: React.FC<Props> = ({
                                     <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">토론 실시간 요약</h3>
                                     <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                                         <div className="text-sm text-gray-700">
-                                            <p className="mb-2 text-center"><span className="text-purple-600 font-semibold">현재 쟁점:</span></p>
-                                            <p className="mb-3 text-center">{roomDescription}</p>
                                             <p className="mb-2"><span className="text-pink-600 font-semibold">토론자 A:</span> {messages.filter(m => m.speaker === debaterA).slice(-1)[0]?.text || '아직 발언이 없습니다'}</p>
                                             <p className="mb-2"><span className="text-blue-600 font-semibold">토론자 B:</span> {messages.filter(m => m.speaker === debaterB).slice(-1)[0]?.text || '아직 발언이 없습니다'}</p>
                                             <div className="mt-3 pt-2 border-t border-gray-200">
