@@ -24,9 +24,9 @@ public class YouTubeService {
 
     // 수동 수집 및 자막 포함 저장, Elasticsearch 동기화
     @Autowired
-    private YouTubeVideoRepository videoRepo;
+    private final YouTubeVideoRepository videoRepo;
     @Autowired
-    private VideoTitleElasticRepository elasticRepo;
+    private final VideoTitleElasticRepository elasticRepo;
 
     private final YouTubeConfig config;
 
@@ -51,7 +51,7 @@ public class YouTubeService {
         for (String channelId : channelIds) {
             String url = "https://www.googleapis.com/youtube/v3/search?part=snippet" +
                     "&channelId=" + channelId +
-                    "&maxResults=5&order=date&type=video" +
+                    "&maxResults=2&order=date&type=video" +
                     "&publishedAfter=" + afterDate +
                     "&key=" + apiKey;
 

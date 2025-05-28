@@ -1,33 +1,24 @@
 package newsbalance.demo.Controller;
 
-import newsbalance.demo.Entity.VideoTitleDoc;
-import newsbalance.demo.Entity.YouTubeVideo;
-import newsbalance.demo.Repository.Elasticsearch.VideoTitleElasticRepository;
-import newsbalance.demo.Repository.JPA.YouTubeVideoRepository;
+import newsbalance.demo.Entity.YoutubeContentElastic;
+import newsbalance.demo.Repository.Elasticsearch.YoutubeContentElasticRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/search")
 public class SearchController {
 
-    private final VideoTitleElasticRepository elasticRepo;
-    private final YouTubeVideoRepository videoRepo;
+    private final YoutubeContentElasticRepository contentRepo;
 
-    public SearchController(VideoTitleElasticRepository elasticRepo, YouTubeVideoRepository videoRepo) {
-        this.elasticRepo = elasticRepo;
-        this.videoRepo = videoRepo;
+    public SearchController(YoutubeContentElasticRepository contentRepo) {
+        this.contentRepo = contentRepo;
     }
 
-    @GetMapping
-    public List<YouTubeVideo> search(@RequestParam String query) {
-        List<VideoTitleDoc> results = elasticRepo.findByTitleContaining(query);
-        return results.stream()
-                .map(doc -> videoRepo.findById(doc.getVideoId()).orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+    @GetMapping("/titles")
+    public List<YoutubeContentElastic> search(@RequestParam String query) {
+        return contentRepo.findByTitleWildcard(query);
     }
 
 }

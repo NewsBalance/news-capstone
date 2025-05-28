@@ -1,5 +1,6 @@
 package newsbalance.demo.DTO.Request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,4 +12,5 @@ public class YoutubeContentRequestDTO {
     private String url;
     private Double biasScore;
     private List<SummarySentenceDTO> summarySentences;
+
 }

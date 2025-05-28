@@ -1,10 +1,13 @@
 package newsbalance.demo.Entity;
 
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,8 +15,7 @@ import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table(name = "youtube_content")
-@Document(indexName = "youtube_contents")
+@Table(name = "youtube_contents")
 public class YoutubeContent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +29,6 @@ public class YoutubeContent {
 
     @OneToMany(mappedBy = "videoSummary", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SummarySentence> SentencesScore = new ArrayList<>();
+
+
 }

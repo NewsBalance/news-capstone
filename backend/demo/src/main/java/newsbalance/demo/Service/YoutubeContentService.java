@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import newsbalance.demo.Entity.SummarySentence;
 import newsbalance.demo.Entity.YoutubeContent;
+import newsbalance.demo.Entity.YoutubeContentElastic;
 import newsbalance.demo.Repository.Elasticsearch.YoutubeContentElasticRepository;
 import newsbalance.demo.Repository.JPA.YoutubeContentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,7 +35,13 @@ public class YoutubeContentService {
         content.setTitle(title);
         content.setPublishedAt(publishedAt);
 
-        youtubeContentElasticRepository.save(content);
+        YoutubeContentElastic contentElastic = new YoutubeContentElastic();
+        contentElastic.setId(UUID.randomUUID().toString());
+        contentElastic.setVideoUrl(dto.getUrl());
+        contentElastic.setBiasScore(dto.getBiasScore());
+        contentElastic.setTitle(title);
+
+        youtubeContentElasticRepository.save(contentElastic);
 
         List<SummarySentence> sentences = dto.getSummarySentences().stream()
                 .map(s -> {
@@ -48,5 +56,6 @@ public class YoutubeContentService {
         content.setSentencesScore(sentences);
         youtubeContentRepository.save(content);
     }
+
 
 }

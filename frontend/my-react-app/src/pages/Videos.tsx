@@ -9,18 +9,18 @@ type Bias = 'left' | 'center' | 'right';
 interface YTVideo {
   videoId: string;
   title: string;
-  channel: string;
   thumbnail: string;
   bias: Bias;
+  score: number;
 }
 
 // 서버 원본 데이터 타입
 interface RawVideo {
-  videoId: string;
+  id: string;             // 내부 UUID
   title: string;
-  channel: string;
-  thumbnail: string;
-  bias: number;      // –2.0 ~ 2.0
+  videoUrl: string;       // https://www.youtube.com/watch?v=...
+  biasScore: number;      // –2.0 ~ 2.0
+  publishedAt: string | null;
 }
 
 // 숫자 bias → 카테고리 매핑
@@ -34,6 +34,16 @@ const LABEL: Record<Bias, string> = {
   left: '진보',
   center: '중도',
   right: '보수',
+};
+
+// videoUrl에서 v 파라미터만 뽑아서 리턴
+const extractVideoId = (url: string): string => {
+  try {
+    const params = new URL(url).searchParams;
+    return params.get('v') || '';
+  } catch {
+    return '';
+  }
 };
 
 export default function VideosPage() {
@@ -54,21 +64,24 @@ export default function VideosPage() {
     const fetchVideos = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8080/search?query=${encodeURIComponent(param)}`
+          `http://localhost:8080/search/titles?query=${encodeURIComponent(param)}`
         );
         if (!res.ok) throw new Error(res.statusText);
 
         // 1) 서버에서 숫자 bias로 된 배열을 받는다
         const rawData: RawVideo[] = await res.json();
 
-        // 2) mapBias로 변환
-        const converted: YTVideo[] = rawData.map(v => ({
-          videoId:   v.videoId,
-          title:     v.title,
-          channel:   v.channel,
-          thumbnail: v.thumbnail,
-          bias:      mapBias(v.bias),
-        }));
+        // 2) videoId/thumbnail 생성, bias 카테고리 변환
+        const converted: YTVideo[] = rawData.map(v => {
+          const videoId = extractVideoId(v.videoUrl);
+          return {
+            videoId,
+            title: v.title,
+            thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+            bias: mapBias(v.biasScore),
+            score: v.biasScore,
+          };
+        });
 
         // 3) 편향별로 그룹핑
         setVideos({
@@ -104,7 +117,9 @@ export default function VideosPage() {
       <img src={v.thumbnail} alt={v.title} />
       <div className="info">
         <h3>{v.title}</h3>
-        <p>{v.channel}</p>
+        <p className="bias-info">
+          편향도: ({v.score.toFixed(2)})
+        </p>
       </div>
     </a>
   );
