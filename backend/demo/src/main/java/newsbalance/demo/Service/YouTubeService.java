@@ -1,9 +1,13 @@
 package newsbalance.demo.Service;
 
+import jakarta.persistence.EntityNotFoundException;
 import newsbalance.demo.Configuration.YouTubeConfig;
+import newsbalance.demo.DTO.Request.SummarySentenceDTO;
 import newsbalance.demo.Entity.VideoInfo;
 import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YouTubeVideo;
+import newsbalance.demo.Entity.YoutubeContent;
+import newsbalance.demo.Repository.JPA.YoutubeContentRepository;
 import newsbalance.demo.Repository.UrlOnly;
 import newsbalance.demo.Repository.Elasticsearch.VideoTitleElasticRepository;
 import newsbalance.demo.Repository.JPA.YouTubeVideoRepository;
@@ -27,14 +31,18 @@ public class YouTubeService {
     private final YouTubeVideoRepository videoRepo;
     @Autowired
     private final VideoTitleElasticRepository elasticRepo;
+    @Autowired
+    private final YoutubeContentRepository contentRepo;
 
     private final YouTubeConfig config;
 
     public YouTubeService(YouTubeVideoRepository videoRepo,
                           VideoTitleElasticRepository elasticRepo,
+                          YoutubeContentRepository contentRepo,
                           YouTubeConfig config) {
         this.videoRepo = videoRepo;
         this.elasticRepo = elasticRepo;
+        this.contentRepo = contentRepo;
         this.config = config;
     }
 
@@ -148,6 +156,14 @@ public class YouTubeService {
                         p.getTitle(),
                         p.getPublishedAt()
                 ))
+                .collect(Collectors.toList());
+    }
+
+    public List<SummarySentenceDTO> getSummariesByVideoUrl(String url) {
+        YoutubeContent content = contentRepo.findByVideoUrl(url)
+                .orElseThrow(() -> new EntityNotFoundException("해당 비디오(id=" + url + ")를 찾을 수 없습니다."));
+        return content.getSentencesScore().stream()
+                .map(s -> new SummarySentenceDTO(s.getContent(), s.getScore()))
                 .collect(Collectors.toList());
     }
 

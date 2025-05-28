@@ -1,0 +1,181 @@
+/* src/styles/VideoDetail.css */
+
+.video-detail-page {
+  /* 1) 컴포넌트 전용 CSS 변수 */
+  --primary:      #5f3dc4;
+  --surface-alt:  #f9f9fb;
+  --text:         #333333;
+  --muted:        #666666;
+  --shadow:       rgba(0,0,0,0.08);
+
+  /* 기존 .video-detail-page 스타일 */
+  max-width: 1140px;
+  margin: 3rem auto;
+  padding: 0 1.5rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+/* ─────────────────────────────────
+   1. Top Row: Video + Sidebar
+   ───────────────────────────────── */
+.video-detail-page .top-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+@media (min-width:900px) {
+  .video-detail-page .top-row {
+    flex-direction: row;
+    align-items: start;
+    gap: 3rem;
+  }
+}
+
+.video-detail-page .video-section {
+  flex: 2;
+}
+.video-detail-page .video-section iframe {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.video-detail-page .video-title {
+  margin: 1rem 0 0.25rem;
+  font-size: 1.75rem;
+  line-height: 1.3;
+}
+.video-detail-page .video-channel {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.video-detail-page .sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.video-detail-page .classification .bias-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface-alt);
+  border-radius: 2rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.video-detail-page .classification .bias-tag span {
+  color: var(--muted);
+}
+.video-detail-page .bias-desc {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.video-detail-page .summary-heading {
+  font-size: 1.1rem;
+  color: var(--primary);
+  margin: 0;
+}
+
+/* ─────────────────────────────────
+   2. Bottom Row: Details & Data
+   ───────────────────────────────── */
+.video-detail-page .bottom-row {
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Summary details */
+.video-detail-page .summary-details {
+  background: var(--surface-alt);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.video-detail-page .summary-details p {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+.video-detail-page .summary-text {
+  font-style: italic;
+}
+.video-detail-page .keyword {
+  display: inline-block;
+  margin: 0 0.3rem 0.3rem 0;
+  padding: 0.3rem 0.6rem;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+/* Metadata */
+.video-detail-page .metadata .video-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+}
+.video-detail-page .metadata .video-stats li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Transcript */
+.video-detail-page .transcript-raw {
+  background: var(--surface-alt);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.video-detail-page .transcript-raw h2 {
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+  color: var(--primary);
+}
+.video-detail-page .transcript-raw pre {
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Back button */
+.video-detail-page .back-button {
+  align-self: center;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.video-detail-page .back-button:hover {
+  background: #4a2dab;
+}
+
+/* Loading & Error */
+.video-detail-page .loading {
+  font-style: italic;
+  color: var(--muted);
+}
+.video-detail-page .error {
+  color: #d93025;
+}

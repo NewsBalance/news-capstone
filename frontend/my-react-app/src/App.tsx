@@ -13,6 +13,8 @@ import DebateRoomPageWrapper from './pages/DebateRoomPageWrapper';
 import VideosPage from './pages/Videos';
 import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
+import VideoDetailPage from './pages/VideoDetail';
+
 
 export default function App() {
   return (
@@ -55,6 +57,9 @@ export default function App() {
         }
       />
       <Route path="/videos" element={<VideosPage />} />
+      <Route path="/videos/:videoId" element={<VideoDetailPage />} />
+      
+
       <Route
         path="/reset-password"
         element={

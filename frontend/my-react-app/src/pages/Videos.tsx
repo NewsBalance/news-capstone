@@ -1,15 +1,16 @@
 // src/pages/Videos.tsx
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Videos.css';
 
 type Bias = 'left' | 'center' | 'right';
 
-interface YTVideo {
+export interface YTVideo {
   videoId: string;
   title: string;
   thumbnail: string;
+  videoUrl: string;
   bias: Bias;
   score: number;
 }
@@ -30,7 +31,7 @@ const mapBias = (value: number): Bias => {
   return 'right';
 };
 
-const LABEL: Record<Bias, string> = {
+export const LABEL: Record<Bias, string> = {
   left: '진보',
   center: '중도',
   right: '보수',
@@ -78,6 +79,7 @@ export default function VideosPage() {
             videoId,
             title: v.title,
             thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+            videoUrl: v.videoUrl,
             bias: mapBias(v.biasScore),
             score: v.biasScore,
           };
@@ -108,21 +110,20 @@ export default function VideosPage() {
 
   // 영상 카드 컴포넌트
   const Card = ({ v }: { v: YTVideo }) => (
-    <a
-      href={`https://youtu.be/${v.videoId}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="video-card"
-    >
-      <img src={v.thumbnail} alt={v.title} />
-      <div className="info">
-        <h3>{v.title}</h3>
-        <p className="bias-info">
-          편향도: ({v.score.toFixed(2)})
-        </p>
-      </div>
-    </a>
-  );
+  <Link
+    to={`/videos/${v.videoId}`}
+    state={{ video: v }}
+    className="video-card"
+  >
+    <img src={v.thumbnail} alt={v.title} />
+    <div className="info">
+      <h3>{v.title}</h3>
+      <p className="bias-info">
+        편향도: ({v.score.toFixed(2)})
+      </p>
+    </div>
+  </Link>
+);
 
   // 편향별 컬럼 렌더링
   const Column = ({ bias }: { bias: Bias }) => (

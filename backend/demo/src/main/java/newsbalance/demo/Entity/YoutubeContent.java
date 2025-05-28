@@ -22,13 +22,13 @@ public class YoutubeContent {
     private Long id;
 
     private String title;
-    private String VideoUrl;
+    private String videoUrl;
     private Double biasScore;
 
     private LocalDateTime publishedAt;
 
     @OneToMany(mappedBy = "videoSummary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SummarySentence> SentencesScore = new ArrayList<>();
+    private List<SummarySentence> sentencesScore = new ArrayList<>();
 
 
 }
