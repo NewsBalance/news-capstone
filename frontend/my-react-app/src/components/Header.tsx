@@ -12,11 +12,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await fetch(`${URL}/session/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    logout();          // ★ 컨텍스트 상태 초기화
+    logout();
     alert("로그아웃 되었습니다.");
     navigate('/');
   };
