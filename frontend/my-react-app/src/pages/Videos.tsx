@@ -14,6 +14,7 @@ export interface YTVideo {
   videoUrl: string;
   bias: Bias;
   score: number;
+  publishedAt: number | null;
 }
 
 // 서버 원본 데이터 타입
@@ -22,7 +23,7 @@ interface RawVideo {
   title: string;
   videoUrl: string;       // https://www.youtube.com/watch?v=...
   biasScore: number;      // –2.0 ~ 2.0
-  publishedAt: string | null;
+  publishedAt: number | null;
 }
 
 // 숫자 bias → 카테고리 매핑
@@ -58,6 +59,9 @@ export default function VideosPage() {
     left: [], center: [], right: [],
   });
 
+  // 정렬 상태
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
   useEffect(() => {
     if (!param) return;
     setQuery(param);
@@ -83,6 +87,7 @@ export default function VideosPage() {
             videoUrl: v.videoUrl,
             bias: mapBias(v.biasScore),
             score: v.biasScore,
+            publishedAt: v.publishedAt,
           };
         });
 
@@ -119,6 +124,18 @@ export default function VideosPage() {
     <img src={v.thumbnail} alt={v.title} />
     <div className="info">
       <h3>{parse(v.title)}</h3>
+      <p className="upload-date">
+        업로드:{" "}
+        {v.publishedAt
+          ? new Date(v.publishedAt).toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          }) 
+          : "알 수 없음"}
+      </p>
       <p className="bias-info">
         편향도: ({v.score.toFixed(2)})
       </p>
@@ -127,14 +144,24 @@ export default function VideosPage() {
 );
 
   // 편향별 컬럼 렌더링
-  const Column = ({ bias }: { bias: Bias }) => (
+  const Column = ({ bias }: { bias: Bias }) => {
+  // 정렬 기준에 따라 복사본을 정렬
+  const sorted = [...videos[bias]].sort((a, b) => {
+    if (a.publishedAt == null || b.publishedAt == null) return 0;
+    return sortOrder === 'newest'
+      ? b.publishedAt - a.publishedAt
+      : a.publishedAt - b.publishedAt;
+  });
+
+  return (
     <section className={`col ${bias}`} aria-labelledby={`${bias}-heading`}>
       <h2 id={`${bias}-heading`} className="col-heading">{LABEL[bias]}</h2>
       {!searched && <p className="msg empty">검색어를 입력하세요.</p>}
-      {searched && videos[bias].length === 0 && <p className="msg empty">결과 없음</p>}
-      {videos[bias].map((v) => <Card key={v.videoId} v={v} />)}
+      {searched && sorted.length === 0 && <p className="msg empty">결과 없음</p>}
+      {sorted.map(v => <Card key={v.videoId} v={v} />)}
     </section>
   );
+};
 
   return (
     <>
@@ -153,6 +180,20 @@ export default function VideosPage() {
             <button type="submit">조회</button>
           </form>
         </div>
+
+        {/* 정렬 컨트롤 */}
+        <div className="container sort-bar">
+          <label htmlFor="sortOrder">정렬:</label>
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as 'newest' | 'oldest')}
+          >
+            <option value="newest">최신순</option>
+            <option value="oldest">오래된 순</option>
+          </select>
+        </div>
+
         {/* 결과 영역 */}
         <div className="container">
           <div className="grid">
