@@ -1,14 +1,10 @@
 package newsbalance.demo.Service;
 
-import jakarta.persistence.EntityNotFoundException;
 import newsbalance.demo.Configuration.YouTubeConfig;
-import newsbalance.demo.DTO.Request.SummarySentenceDTO;
 import newsbalance.demo.Entity.VideoInfo;
 import newsbalance.demo.Entity.VideoTitleDoc;
 import newsbalance.demo.Entity.YouTubeVideo;
-import newsbalance.demo.Entity.YoutubeContent;
 import newsbalance.demo.Repository.JPA.YoutubeContentRepository;
-import newsbalance.demo.Repository.UrlOnly;
 import newsbalance.demo.Repository.Elasticsearch.VideoTitleElasticRepository;
 import newsbalance.demo.Repository.JPA.YouTubeVideoRepository;
 import org.json.JSONObject;
@@ -19,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,7 +56,7 @@ public class YouTubeService {
         for (String channelId : channelIds) {
             String url = "https://www.googleapis.com/youtube/v3/search?part=snippet" +
                     "&channelId=" + channelId +
-                    "&maxResults=2&order=date&type=video" +
+                    "&maxResults=3&order=date&type=video" +
                     "&publishedAfter=" + afterDate +
                     "&key=" + apiKey;
 
@@ -155,15 +152,9 @@ public class YouTubeService {
                         p.getVideoUrl(),
                         p.getTitle(),
                         p.getPublishedAt()
+                                .atZone(ZoneId.systemDefault())
+                                .toEpochSecond()
                 ))
-                .collect(Collectors.toList());
-    }
-
-    public List<SummarySentenceDTO> getSummariesByVideoUrl(String url) {
-        YoutubeContent content = contentRepo.findByVideoUrl(url)
-                .orElseThrow(() -> new EntityNotFoundException("해당 비디오(id=" + url + ")를 찾을 수 없습니다."));
-        return content.getSentencesScore().stream()
-                .map(s -> new SummarySentenceDTO(s.getContent(), s.getScore()))
                 .collect(Collectors.toList());
     }
 

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,34 @@ public class ApiController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @PostMapping("/debug/getdata")
+    public ResponseEntity<?> debugSummarize(@RequestBody URLDTO urlDTO) {
+        // Python 서버에 보낼 페이로드 생성
+        Map<String, String> payload = Collections.singletonMap("url", urlDTO.getUrl());
+
+        try {
+            // Python 서버로 POST 요청 (응답을 Map 형태로 받음)
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(
+                            "http://localhost:5000/summarize",
+                            payload,
+                            Map.class
+                    );
+
+            // Python 서버의 상태 코드와 본문을 그대로 클라이언트에 전달
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .body(response.getBody());
+
+        } catch (Exception e) {
+            // 예외 발생 시 에러 메시지와 함께 500 리턴
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
 
 
     // 기존 단일 URL 처리 엔드포인트는 그대로 두고,

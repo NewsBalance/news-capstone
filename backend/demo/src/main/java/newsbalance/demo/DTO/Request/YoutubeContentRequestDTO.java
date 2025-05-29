@@ -11,6 +11,7 @@ import java.util.List;
 public class YoutubeContentRequestDTO {
     private String url;
     private Double biasScore;
+    private List<RelatedArticleDTO> relatedArticles;
     private List<SummarySentenceDTO> summarySentences;
-
+    private List<String> keywords;
 }

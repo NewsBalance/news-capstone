@@ -6,6 +6,8 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import nltk, openai, time, torch
 from nltk.tokenize import sent_tokenize
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import requests
+
 from dotenv import load_dotenv
 import os
 
@@ -15,6 +17,12 @@ load_dotenv()
 nltk.download("punkt")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
+
+TRUSTED_SOURCES = ["chosun", "hani", "khan", "donga", "joongang", "mbn", "sbs", "ytn", "kbs", "mbc", "jtbc", "ohmynews", "newsis", "yna", "hankookilbo"]
+
+
 
 # 모델 로드
 MODEL_PATH = "./model/kcbert_final_model"
@@ -76,6 +84,45 @@ def predict_bias(sentences):
     reverse_map = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2}
     return [reverse_map[p] for p in preds]
 
+# 4.  관련 기사 검색
+def search_news_articles(keyword, max_articles=3):
+    url = "https://openapi.naver.com/v1/search/news.json"
+    headers = {
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+    }
+    params = {
+        "query": keyword,
+        "display": 10,
+        "sort": "date"
+    }
+    response = requests.get(url, headers=headers, params=params)
+    results = []
+    if response.status_code == 200:
+        items = response.json().get("items", [])
+        for item in items:
+            # 🔻 여기 수정된 부분: 필터링 없이 모두 포함
+            results.append({
+                "title": item.get("title"),
+                "link": item.get("link")
+            })
+            if len(results) >= max_articles:
+                break
+    return results
+
+def extract_keywords_from_summary(summary_text):
+    if "[KEYWORDS]" in summary_text:
+        parts = summary_text.split("[KEYWORDS]")
+        keyword_block = parts[-1].strip()
+        queries= [kw.strip() for kw in keyword_block.split(",") if kw.strip()]
+        return queries
+    return []
+
+
+
+
+
+
 #  엔드포인트
 @app.route('/summarize', methods=['POST'])
 def summarize_endpoint():
@@ -86,9 +133,22 @@ def summarize_endpoint():
         return jsonify({"error":"자막 추출 실패"}), 400
 
     summary = summarize_with_assistant(transcript)
-    sentences = sent_tokenize(summary)
+    content_only = summary.split("[KEYWORDS]")[0].strip()
+    sentences = sent_tokenize(content_only)
     scores = predict_bias(sentences)
     avg = sum(scores) / len(scores) if scores else 0
+
+    queries = extract_keywords_from_summary(summary)
+    related_articles = {kw: search_news_articles(kw) for kw in queries}
+
+    # 쿼리별 뉴스 기사 딕셔너리 구성
+    related_articles_result = []
+    for articles in related_articles.values():  # 딕셔너리의 값만 가져옴
+        for art in articles:
+            related_articles_result.append({
+                "title": art["title"],
+                "link": art["link"]
+            })
 
     result = {
         "url": url,
@@ -96,9 +156,14 @@ def summarize_endpoint():
         "summarySentences": [
             {"content": s, "score": b}
             for s, b in zip(sentences, scores)
-        ]
+            
+        ],
+        "relatedArticles": related_articles_result,
+        "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
+        
     }
     return jsonify(result)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+    

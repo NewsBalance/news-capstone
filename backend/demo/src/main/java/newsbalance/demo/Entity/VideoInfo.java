@@ -6,6 +6,6 @@ import java.time.LocalDateTime;
 public record VideoInfo(
         String videoUrl,
         String title,
-        LocalDateTime publishedAt
+        Long publishedAt
 ) {
 }
