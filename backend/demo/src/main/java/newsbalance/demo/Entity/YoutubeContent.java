@@ -1,5 +1,6 @@
 package newsbalance.demo.Entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,9 +22,8 @@ import java.util.List;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 public class YoutubeContent {
-    @Id
+    @Id @org.springframework.data.annotation.Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @org.springframework.data.annotation.Id
     private int id;
 
     @Field(type = FieldType.Text)
@@ -61,11 +61,14 @@ public class YoutubeContent {
             joinColumns = @JoinColumn(name = "youtube_content_id")
     )
     @Field(type = FieldType.Nested, includeInParent = true)
+    @org.springframework.data.annotation.Transient
     private List<RelatedArticle> relatedArticles = new ArrayList<>();
 
     // 기존 summarySentences 매핑
     @OneToMany(mappedBy = "videoSummary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Field(type = FieldType.Nested, includeInParent = true)
+    @JsonManagedReference
+    @org.springframework.data.annotation.Transient
     private List<SummarySentence> sentencesScore = new ArrayList<>();
 
 

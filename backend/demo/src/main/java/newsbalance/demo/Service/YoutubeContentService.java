@@ -34,32 +34,34 @@ public class YoutubeContentService {
         content.setBiasScore(dto.getBiasScore());
         content.setTitle(title);
         content.setPublishedAt(publishedAt * 1_000L);
-        content.setKeywords(dto.getKeywords());
 
-        youtubeContentElasticRepository.save(content);
 
         List<SummarySentence> sentences = dto.getSummarySentences().stream()
                 .map(s -> {
-                    SummarySentence sentence = new SummarySentence();
-                    sentence.setContent(s.getContent());
-                    sentence.setScore(s.getScore());
-                    sentence.setVideoSummary(content);
-                    return sentence;
+                    SummarySentence ss = new SummarySentence();
+                    ss.setContent(s.getContent());
+                    ss.setScore(s.getScore());
+                    ss.setVideoSummary(content);
+                    return ss;
                 })
                 .collect(Collectors.toList());
         content.setSentencesScore(sentences);
 
         List<RelatedArticle> relatedArticles = dto.getRelatedArticles().stream()
-                        .map(s -> {
-                            RelatedArticle relatedArticle = new RelatedArticle();
-                            relatedArticle.setTitle(s.getTitle());
-                            relatedArticle.setLink(s.getLink());
-                            return relatedArticle;
-                        })
-                        .toList();
+                .map(a -> {
+                    RelatedArticle ra = new RelatedArticle();
+                    ra.setTitle(a.getTitle());
+                    ra.setLink(a.getLink());
+                    return ra;
+                })
+                .toList();
         content.setRelatedArticles(relatedArticles);
 
-        youtubeContentRepository.save(content);
+        // 3. JPA 저장 (ID 발급 및 자식 연관관계 저장)
+        YoutubeContent saved = youtubeContentRepository.save(content);
+
+        // 4. Elasticsearch 저장 (초기 save 시점보다 마지막에 호출)
+        youtubeContentElasticRepository.save(saved);
     }
 
     public Optional<YoutubeContent> getYoutubecontent(String url) {

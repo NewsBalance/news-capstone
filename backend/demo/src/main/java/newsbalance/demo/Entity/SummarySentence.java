@@ -1,5 +1,6 @@
 package newsbalance.demo.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,7 +17,7 @@ public class SummarySentence {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "video_summary_id")
-    @JsonIgnore
+    @JsonBackReference
     private YoutubeContent videoSummary;
 
     @Column(columnDefinition = "TEXT")
