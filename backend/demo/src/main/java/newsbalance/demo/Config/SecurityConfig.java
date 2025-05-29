@@ -48,9 +48,10 @@ public class SecurityConfig {
             // 세션 정책: 세션 기반 인증 사용
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                // 공개 경로 명시적 허용 (session/login 추가)
+                // 공개 경로 명시적 허용 (session/login, 검색 관련 추가)
                 .requestMatchers("/session/login", "/api/login", "/Login/login").permitAll()
                 .requestMatchers("/api/register", "/Register/register").permitAll()
+                .requestMatchers("/search/**").permitAll()
                 // 기타 공개 경로 허용
                 .requestMatchers("/h2-console/**", "/api/public/**").permitAll()
                 // 나머지 요청은 인증 필요
