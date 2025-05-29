@@ -1,4 +1,3 @@
-from flask import Flask, request, jsonify
 import nltk
 nltk.download('punkt')
 
@@ -10,7 +9,6 @@ import requests
 
 from dotenv import load_dotenv
 import os
-
 load_dotenv()
 
 # Setup
@@ -22,18 +20,12 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
 TRUSTED_SOURCES = ["chosun", "hani", "khan", "donga", "joongang", "mbn", "sbs", "ytn", "kbs", "mbc", "jtbc", "ohmynews", "newsis", "yna", "hankookilbo"]
 
-
-
 # 모델 로드
 MODEL_PATH = "./model/kcbert_final_model"
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-
-app = Flask(__name__)
-
-
 
 #  1. 유튜브 자막 추출
 def get_transcript(video_url):
@@ -110,6 +102,8 @@ def search_news_articles(keyword, max_articles=3):
                 break
     return results
 
+
+
 def extract_keywords_from_summary(summary_text):
     if "[KEYWORDS]" in summary_text:
         parts = summary_text.split("[KEYWORDS]")
@@ -121,59 +115,42 @@ def extract_keywords_from_summary(summary_text):
 
 
 
-
-
-#  엔드포인트
-@app.route('/summarize', methods=['POST'])
-def summarize_endpoint():
-    data = request.get_json()
-    url = data.get("url")
+#   전체 흐름 통합
+def analyze_youtube_political_bias(url):
+    print(f"\n 유튜브 처리 중: {url}")
     transcript = get_transcript(url)
     if not transcript:
-        return jsonify({"error":"자막 추출 실패"}), 400
+        print("자막이 없거나 추출 실패.")
+        return
 
+    print(" GPT Assistant에게 요약 요청 중...")
     summary = summarize_with_assistant(transcript)
+    print("\n 요약 결과:\n", summary)
+
     content_only = summary.split("[KEYWORDS]")[0].strip()
     sentences = sent_tokenize(content_only)
-    scores = predict_bias(sentences)
-    avg = sum(scores) / len(scores) if scores else 0
+    print(f"\n총 {len(sentences)}개의 문장을 분석합니다...")
+
+
+    bias_scores = predict_bias(sentences)
+    for s, b in zip(sentences, bias_scores):
+        print(f"[{b:+}] {s}")
+
+    avg = round(sum(bias_scores) / len(bias_scores), 3)
+    print(f"\n 평균 정치 편향도: {avg:+}")
 
     queries = extract_keywords_from_summary(summary)
     related_articles = {kw: search_news_articles(kw) for kw in queries}
 
-    # 쿼리별 뉴스 기사 딕셔너리 구성
-    related_articles_result = []
-    for articles in related_articles.values():  # 딕셔너리의 값만 가져옴
+    print("\n 키워드별 관련 뉴스 기사:")
+    for kw, articles in related_articles.items():
+        print(f"\n{kw}:")
         for art in articles:
-            related_articles_result.append({
-                "title": art["title"],
-                "link": art["link"]
-            })
+            print(f"- {art['title']}\n  {art['link']}")
 
-    result = {
-        "url": url,
-        "biasScore": avg,
-        "summarySentences": [
-            {"content": s, "score": b}
-            for s, b in zip(sentences, scores)
-            
-        ],
-        "relatedArticles": related_articles_result,
-        "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
-        
-    }
-    return jsonify(result)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+# 사용
+if __name__ == "__main__":
+    youtube_url = "https://www.youtube.com/watch?v=H52SDhRpH5A"
+    analyze_youtube_political_bias(youtube_url)
