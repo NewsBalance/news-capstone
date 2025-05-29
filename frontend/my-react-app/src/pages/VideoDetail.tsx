@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/VideoDetail.css';
 import { YTVideo, LABEL } from './Videos';
+import parse from 'html-react-parser';
 
 type Bias = YTVideo['bias'];
 
@@ -18,9 +19,26 @@ interface TranscriptAnalysis {
 
 interface LocationState { video: YTVideo; videoUrl: string; }
 
+interface RelatedArticle {
+  link: string;
+  title: string;
+}
+
 interface SummarySentenceDTO {
   content: string;
   score: number;
+}
+
+interface YoutubeContentResponse {
+  id: number;
+  title: string;
+  videoUrl: string;
+  biasScore: number;
+  publishedAt: number;
+  url: string | null;
+  keywords: string[];
+  relatedArticles: RelatedArticle[];
+  sentencesScore: SummarySentenceDTO[];
 }
 
 interface VideoStats {
@@ -51,6 +69,8 @@ export default function VideoDetailPage() {
 
   // 요약 문장 목록
   const [sentences, setSentences] = useState<SummarySentenceDTO[]>([]);
+  const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
+  const [keywordsList, setKeywordsList] = useState<string[]>([]);
   const [sentLoading, setSentLoading] = useState(false);
   const [sentError, setSentError] = useState('');
 
@@ -88,35 +108,33 @@ export default function VideoDetailPage() {
       .finally(() => setStatsLoading(false));
   }, [video]);
 
-  // 2) 자막 분석
+  // 2) 데이터 꺼내오기
   useEffect(() => {
     if (!video) return;
     setSentLoading(true);
     setSentError('');
-    fetch(`${URL}/search/summaries?videoUrl=${encodeURIComponent(video.videoUrl)}`)
+    fetch(
+      `${URL}/search/info?videoUrl=${encodeURIComponent(video.videoUrl)}`
+    )
       .then(res => {
         if (!res.ok) throw new Error(res.statusText);
-        return res.json() as Promise<SummarySentenceDTO[]>;
+        return res.json() as Promise<YoutubeContentResponse>;
       })
-      .then(data => setSentences(data))
-      .catch(() => setSentError('요약 문장 로딩 실패'))
+      .then(data => {
+        // sentencesScore, relatedArticles, keywords를 상태에 반영
+        setSentences(Array.isArray(data.sentencesScore) ? data.sentencesScore : []);
+        setRelatedArticles(Array.isArray(data.relatedArticles) ? data.relatedArticles : []);
+        setKeywordsList(Array.isArray(data.keywords) ? data.keywords : []);
+      })
+      .catch(() => {
+        setSentError('요약 문장 로딩 실패');
+        setSentences([]);
+        setRelatedArticles([]);
+        setKeywordsList([]);
+      })
       .finally(() => setSentLoading(false));
-  }, [videoUrl]);
-
-  // 3) 자막 원문
-  useEffect(() => {
-    if (!video) return;
-    setTranscriptLoading(true);
-    setTranscriptError('');
-    fetch(`/api/getTranscript?videoId=${video.videoId}`)
-      .then(res => {
-        if (!res.ok) throw new Error();
-        return res.text();
-      })
-      .then(text => setTranscript(text))
-      .catch(() => setTranscriptError('자막 로딩 실패'))
-      .finally(() => setTranscriptLoading(false));
   }, [video]);
+
 
   const biasDesc: Record<Bias,string> = {
     left:   '진보 키워드가 많이 포함되었습니다.',
@@ -140,7 +158,7 @@ export default function VideoDetailPage() {
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
-            <h1 className="video-title">{video.title}</h1>
+            <h1 className="video-title">{parse(video.title)}</h1>
           </div>
           <aside className="sidebar">
             <div className="classification">
@@ -158,7 +176,26 @@ export default function VideoDetailPage() {
                 {biasDesc[analysis?.bias ?? video.bias]}
               </p>
             </div>
-            <h2 className="summary-heading">📝 자막 분석 요약</h2>
+
+            <h2 className="related-heading">관련 기사</h2>
+            {sentLoading && <p className="loading">로딩 중…</p>}
+            {sentError   && <p className="error">{sentError}</p>}
+            {!sentLoading && !sentError && relatedArticles.length === 0 && (
+              <p className="empty">관련 기사가 없습니다.</p>
+            )}
+            <ul className="related-articles">
+              {relatedArticles.map((article, idx) => (
+                <li key={idx} className="related-item">
+                  <a
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {parse(article.title)}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </aside>
         </div>
 
@@ -173,7 +210,7 @@ export default function VideoDetailPage() {
             )}
             {sentences.map((s, idx) => (
               <div key={idx} className="sentence-item">
-                <p>{s.content}</p>
+                <p>{parse(s.content)}</p>
                 <p className="score">점수: {s.score.toFixed(2)}</p>
               </div>
             ))}

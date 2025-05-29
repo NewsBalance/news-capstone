@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import '../styles/Videos.css';
+import parse from 'html-react-parser';
 
 type Bias = 'left' | 'center' | 'right';
 
@@ -112,12 +113,12 @@ export default function VideosPage() {
   const Card = ({ v }: { v: YTVideo }) => (
   <Link
     to={`/videos/${v.videoId}`}
-    state={{ video: v }}
+    state={{ video: v, videoUrl: v.videoUrl }}
     className="video-card"
   >
     <img src={v.thumbnail} alt={v.title} />
     <div className="info">
-      <h3>{v.title}</h3>
+      <h3>{parse(v.title)}</h3>
       <p className="bias-info">
         편향도: ({v.score.toFixed(2)})
       </p>
