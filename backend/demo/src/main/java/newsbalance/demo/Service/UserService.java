@@ -88,7 +88,7 @@ public class UserService {
     }
 
     public boolean isExistbyNickname(String nickname) {
-        return userRepository.findByNickname(nickname) != null;
+        return userRepository.findByNickname(nickname).isPresent();
     }
 
     public void changeNickname(String email, String newnickname) {

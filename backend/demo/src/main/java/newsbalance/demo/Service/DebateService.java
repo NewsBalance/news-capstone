@@ -11,7 +11,7 @@ import newsbalance.demo.Entity.User;
 import newsbalance.demo.Repository.JPA.ChatMessageRepository;
 import newsbalance.demo.Repository.JPA.DebateMessageRepository;
 import newsbalance.demo.Repository.JPA.DebateRoomRepository;
-import newsbalance.demo.Repository.RoomParticipantRepository;
+import newsbalance.demo.Repository.JPA.RoomParticipantRepository;
 import newsbalance.demo.Repository.JPA.UserRepository;
 import newsbalance.demo.Configuration.SessionConst;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

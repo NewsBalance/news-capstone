@@ -1,4 +1,4 @@
-package newsbalance.demo.Repository;
+package newsbalance.demo.Repository.JPA;
 
 import newsbalance.demo.Entity.RoomParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;

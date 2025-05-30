@@ -2,7 +2,7 @@ package newsbalance.demo.Controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import newsbalance.demo.Configuration.SessionConst;
+import lombok.RequiredArgsConstructor;
 import newsbalance.demo.DTO.Request.*;
 import newsbalance.demo.DTO.Response.APIResponse;
 import newsbalance.demo.Entity.User;
@@ -11,6 +11,7 @@ import newsbalance.demo.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,8 +27,7 @@ public class UserController {
     // 회원가입
     @PostMapping("/regi")
     public ResponseEntity<?> userRegister(@RequestBody UserRegisterDTO userRegisterDTO) {
-        User newuser = new User(userRegisterDTO.getNickname(), userRegisterDTO.getPassword(), userRegisterDTO.getEmail(), userRegisterDTO.getBirth());
-        userService.save(newuser);
+        userService.registerUser(userRegisterDTO.getNickname(), userRegisterDTO.getPassword(), userRegisterDTO.getEmail(), userRegisterDTO.getBirth());
         return ResponseEntity.status(HttpStatus.CREATED).body(new APIResponse(true, 201, "회원가입에 성공했습니다.", null));
     }
 

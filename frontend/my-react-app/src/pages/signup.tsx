@@ -393,7 +393,7 @@ function SignupPage() {
     }
 
     try {
-      console.log('API 요청 시작:', `${URL}/api/register`);
+      console.log('API 요청 시작:', `${URL}/user/regi`);
       
       const requestData = {
         nickname,
@@ -404,7 +404,7 @@ function SignupPage() {
       
       console.log('요청 데이터:', JSON.stringify(requestData));
       
-      const response = await fetch(`${URL}/api/register`, {
+      const response = await fetch(`${URL}/user/regi`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

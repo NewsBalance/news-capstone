@@ -2,8 +2,8 @@ package newsbalance.demo.Service;
 
 import newsbalance.demo.Entity.DebateMessage;
 import newsbalance.demo.Entity.DebateRoom;
-import newsbalance.demo.Repository.DebateMessageRepository;
-import newsbalance.demo.Repository.DebateRoomRepository;
+import newsbalance.demo.Repository.JPA.DebateMessageRepository;
+import newsbalance.demo.Repository.JPA.DebateRoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
