@@ -25,7 +25,7 @@ TRUSTED_SOURCES = ["chosun", "hani", "khan", "donga", "joongang", "mbn", "sbs", 
 
 
 # 모델 로드
-MODEL_PATH = "./model/kcbert_final_model"
+MODEL_PATH = "./model/kcbert_second_model"
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

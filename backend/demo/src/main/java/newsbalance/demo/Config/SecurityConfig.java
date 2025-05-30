@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/session/login", "/api/login", "/Login/login").permitAll()
                 .requestMatchers("/api/register", "/Register/register").permitAll()
                 .requestMatchers("/search/**").permitAll()
+                .requestMatchers("/**").permitAll()
                 // 기타 공개 경로 허용
                 .requestMatchers("/h2-console/**", "/api/public/**").permitAll()
                 // 나머지 요청은 인증 필요
