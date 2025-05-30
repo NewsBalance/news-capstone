@@ -82,7 +82,7 @@ function LoginPage() {
       if (response.ok) {
         // 세션 인증으로 전환: 사용자 정보만 컨텍스트에 저장
         login({
-          nickname: result.nickname || email.split('@')[0],
+          nickname: result.nickname,
           email: result.email || email,
           id: result.id || 0,
           role: result.role || 'USER'
