@@ -66,6 +66,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const data = await res.json();
         if (data.success) {
+          console.log('세션 정보:', data.result);
           setIsAuthenticated(true);
           setUser({
             id: data.result.id || 0,
@@ -81,17 +82,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('세션 확인 중 오류:', error);
         setIsAuthenticated(false);
         setUser(null);
+      } finally {
+        // 성공이든 실패든 항상 로딩 상태 해제
         setLoading(false);
       }
     };
 
-    // 세션 체크 실행 전에 오류 처리 추가
-    checkSession().catch(err => {
-      console.error('세션 체크 실패:', err);
-      setIsAuthenticated(false);
-      setUser(null);
-      setLoading(false);
-    });
+    // 세션 체크 실행
+    checkSession();
   }, []);
 
   const login = (newUser: User) => {
