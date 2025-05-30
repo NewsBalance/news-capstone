@@ -34,4 +34,12 @@ public class DebateMessage {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column(length = 1000)
+    private String factCheck;
+
+    @Column(length = 100)
+    private String factCheckBy;
+
+    private boolean isSystemMessage;
 } 

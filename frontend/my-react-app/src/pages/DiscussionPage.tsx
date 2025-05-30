@@ -275,35 +275,57 @@ export default function DiscussionPage() {
   // API 호출 함수 수정
   const fetchHotRooms = async () => {
     try {
-      const response = await fetch(`/api/debate-rooms/hot`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/hot`, {
+        method: 'GET',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
         credentials: 'include' // 세션 쿠키 포함
       });
-      
+
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('로그인이 필요합니다');
+        // 응답이 JSON이 아닌 경우를 처리하기 위한 코드
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json();
+          console.error('Hot rooms error:', errorData);
+          throw new Error(errorData.message || '인기 토론방을 불러오는데 실패했습니다');
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON error response:', errorText);
+          throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
         }
-        throw new Error('인기 토론방을 불러오는데 실패했습니다');
       }
-      
+
       const data = await response.json();
-      setHotList(data);
+      console.log('핫 룸 데이터:', data);
+      
+      // API 응답 구조에 따라 조정
+      const hotRoomsData = data.result || data || [];
+      setHotList(hotRoomsData);
     } catch (error) {
       console.error('Error fetching hot rooms:', error);
-      showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
+      // 오류가 발생해도 UI가 중단되지 않도록 빈 배열 설정
+      setHotList([]);
     }
   };
 
   const fetchAllRooms = async () => {
     try {
-      const response = await fetch(`/api/debate-rooms`, {
+      // 로드 중 표시
+      console.log("모든 토론방 로딩 중...");
+      
+      // API 호출 시도
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
+        method: 'GET',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include' // 세션 쿠키 포함
+        credentials: 'include',
+        // 5초 타임아웃 설정
+        signal: AbortSignal.timeout(5000)
       });
       
       if (!response.ok) {
@@ -314,7 +336,11 @@ export default function DiscussionPage() {
       }
       
       const data = await response.json();
-      setAllRooms(sortRoomsBy(data, allRoomsSortKey));
+      console.log('모든 토론방 데이터:', data);
+      
+      // API 응답 구조에 따라 조정
+      const roomsData = data.result || data || [];
+      setAllRooms(sortRoomsBy(roomsData, allRoomsSortKey));
     } catch (error) {
       console.error('Error fetching all rooms:', error);
       showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
@@ -371,20 +397,21 @@ export default function DiscussionPage() {
     setIsLoadingSearch(false);
   };
 
-  const createRoom = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    // 유효성 검사
+  const createRoom = async () => {
+    if (isCreating) return;
+
+    // 입력 유효성 검사
     let hasError = false;
-    if (newTitle.trim().length < 3 || newTitle.trim().length > 50) {
-      setTitleError('제목은 3~50자 사이여야 합니다.');
+    
+    if (!newTitle.trim() || newTitle.length < 3 || newTitle.length > 50) {
+      setTitleError('제목은 3~50자 사이여야 합니다');
       hasError = true;
     } else {
       setTitleError('');
     }
     
-    if (newDesc.trim().length < 10 || newDesc.trim().length > 200) {
-      setDescError('설명은 10~200자 사이여야 합니다.');
+    if (!newDesc.trim() || newDesc.length < 10 || newDesc.length > 200) {
+      setDescError('설명은 10~200자 사이여야 합니다');
       hasError = true;
     } else {
       setDescError('');
@@ -392,37 +419,38 @@ export default function DiscussionPage() {
     
     if (hasError) return;
 
+    // 키워드 처리
+    const keywordList = newKeywords
+      .split(',')
+      .map(k => k.trim())
+      .filter(k => k !== '')
+      .slice(0, 5);
+
     try {
       setIsCreating(true);
       
-      // 키워드 처리 - 쉼표로 분리하고 공백 제거, 빈 문자열 제거
-      const processedKeywords = newKeywords
-        .split(',')
-        .map(k => k.trim())
-        .filter(Boolean)
-        .slice(0, 5); // 최대 5개만 사용
-      
-      const response = await fetch(`/api/debate-rooms`, {
+      // API URL 수정 - 백엔드 서버 URL 추가
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        credentials: 'include', // 세션 쿠키 포함
         body: JSON.stringify({
           title: newTitle.trim(),
-          topic: newDesc.trim(), // description을 topic으로 변경
-          keywords: processedKeywords
-        })
+          topic: newDesc.trim(),
+          keywords: keywordList
+        }),
+        credentials: 'include' // 세션 쿠키 포함
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('방 생성 오류:', errorText);
-        throw new Error(errorText || '토론방 생성에 실패했습니다');
+        console.error('방 생성 응답 오류:', response.status, errorText);
+        throw new Error(errorText || '방 생성에 실패했습니다');
       }
 
       const data = await response.json();
-      console.log('생성된 토론방:', data);
       
       // 폼 초기화
       setNewTitle('');

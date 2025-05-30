@@ -137,6 +137,9 @@ public class DebateRoomService {
                 .map(Keyword::getName)
                 .collect(Collectors.toList());
 
+        // 생성자는 debaterA(방장)와 동일
+        String creator = room.getDebaterA() != null ? room.getDebaterA().getNickname() : "시스템";
+
         return new DebateRoomWithMessagesDto(
                 room.getId(),
                 room.getTitle(),
@@ -149,7 +152,10 @@ public class DebateRoomService {
                 room.isDebaterBReady(),
                 room.isStarted(),
                 messages,
-                keywords
+                keywords,
+                room.getCurrentParticipants(),  // 실시간 참여자 수 추가
+                room.getTotalVisits(),          // 총 방문자 수 추가
+                creator                         // 생성자(방장) 정보 추가
         );
     }
 
