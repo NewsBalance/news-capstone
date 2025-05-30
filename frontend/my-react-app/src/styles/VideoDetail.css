@@ -179,3 +179,20 @@
 .video-detail-page .error {
   color: #d93025;
 }
+
+/* Sentence */
+.sentence-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; /* 또는 center */
+  margin-bottom: 0.5em;
+}
+
+.sentence-text {
+  flex: 1;
+  margin-right: 1em;
+}
+
+.score {
+  white-space: nowrap;
+}

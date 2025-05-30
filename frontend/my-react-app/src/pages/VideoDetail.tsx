@@ -163,7 +163,7 @@ export default function VideoDetailPage() {
           <aside className="sidebar">
             <div className="classification">
               <div className={`bias-tag ${video.bias}`}>
-                <span>제목기반</span>
+                <span>내용 분석</span>
                 <strong>{LABEL[video.bias]}</strong>
               </div>
               {analysis && (
@@ -191,7 +191,7 @@ export default function VideoDetailPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {parse(article.title)}
+                    - {parse(article.title)}
                   </a>
                 </li>
               ))}
@@ -210,8 +210,8 @@ export default function VideoDetailPage() {
             )}
             {sentences.map((s, idx) => (
               <div key={idx} className="sentence-item">
-                <p>{parse(s.content)}</p>
-                <p className="score">점수: {s.score.toFixed(2)}</p>
+                <span className="sentence-text">{parse(s.content)}</span>
+                <span className="score">편향도 점수: {s.score.toFixed(2)}</span>
               </div>
             ))}
 
@@ -249,13 +249,6 @@ export default function VideoDetailPage() {
                 <li>💬 {Number(stats.commentCount).toLocaleString()}개</li>
               </ul>
             )}
-          </section>
-
-          <section className="transcript-raw">
-            <h2>📃 전체 자막</h2>
-            {transcriptLoading && <p className="loading">불러오는 중…</p>}
-            {transcriptError   && <p className="error">{transcriptError}</p>}
-            {transcript && <pre>{transcript}</pre>}
           </section>
 
           <button className="back-button" onClick={() => navigate(-1)}>

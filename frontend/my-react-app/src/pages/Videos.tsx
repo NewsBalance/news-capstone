@@ -28,8 +28,8 @@ interface RawVideo {
 
 // 숫자 bias → 카테고리 매핑
 const mapBias = (value: number): Bias => {
-  if (value < -0.5) return 'left';
-  if (value <= 0.5) return 'center';
+  if (value <= -0.3) return 'left';
+  if (value <= 0.3) return 'center';
   return 'right';
 };
 

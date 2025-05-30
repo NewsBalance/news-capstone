@@ -45,9 +45,9 @@
 /* 색 변수 */
 :root {
   --primary: #5f3dc4;
-  --left:    #e85a71;
+  --right:    #e85a71;
   --center:  #5f3dc4;
-  --right:   #3b82f6;
+  --left:   #3b82f6;
   --bg:      #f9f8fb;
   --card:    #ffffff;
   --text:    #333;
