@@ -68,7 +68,7 @@ export default function MyPage() {
   const [tab, setTab] = useState<'analytics'|'security'|'activity'>('analytics');
 
   // 로그인 정보 꺼내기
-  const { isAuthenticated, token, loading: authLoading, login, logout, checkAuth} = useContext(AuthContext);
+  const { isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
   const [profile, setProfile] = useState<userDTO | null>(null);
   const navigate = useNavigate();
 
@@ -153,7 +153,7 @@ export default function MyPage() {
 
   // 사용자 정보 로드 및 타임라인 로드
   useEffect(() => {
-    // AuthContext 에서 닉네임이 준비된 후에만 실행
+    // AuthContext 에서 인증 상태가 준비된 후에만 실행
     if (authLoading || !isAuthenticated) return;
 
     setLoading(true);
@@ -558,18 +558,18 @@ export default function MyPage() {
                       if (!window.confirm('정말 삭제하시겠습니까?')) return;
 
                       try {
-                        // 회원 탈퇴퇴
+                        // 회원 탈퇴
                         const res = await fetch(`${URL}/user/del`, {
                           method: 'POST',
-                          credentials: 'include'
+                          credentials: 'include' // 쿠키 포함
                         });
                         const apiRes = await res.json()
 
-                        if (!res.ok || !apiRes.isSuccess) {
+                        if (!res.ok || !apiRes.success) {
                           throw new Error(apiRes.message || `삭제 실패: ${res.status}`);
                         }
 
-                        // 서버 세션 무효화화
+                        // 서버 세션 무효화
                         const loRes = await fetch(`${URL}/session/logout`, {
                           method: 'POST',
                           credentials: 'include',

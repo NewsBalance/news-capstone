@@ -1,14 +1,12 @@
 package newsbalance.demo.DTO;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class DebateRoomWithMessagesDto {
     private Long id;
@@ -23,4 +21,31 @@ public class DebateRoomWithMessagesDto {
     private boolean started;
     private List<MessageDto> messages;
     private List<String> keywords;
+    
+    private int currentParticipants;
+    private int totalVisits;
+    private String creator;
+    
+    public DebateRoomWithMessagesDto(
+            Long id, String title, String topic, boolean active, 
+            LocalDateTime createdAt, String debaterA, String debaterB, 
+            boolean debaterAReady, boolean debaterBReady, boolean started,
+            List<MessageDto> messages, List<String> keywords) {
+        this.id = id;
+        this.title = title;
+        this.topic = topic;
+        this.active = active;
+        this.createdAt = createdAt;
+        this.debaterA = debaterA;
+        this.debaterB = debaterB;
+        this.debaterAReady = debaterAReady;
+        this.debaterBReady = debaterBReady;
+        this.started = started;
+        this.messages = messages;
+        this.keywords = keywords;
+        
+        this.currentParticipants = 0;
+        this.totalVisits = 0;
+        this.creator = debaterA;
+    }
 }

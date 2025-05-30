@@ -61,7 +61,7 @@ function LoginPage() {
           email,
           password
         }),
-        credentials: 'include'
+        credentials: 'include'  // 세션 쿠키를 받기 위해 필요
       });
 
       console.log('응답 상태:', response.status);
@@ -80,20 +80,13 @@ function LoginPage() {
       }
 
       if (response.ok) {
-        // 서버 응답에서 필요한 정보 추출
-        const userData = {
-          nickname: result.nickname || email.split('@')[0], // 닉네임이 없으면 이메일에서 추출
-          email: result.email || null,
+        // 세션 인증으로 전환: 사용자 정보만 컨텍스트에 저장
+        login({
+          nickname: result.nickname,
+          email: result.email || email,
           id: result.id || 0,
           role: result.role || 'USER'
-        };
-        
-        // 토큰과 사용자 객체를 login 함수에 전달
-        login(result.token, userData);
-        
-        // 로컬 스토리지에도 저장
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(userData));
+        });
         
         navigate('/');
         alert('로그인이 완료되었습니다.');

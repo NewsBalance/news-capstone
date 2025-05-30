@@ -3,21 +3,19 @@ package newsbalance.demo.Service;
 import jakarta.persistence.EntityNotFoundException;
 import newsbalance.demo.DTO.UserInfoDto;
 import newsbalance.demo.Entity.User;
-import newsbalance.demo.Repository.JPA.UserRepository;
+import newsbalance.demo.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Collections;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,18 +38,6 @@ public class UserService implements UserDetailsService {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String nickname) throws UsernameNotFoundException {
-        User user = userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with nickname: " + nickname));
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getNickname(),
-                user.getPassword(),
-                Collections.emptyList()
-        );
     }
 
     public User validateUser(String email, String password) {
@@ -140,5 +126,10 @@ public class UserService implements UserDetailsService {
         // 필요한 다른 정보들 설정
         
         return userInfoDto;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

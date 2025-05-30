@@ -6,16 +6,22 @@ import newsbalance.demo.DTO.DebateRoomDto;
 import newsbalance.demo.Entity.DebateMessage;
 import newsbalance.demo.Entity.DebateRoom;
 import newsbalance.demo.Entity.Message;
+import newsbalance.demo.Entity.RoomParticipant;
 import newsbalance.demo.Entity.User;
-import newsbalance.demo.Repository.JPA.ChatMessageRepository;
-import newsbalance.demo.Repository.JPA.DebateMessageRepository;
-import newsbalance.demo.Repository.JPA.DebateRoomRepository;
-import newsbalance.demo.Repository.JPA.UserRepository;
+import newsbalance.demo.Repository.ChatMessageRepository;
+import newsbalance.demo.Repository.DebateMessageRepository;
+import newsbalance.demo.Repository.DebateRoomRepository;
+import newsbalance.demo.Repository.RoomParticipantRepository;
+import newsbalance.demo.Repository.UserRepository;
+import newsbalance.demo.Configuration.SessionConst;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +32,7 @@ public class DebateService {
     private final DebateMessageRepository messageRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final DebateRoomService debateRoomService;
+    private final RoomParticipantRepository roomParticipantRepository;
 
     public void handleMessage(Message message) {
         User sender = userRepository.findByNickname(message.getSender())
@@ -232,5 +239,107 @@ public class DebateService {
                     "System",
                     roomId));
         }
+    }
+
+    @Transactional
+    public void enterDebateRoom(Long roomId, HttpServletRequest request) {
+        // 세션에서 사용자 정보 가져오기
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        String nickname = (String) session.getAttribute(SessionConst.Login_nickname);
+        if (nickname == null) {
+            throw new IllegalStateException("세션에 사용자 정보가 없습니다.");
+        }
+
+        // 사용자 정보 조회
+        User user = userRepository.findByNickname(nickname)
+            .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + nickname));
+
+        // 토론방 정보 조회
+        DebateRoom room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + roomId));
+
+        // 중복 입장 체크
+        Optional<RoomParticipant> existingParticipant = roomParticipantRepository
+            .findByUserIdAndRoomId(user.getId(), roomId);
+
+        if (existingParticipant.isPresent()) {
+            RoomParticipant participant = existingParticipant.get();
+            // 이미 활성 상태라면 아무 작업도 하지 않음
+            if (participant.isActive()) {
+                return;
+            }
+            // 비활성 상태라면 활성화
+            participant.setActive(true);
+            participant.setEnteredAt(LocalDateTime.now());
+            participant.setExitedAt(null);
+            roomParticipantRepository.save(participant);
+        } else {
+            // 새 참가자 등록
+            RoomParticipant participant = new RoomParticipant();
+            participant.setUser(user);
+            participant.setRoom(room);
+            participant.setEnteredAt(LocalDateTime.now());
+            participant.setActive(true);
+            roomParticipantRepository.save(participant);
+        }
+
+        // 현재 참여자 수 업데이트
+        long activeParticipants = roomParticipantRepository.countByRoomIdAndIsActiveTrue(roomId);
+        room.setCurrentParticipants((int)activeParticipants);
+        roomRepository.save(room);
+
+        // 방 입장 알림 전송 (선택적)
+        // ...
+    }
+
+    @Transactional
+    public void leaveDebateRoom(Long roomId, HttpServletRequest request) {
+        // 세션에서 사용자 정보 가져오기
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return;
+        }
+
+        String nickname = (String) session.getAttribute(SessionConst.Login_nickname);
+
+        if (nickname == null) {
+            return;
+        }
+
+        // 사용자 정보 조회
+        User user = userRepository.findByNickname(nickname).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        // 참여자 기록 조회
+        Optional<RoomParticipant> participantOpt =
+            roomParticipantRepository.findByUserIdAndRoomId(user.getId(), roomId);
+
+        if (!participantOpt.isPresent() || !participantOpt.get().isActive()) {
+            return; // 참여자가 없거나 이미 비활성 상태
+        }
+
+        // 참여자 상태 업데이트
+        RoomParticipant participant = participantOpt.get();
+        participant.setActive(false);
+        participant.setExitedAt(LocalDateTime.now());
+        roomParticipantRepository.save(participant);
+
+        // 토론방 정보 조회 및 업데이트
+        DebateRoom room = roomRepository.findById(roomId).orElse(null);
+        if (room != null) {
+            // 현재 참여자 수 업데이트
+            long activeParticipants = roomParticipantRepository.countByRoomIdAndIsActiveTrue(roomId);
+            room.setCurrentParticipants((int)activeParticipants);
+            roomRepository.save(room);
+        }
+
+        // 방 퇴장 알림 전송 (선택적)
+        // ...
     }
 }

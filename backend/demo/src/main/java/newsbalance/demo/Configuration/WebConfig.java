@@ -12,11 +12,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:3000", "http://192.168.41.157:3000")
+                .allowedOrigins("http://localhost:3000") // 프론트엔드 URL을 명시적으로 설정
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true)
-                .maxAge(3600);
+                .allowCredentials(true) // 자격 증명 허용
+                .maxAge(3600); // Pre-flight 요청 캐시 시간 (1시간)
     }
 
     @Override
@@ -25,5 +25,4 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/static/backimages/")
                 .setCacheControl(CacheControl.noCache());
     }
-
 }

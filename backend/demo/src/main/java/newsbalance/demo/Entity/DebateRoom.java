@@ -66,6 +66,10 @@ public class DebateRoom {
     private boolean scheduledForDeletion = false;
     private LocalDateTime deletionTime;
     
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private int viewCount = 0;
+    
     public void incrementCurrentParticipants() {
         this.currentParticipants++;
     }
@@ -78,5 +82,15 @@ public class DebateRoom {
     
     public void incrementTotalVisits() {
         this.totalVisits++;
+    }
+
+    public void incrementViewCount() {
+        this.viewCount = this.viewCount + 1;
+    }
+
+    public void decrementViewCount() {
+        if (this.viewCount > 0) {
+            this.viewCount = this.viewCount - 1;
+        }
     }
 }

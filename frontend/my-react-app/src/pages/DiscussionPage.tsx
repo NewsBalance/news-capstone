@@ -180,11 +180,7 @@ const CreateCard: React.FC<CreateCardProps> = ({
         onChange={(e) => onKeywords(e.target.value)}
         placeholder="키워드 (최대5개, 콤마 구분)"
       />
-
-      <div className="point-info">
-        포인트 제한: <strong>50</strong>
-      </div>
-
+      
       <button
         type="submit"
         className="btn-create"
@@ -224,22 +220,16 @@ export default function DiscussionPage() {
   const [allRooms, setAllRooms] = useState<Dialogue[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [allRoomsSortKey, setAllRoomsSortKey] = useState<'recent' | 'popular'>(
-    localStorage.getItem('allRoomsSortKey') === 'popular'
-      ? 'popular'
-      : 'recent',
-  );
+  // 정렬 키 - 로컬스토리지 사용하지 않음
+  const [allRoomsSortKey, setAllRoomsSortKey] = useState<'recent' | 'popular'>('recent');
 
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [searchPageSize, setSearchPageSize] = useState(5);
 
-  const [sortKey, setSortKey] = useState<'recent' | 'popular'>(
-    localStorage.getItem('discussionSortKey') === 'popular'
-      ? 'popular'
-      : 'recent',
-  );
+  // 정렬 키 - 로컬스토리지 사용하지 않음
+  const [sortKey, setSortKey] = useState<'recent' | 'popular'>('recent');
 
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -258,7 +248,7 @@ export default function DiscussionPage() {
   const scrollKeep = useRef<number>(0);
   const hotRef = useRef<HTMLDivElement>(null);
 
-  const { isAuthenticated, token, checkAuth } = useAuth();
+  const { isAuthenticated, checkAuth } = useAuth();
 
   // 스크롤 기억
   useEffect(() => {
@@ -272,11 +262,6 @@ export default function DiscussionPage() {
     window.scrollTo(0, scrollKeep.current);
   }, [location.key]);
 
-  // 로컬스토리지
-  useEffect(() => {
-    localStorage.setItem('discussionSortKey', sortKey);
-  }, [sortKey]);
-
   // 토스트 타이머
   useEffect(() => {
     if (!toastMsg) return;
@@ -285,44 +270,62 @@ export default function DiscussionPage() {
   }, [toastMsg]);
 
   // API URL 상수 추가
-  const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.41.157:8080';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
   // API 호출 함수 수정
   const fetchHotRooms = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/debate-rooms/hot`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/hot`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include'
+        credentials: 'include' // 세션 쿠키 포함
       });
-      
+
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('로그인이 필요합니다');
+        // 응답이 JSON이 아닌 경우를 처리하기 위한 코드
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json();
+          console.error('Hot rooms error:', errorData);
+          throw new Error(errorData.message || '인기 토론방을 불러오는데 실패했습니다');
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON error response:', errorText);
+          throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
         }
-        throw new Error('인기 토론방을 불러오는데 실패했습니다');
       }
-      
+
       const data = await response.json();
-      setHotList(data);
+      console.log('핫 룸 데이터:', data);
+      
+      // API 응답 구조에 따라 조정
+      const hotRoomsData = data.result || data || [];
+      setHotList(hotRoomsData);
     } catch (error) {
       console.error('Error fetching hot rooms:', error);
-      showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
+      // 오류가 발생해도 UI가 중단되지 않도록 빈 배열 설정
+      setHotList([]);
     }
   };
 
   const fetchAllRooms = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/debate-rooms`, {
+      // 로드 중 표시
+      console.log("모든 토론방 로딩 중...");
+      
+      // API 호출 시도
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include'
+        credentials: 'include',
+        // 5초 타임아웃 설정
+        signal: AbortSignal.timeout(5000)
       });
       
       if (!response.ok) {
@@ -333,7 +336,11 @@ export default function DiscussionPage() {
       }
       
       const data = await response.json();
-      setAllRooms(sortRoomsBy(data, allRoomsSortKey));
+      console.log('모든 토론방 데이터:', data);
+      
+      // API 응답 구조에 따라 조정
+      const roomsData = data.result || data || [];
+      setAllRooms(sortRoomsBy(roomsData, allRoomsSortKey));
     } catch (error) {
       console.error('Error fetching all rooms:', error);
       showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
@@ -354,15 +361,12 @@ export default function DiscussionPage() {
   }, []);
 
   /* ----- 정렬 & 필터 ------------------------------------------ */
-  // 모든 토론방 정렬 변경 이벤트 핸들러
+  // 모든 토론방 정렬 변경 이벤트 핸들러 (로컬스토리지 저장 제거)
   const handleAllRoomsSortChange = (newSortKey: 'recent' | 'popular') => {
     setAllRoomsSortKey(newSortKey);
     
     // 모든 토론방 재정렬
     setAllRooms(prev => sortRoomsBy(prev, newSortKey));
-    
-    // 로컬 스토리지에 저장
-    localStorage.setItem('allRoomsSortKey', newSortKey);
   };
 
   const sortRooms = (rooms: Dialogue[]) =>
@@ -393,65 +397,83 @@ export default function DiscussionPage() {
     setIsLoadingSearch(false);
   };
 
-  const createRoom = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    // 유효성 검사
+  const createRoom = async () => {
+    if (isCreating) return;
+
+    // 입력 유효성 검사
     let hasError = false;
-    if (newTitle.trim().length < 3 || newTitle.trim().length > 50) {
-        setTitleError('제목은 3~50자 사이여야 합니다.');
-        hasError = true;
+    
+    if (!newTitle.trim() || newTitle.length < 3 || newTitle.length > 50) {
+      setTitleError('제목은 3~50자 사이여야 합니다');
+      hasError = true;
     } else {
-        setTitleError('');
+      setTitleError('');
     }
     
-    if (newDesc.trim().length < 10 || newDesc.trim().length > 200) {
-        setDescError('설명은 10~200자 사이여야 합니다.');
-        hasError = true;
+    if (!newDesc.trim() || newDesc.length < 10 || newDesc.length > 200) {
+      setDescError('설명은 10~200자 사이여야 합니다');
+      hasError = true;
     } else {
-        setDescError('');
+      setDescError('');
     }
     
     if (hasError) return;
 
+    // 키워드 처리
+    const keywordList = newKeywords
+      .split(',')
+      .map(k => k.trim())
+      .filter(k => k !== '')
+      .slice(0, 5);
+
     try {
-        setIsCreating(true);
-        const token = localStorage.getItem('token');
-        
-        const response = await fetch(`${API_URL}/api/debate-rooms`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                title: newTitle.trim(),
-                topic: newDesc.trim(),
-                keywords: newKeywords.split(',').map(k => k.trim()).filter(Boolean)
-            })
-        });
+      setIsCreating(true);
+      
+      // API URL 수정 - 백엔드 서버 URL 추가
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          topic: newDesc.trim(),
+          keywords: keywordList
+        }),
+        credentials: 'include' // 세션 쿠키 포함
+      });
 
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('방 생성 응답 오류:', response.status, errorText);
+        throw new Error(errorText || '방 생성에 실패했습니다');
+      }
 
-        const data = await response.json();
-        
-        // 폼 초기화
-        setNewTitle('');
-        setNewDesc('');
-        setNewKeywords('');
-        setShowCreateForm(false);
-        showToast('토론방이 생성되었습니다!');
+      const data = await response.json();
+      
+      // 폼 초기화
+      setNewTitle('');
+      setNewDesc('');
+      setNewKeywords('');
+      setShowCreateForm(false);
+      
+      // 토론방 목록 새로고침
+      await Promise.all([
+        fetchHotRooms(),
+        fetchAllRooms()
+      ]);
+      
+      showToast('토론방이 생성되었습니다!');
 
-        // 생성된 방으로 바로 입장
-        navigate(`/discussion/${data.id}`);
+      // 생성된 방으로 바로 입장
+      navigate(`/discussion/${data.id}`);
 
     } catch (error) {
-        showToast(error instanceof Error ? error.message : '방 생성 중 오류가 발생했습니다');
+      console.error('방 생성 오류:', error);
+      showToast(error instanceof Error ? error.message : '방 생성 중 오류가 발생했습니다');
     } finally {
-        setIsCreating(false);
+      setIsCreating(false);
     }
   };
 
@@ -461,15 +483,13 @@ export default function DiscussionPage() {
 
     try {
       setDeletingRoomId(id);
-      const token = localStorage.getItem('token');
       
-      const response = await fetch(`${API_URL}/api/debate-rooms/${id}`, {
+      const response = await fetch(`/api/debate-rooms/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        credentials: 'include'
+        credentials: 'include' // 세션 쿠키 포함
       });
 
       if (!response.ok) {
@@ -497,14 +517,12 @@ export default function DiscussionPage() {
     }
 
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/debate-rooms/${id}/join`, {
+        const response = await fetch(`/api/debate-rooms/${id}/join`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            credentials: 'include'
+            credentials: 'include' // 세션 쿠키 포함
         });
 
         if (!response.ok) {
@@ -537,6 +555,35 @@ export default function DiscussionPage() {
 
   const scrollHot = (dir: number) =>
     hotRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
+
+  // 데이터 로드 함수 개선
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchHotRooms(),
+        fetchAllRooms()
+      ]);
+    } catch (error) {
+      console.error('데이터 로드 오류:', error);
+      showToast('데이터를 불러오는 데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 초기 데이터 로드 및 주기적 새로고침
+  useEffect(() => {
+    loadAllData();
+    
+    // 5분마다 데이터 새로고침 (선택적)
+    const refreshInterval = setInterval(() => {
+      fetchHotRooms();
+      fetchAllRooms();
+    }, 300000); // 5분
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
 
   /* =============================================================
      렌더링

@@ -1,14 +1,13 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const URL = "http://localhost:8080";
+const URL = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}`;
 
 interface AuthContextType {
     isAuthenticated: boolean;
     user: User | null;
-    token: string | null;
     loading: boolean;
-    login: (token: string, user: User) => void;
+    login: (user: User) => void;
     logout: () => void;
     checkAuth: () => boolean;
 }
@@ -22,7 +21,6 @@ interface User {
 
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  token: null,
   user: null,
   loading: true,
   login: () => {},
@@ -32,46 +30,70 @@ export const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 세션 기반 인증 검사로 변경
   useEffect(() => {
-    // localStorage 관련 코드 제거하고 세션 검사만 수행
-    fetch(`${URL}/session/my`, { 
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
+    const checkSession = async () => {
+      try {
+        // 기본 에러 처리를 위한 타임아웃 설정
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const res = await fetch(`${URL}/session/my`, { 
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            // 인증되지 않은 상태는 정상적인 응답으로 처리
+            setIsAuthenticated(false);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          throw new Error(`세션 확인 실패: ${res.status}`);
+        }
+
+        const data = await res.json();
         if (data.success) {
+          console.log('세션 정보:', data.result);
           setIsAuthenticated(true);
           setUser({
-            id: data.result.email ? 0 : 0, // 백엔드에서 id 필드가 없으므로 임시로 0 설정
+            id: data.result.id || 0,
             nickname: data.result.nickname,
             email: data.result.email,
-            role: 'USER', // 백엔드에서 role 필드가 없으므로 기본값 설정
+            role: data.result.role || 'USER',
           });
         } else {
           setIsAuthenticated(false);
           setUser(null);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('세션 확인 중 오류:', error);
         setIsAuthenticated(false);
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        // 성공이든 실패든 항상 로딩 상태 해제
+        setLoading(false);
+      }
+    };
+
+    // 세션 체크 실행
+    checkSession();
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    // localStorage 사용 중단하고 세션만 사용
-    setToken(newToken); // 토큰은 첫 로그인에만 사용
+  const login = (newUser: User) => {
+    // 세션 기반 인증에서는 사용자 정보만 상태에 저장
     setUser(newUser);
     setIsAuthenticated(true);
   };
@@ -88,14 +110,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     })
     .then(() => {
       // 클라이언트 상태 초기화
-      setToken(null);
       setUser(null);
       setIsAuthenticated(false);
     })
     .catch(error => {
       console.error('로그아웃 중 오류 발생:', error);
       // 오류가 발생해도 클라이언트 상태는 초기화
-      setToken(null);
       setUser(null);
       setIsAuthenticated(false);
     });
@@ -108,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, token, user, loading, login, logout, checkAuth }}
+      value={{ isAuthenticated, user, loading, login, logout, checkAuth }}
     >
       {children}
     </AuthContext.Provider>
