@@ -69,6 +69,7 @@ public class DebateRoomService {
 
     @Transactional
     public DebateRoomDto createDebateRoom(CreateRoomRequestDto request, String nickname) {
+        // 토론방 생성
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다"));
 
@@ -102,6 +103,7 @@ public class DebateRoomService {
 
     @Transactional
     public DebateRoomDto joinDebateRoom(Long roomId, String nickname) {
+        // 토론방에 참여
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다"));
 
@@ -129,46 +131,59 @@ public class DebateRoomService {
         DebateRoom room = debateRoomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다"));
 
+        // 토론 메시지 가져오기
         List<MessageDto> messages = room.getMessages().stream()
                 .map(this::convertToMessageDto)
                 .collect(Collectors.toList());
-
+        
+        // 채팅 메시지 가져오기
+        List<ChatMessageDto> chatMessages = chatMessageRepository.findByDebateRoomId(roomId).stream()
+                .map(this::convertToChatMessageDto)
+                .collect(Collectors.toList());
+        
+        System.out.println("토론방 " + roomId + "의 토론 메시지 수: " + messages.size());
+        System.out.println("토론방 " + roomId + "의 채팅 메시지 수: " + chatMessages.size());
+        
         List<String> keywords = room.getKeywords().stream()
                 .map(Keyword::getName)
                 .collect(Collectors.toList());
-
-        // 생성자는 debaterA(방장)와 동일
-        String creator = room.getDebaterA() != null ? room.getDebaterA().getNickname() : "시스템";
-
+        
+        String currentTurnUserNickname = null;
+        if (room.getCurrentTurnUserId() != null) {
+            currentTurnUserNickname = userRepository.findById(room.getCurrentTurnUserId())
+                .map(User::getNickname)
+                .orElse(null);
+        }
+        
         return new DebateRoomWithMessagesDto(
-                room.getId(),
-                room.getTitle(),
-                room.getTopic(),
-                room.isActive(),
-                room.getCreatedAt(),
-                room.getDebaterA() != null ? room.getDebaterA().getNickname() : null,
-                room.getDebaterB() != null ? room.getDebaterB().getNickname() : null,
-                room.isDebaterAReady(),
-                room.isDebaterBReady(),
-                room.isStarted(),
-                messages,
-                keywords,
-                room.getCurrentParticipants(),  // 실시간 참여자 수 추가
-                room.getTotalVisits(),          // 총 방문자 수 추가
-                creator                         // 생성자(방장) 정보 추가
+            room.getId(),
+            room.getTitle(),
+            room.getTopic(),
+            room.isActive(),
+            room.getCreatedAt(),
+            room.getDebaterA() != null ? room.getDebaterA().getNickname() : null,
+            room.getDebaterB() != null ? room.getDebaterB().getNickname() : null,
+            room.isDebaterAReady(),
+            room.isDebaterBReady(),
+            room.isStarted(),
+            messages,
+            chatMessages,
+            keywords,
+            currentTurnUserNickname
         );
     }
 
     @Transactional
     public MessageDto saveMessage(Long roomId, MessageRequestDto messageRequest, String nickname) {
+        // 메시지 저장
         DebateRoom room = debateRoomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다"));
 
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다"));
 
-        // 현재 사용자의 턴인지 확인
-        if (room.isStarted() && !user.getId().equals(room.getCurrentTurnUserId())) {
+        // 현재 사용자의 턴인지 확인 (DEBATE 타입인 경우만)
+        if ("DEBATE".equals(messageRequest.getType()) && room.isStarted() && !user.getId().equals(room.getCurrentTurnUserId())) {
             throw new IllegalStateException("현재 턴의 사용자가 아닙니다");
         }
 
@@ -182,8 +197,8 @@ public class DebateRoomService {
 
         DebateMessage savedMessage = debateMessageRepository.save(message);
         
-        // 턴 변경 로직 (CHAT 타입인 경우)
-        if ("CHAT".equals(messageRequest.getType()) && room.isStarted()) {
+        // 턴 변경 로직 (DEBATE 타입인 경우)
+        if ("DEBATE".equals(messageRequest.getType()) && room.isStarted()) {
             if (user.getId().equals(room.getDebaterA().getId())) {
                 room.setCurrentTurnUserId(room.getDebaterB().getId());
             } else {
@@ -242,6 +257,9 @@ public class DebateRoomService {
         // 양쪽 모두 준비 완료되면 토론 시작
         if (room.isDebaterAReady() && room.isDebaterBReady()) {
             room.setStarted(true);
+            
+            // 토론 시작 시 첫 번째 턴은 항상 DebaterA(방장)에게 부여
+            room.setCurrentTurnUserId(room.getDebaterA().getId());
         }
         
         room = debateRoomRepository.save(room);
@@ -422,6 +440,16 @@ public class DebateRoomService {
                 message.getSender(),
                 message.getCreatedAt(),
                 message.getSummary()
+        );
+    }
+
+    // ChatMessage -> ChatMessageDto 변환 메서드 추가
+    private ChatMessageDto convertToChatMessageDto(ChatMessage chatMessage) {
+        return new ChatMessageDto(
+            chatMessage.getId(),
+            chatMessage.getMessage(),
+            chatMessage.getUser() != null ? chatMessage.getUser().getNickname() : "익명",
+            chatMessage.getCreatedAt()
         );
     }
 

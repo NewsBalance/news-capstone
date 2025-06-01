@@ -43,7 +43,7 @@ public class DebateRoom {
     private boolean started;
     
     @Builder.Default
-    @OneToMany(mappedBy = "debateRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "debateRoom", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<DebateMessage> messages = new ArrayList<>();
     
     @Builder.Default

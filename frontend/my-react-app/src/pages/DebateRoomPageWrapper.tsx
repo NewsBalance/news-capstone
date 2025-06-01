@@ -35,6 +35,7 @@ interface RoomData {
     totalVisits: number;
     debaterA: string | null;
     debaterB: string | null;
+    currentTurnUserNickname?: string;
 }
 
 const DebateRoomPageWrapper: React.FC = () => {
@@ -51,6 +52,8 @@ const DebateRoomPageWrapper: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [roomData, setRoomData] = useState<RoomData | null>(null);
     const [participantCount, setParticipantCount] = useState<number>(0);
+    const [currentSpeaker, setCurrentSpeaker] = useState<string>('');
+    const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
 
     // WebSocket 클라이언트 참조
     const stompClient = useRef<any>(null);
@@ -183,14 +186,13 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론방 정보와 메시지 가져오기
     useEffect(() => {
         if (!roomId || !userName) {
-            console.log('필수 데이터가 없어 API 호출을 건너뜁니다.');
+            console.error('roomId 또는 userName이 없습니다');
+            setError('방 정보 또는 사용자 정보가 없습니다');
             return;
         }
+
+        console.log('토론방 정보 요청:', roomId);
         
-        console.log('토론방 정보 API 호출 시작, 사용자:', userName);
-        setLoading(true);
-        
-        // 방 정보 조회
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -199,39 +201,42 @@ const DebateRoomPageWrapper: React.FC = () => {
             credentials: 'include'
         })
         .then(res => {
-            // 상태 코드 확인
             if (!res.ok) {
-                console.error('토론방 정보 API 응답 오류:', res.status, res.statusText);
-                throw new Error(`토론방 정보를 가져올 수 없습니다 (${res.status})`);
+                console.error('토론방 정보 응답 오류:', res.status);
+                return res.text().then(text => {
+                    throw new Error(text || '토론방 정보를 가져오는데 실패했습니다');
+                });
             }
             return res.json();
         })
         .then(data => {
-            // 원본 API 응답 데이터 전체 로그
-            console.log('API 응답 원본 데이터:', data);
-            console.log('API 응답 데이터 키:', Object.keys(data));
+            console.log('토론방 정보 응답:', data);
             
-            // 참가자 수 필드 확인
-            console.log('API 응답의 참가자 수 관련 필드:');
-            console.log('- currentParticipants:', data.currentParticipants);
+            // 토론방 데이터 설정
+            setRoomData(data);
             
-            // 방 데이터 설정
-            const roomData = {
-                ...data,
-                topic: data.topic || '설명 없음'
-            };
-            
-            setRoomData(roomData);
-            
-            // messages 필드가 있는지 확인 후 처리
+            // 토론 메시지 처리
             if (Array.isArray(data.messages)) {
+                console.log('받아온 토론 메시지 수:', data.messages.length);
                 setMessages(data.messages.map((msg: any) => ({
                     speaker: msg.sender,
                     text: msg.content,
                     summary: msg.summary
                 })));
             } else {
+                console.warn('응답에 messages 필드가 없거나 배열이 아닙니다:', data);
                 setMessages([]);
+            }
+            
+            // 채팅 메시지 처리 (추가)
+            if (Array.isArray(data.chatMessages)) {
+                console.log('받아온 채팅 메시지 수:', data.chatMessages.length);
+                setChatMessages(data.chatMessages.map((msg: any) => 
+                    `${msg.message}`
+                ));
+            } else {
+                console.warn('응답에 chatMessages 필드가 없거나 배열이 아닙니다:', data);
+                setChatMessages([]);
             }
             
             // 역할 설정
@@ -278,6 +283,9 @@ const DebateRoomPageWrapper: React.FC = () => {
         }
         
         console.log('토론방 입장 처리 시작:', userName);
+        
+        // 토론방 입장 시 알림 표시
+        alert('토론 규칙 안내:\n- 서로 존중하는 태도로 의견을 나눕니다.\n- 주제에서 벗어나지 않도록 합니다.\n- 각 발언은 300자 이내로 제한됩니다.\n- 상대방의 발언이 끝날 때까지 기다립니다.\n- 욕설, 비방은 제재당할 수 있습니다.');
         
         // 관전자든 토론자든 입장 처리
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/join`, {
@@ -380,7 +388,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론 메시지 전송 로직 분리
     const sendMessage = (text: string) => {
         const message: Message = {
-            type: "CHAT",
+            type: "DEBATE",
             content: text,
             sender: userName,
             roomId: Number(roomId)
@@ -406,7 +414,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 채팅 메시지 전송 로직 수정
     const sendChatMessage = (text: string) => {
         const message: Message = {
-            type: "CHAT",
+            type: "VIEWER_CHAT",
             content: text,
             sender: userName,
             roomId: Number(roomId)
@@ -616,7 +624,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         const messageToCheck = messages[messageIndex];
         if (!messageToCheck) return;
 
-        // API를 통해 팩트체크 요청 - 에러 처리 없이
+        // API를 통해 팩트체크 요청
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/fact-check`, {
             method: 'POST',
             headers: {
@@ -630,8 +638,8 @@ const DebateRoomPageWrapper: React.FC = () => {
         })
         .then(response => response.json())
         .then(data => {
-            // 팩트체크 결과 알림만 표시
-            alert(data.factCheckResult || '팩트체크 결과가 없습니다');
+            // 팩트체크 결과 알림 표시
+            alert(`${messageToCheck.speaker}의 주장 팩트체크 결과: ${data.factCheckResult || '팩트체크 결과가 없습니다'}`);
             
             // 버튼 비활성화 (선택적)
             const updatedMessages = [...messages];
@@ -707,6 +715,73 @@ const DebateRoomPageWrapper: React.FC = () => {
         }
     };
 
+    // WebSocket 메시지 구독 설정
+    const setupSubscriptions = () => {
+        // 토론방 메시지 구독
+        stompClient.current?.subscribe(`/topic/room/${roomId}`, (message: { body: string }) => {
+            const data = JSON.parse(message.body);
+            console.log('토론방 메시지 수신:', data);
+            
+            // 메시지 타입에 따라 처리
+            switch (data.type) {
+                case 'DEBATE':
+                    // 토론 메시지 처리
+                    setMessages(prev => [...prev, {
+                        speaker: data.sender,
+                        text: data.content
+                    }]);
+                    break;
+                    
+                case 'SYSTEM':
+                    // 시스템 메시지 처리 (턴 타임아웃 포함)
+                    setMessages(prev => [...prev, {
+                        speaker: '시스템',
+                        text: data.content,
+                        isSystem: true
+                    }]);
+                    break;
+                    
+                case 'TURN':
+                    // 턴 변경 메시지 처리
+                    setCurrentSpeaker(data.content);
+                    // 현재 턴이 자신인지 표시
+                    setIsMyTurn(data.content === userName);
+                    break;
+                    
+                // 기타 메시지 타입 처리...
+            }
+        });
+        
+        // 턴 알림 구독 추가
+        stompClient.current?.subscribe(`/topic/turn/${roomId}`, (message: { body: string }) => {
+            const data = JSON.parse(message.body);
+            
+            // 현재 발언자 업데이트
+            setCurrentSpeaker(data.content);
+            
+            // 내 턴인지 확인
+            setIsMyTurn(data.content === userName);
+            
+            // 턴 변경 메시지 표시
+            setMessages(prev => [...prev, {
+                speaker: '시스템',
+                text: `${data.content}님의 발언 차례입니다.`,
+                isSystem: true
+            }]);
+        });
+        
+        // 오류 메시지 구독
+        stompClient.current?.subscribe(`/topic/error/${roomId}`, (message: { body: string }) => {
+            const data = JSON.parse(message.body);
+            console.log('오류 메시지:', data);
+            
+            // 오류 알림 표시
+            alert(data.content);
+        });
+        
+        // 기타 구독...
+    };
+
     // 로딩 상태나 오류 처리
     if (loading) {
         return <div className="loading">토론방 로딩 중...</div>;
@@ -741,6 +816,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             onLeave={handleLeave}
             isLoggedIn={!!userName}
             onFactCheck={handleFactCheck}
+            currentTurnUserNickname={roomData.currentTurnUserNickname}
         />
     );
 };
