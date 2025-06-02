@@ -1,0 +1,80 @@
+/* src/styles/global.css */
+
+/* 전역 변수 및 Reset */
+:root {
+  --primary: #5f3dc4;
+  --left:    #3b82f6;
+  --center:  #5f3dc4;
+  --right:   #e85a71;
+  --bg:      #f9f8fb;
+  --card:    #ffffff;
+  --text:    #333;
+  --muted:   #666;
+}
+
+* {
+  /* box-sizing: border-box; */
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: "Noto Sans", "Open Sans", sans-serif;
+  color: var(--text);
+  line-height: 1.5;
+  background-color: #fff;
+  -webkit-text-size-adjust: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+ul, li {
+  list-style: none;
+}
+
+/* ──────────────────────────────────────────────
+   페이지별 컨테이너 풀-와이드 override
+────────────────────────────────────────────── */
+
+/* GoalsPage */
+.goals-page .page-container,
+.goals-page .container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 2rem; /* 필요하면 조정 */
+}
+
+/* TermsPage */
+.terms-page .terms-container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 4rem 2rem;
+}
+
+/* PrivacyPage */
+.privacy-page .privacy-container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 4rem 2rem;
+}
+
+/* ContactPage */
+.contact-page .contact-container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 2rem;
+}

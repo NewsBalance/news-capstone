@@ -6,9 +6,7 @@ import React, {
   FormEvent,
 } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
 import '../styles/Discussion.css';
-import { useAuth } from '../contexts/AuthContext';
 
 /* ===============================================================
    타입 정의 & 샘플 데이터
@@ -21,21 +19,87 @@ type Dialogue = {
   totalVisits: number;
   createdAt: string;
   keywords: string[];
-  creator: string;
 };
 
-/* ===============================================================
-   유틸리티 함수
-================================================================ */
-// 모든 토론방 전용 정렬 함수
-const sortRoomsBy = (rooms: Dialogue[], key: 'recent' | 'popular') =>
-  [...rooms].sort((a, b) =>
-    key === 'popular'
-      ? b.currentParticipants - a.currentParticipants
-      : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+const hotSeed: Dialogue[] = [
+  {
+    id: 1,
+    title: '대선후보 검증 토론',
+    description: '공약·신뢰성 토론',
+    currentParticipants: 20,
+    totalVisits: 124,
+    createdAt: '2025-04-16',
+    keywords: ['정치', '대선'],
+  },
+  {
+    id: 2,
+    title: '기후변화 정책 분석',
+    description: '국내외 대응 비교',
+    currentParticipants: 15,
+    totalVisits: 89,
+    createdAt: '2025-04-15',
+    keywords: ['환경', '정책'],
+  },
+  {
+    id: 3,
+    title: 'AI 윤리와 규제',
+    description: '기술·윤리적 쟁점',
+    currentParticipants: 8,
+    totalVisits: 76,
+    createdAt: '2025-04-14',
+    keywords: ['AI', '윤리'],
+  },
+  {
+    id: 4,
+    title: '교육개혁 방향 토론',
+    description: '입시·커리큘럼 개편',
+    currentParticipants: 5,
+    totalVisits: 54,
+    createdAt: '2025-04-13',
+    keywords: ['교육', '개혁'],
+  },
+  {
+    id: 5,
+    title: '부동산 시장 전망',
+    description: '가격 동향 및 규제',
+    currentParticipants: 12,
+    totalVisits: 98,
+    createdAt: '2025-04-12',
+    keywords: ['경제', '부동산'],
+  },
+  {
+    id: 6,
+    title: '병역제도 개선',
+    description: '모병제 vs 징병제',
+    currentParticipants: 3,
+    totalVisits: 47,
+    createdAt: '2025-04-11',
+    keywords: ['사회', '병역'],
+  },
+  {
+    id: 7,
+    title: '디지털 자산 규제',
+    description: '암호화폐·NFT 정책',
+    currentParticipants: 7,
+    totalVisits: 63,
+    createdAt: '2025-04-10',
+    keywords: ['IT', '규제'],
+  },
+  {
+    id: 8,
+    title: '청년 일자리 해법',
+    description: '창업·인턴십 지원',
+    currentParticipants: 10,
+    totalVisits: 82,
+    createdAt: '2025-04-09',
+    keywords: ['사회', '일자리'],
+  },
+];
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/* ===============================================================
+   유틸
+================================================================ */
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 /* ===============================================================
    재사용 컴포넌트
@@ -69,55 +133,68 @@ interface CardProps {
   highlight?: string;
 }
 const Card: React.FC<CardProps> = ({
-    room,
-    onJoin,
-    onDelete,
-    isMine,
-    highlight,
-  }) => {
-  const navigate = useNavigate();
-
+  room,
+  onJoin,
+  onDelete,
+  isMine,
+  highlight,
+}) => {
   const hl = (text: string) => {
     if (!highlight) return text;
     const re = new RegExp(`(${highlight})`, 'gi');
     return text.split(re).map((part, i) =>
-        part.toLowerCase() === highlight.toLowerCase() ? (
-            <mark key={i}>{part}</mark>
-        ) : (
-            part
-        )
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <mark key={i}>{part}</mark>
+      ) : (
+        part
+      ),
     );
   };
 
   return (
-      <div className="dialogue-card">
-        <div className="card-header">
-          <h3>{hl(room.title)}</h3>
-          <div className="room-stats">
-            <span>💬 {room.currentParticipants}</span>
-            <span>👀 {room.totalVisits}</span>
-            <span>📅 {room.createdAt}</span>
-          </div>
-        </div>
-        <p>{hl(room.description)}</p>
+    <div
+      className="dialogue-card"
+      role="region"
+      aria-label={`토론방: ${room.title}`}
+      tabIndex={0}
+    >
+      <h3 className="dialogue-title">{hl(room.title)}</h3>
+      <p className="dialogue-desc">{hl(room.description)}</p>
 
-        <div className="room-keywords">
-          {room.keywords.map((k, i) => (
-              <span key={i}>#{k}</span>
-          ))}
-        </div>
-
-        <div className="room-creator">
-          <span>생성자: {room.creator}</span>
-        </div>
-
-        <div className="card-actions">
-          <button onClick={() => navigate(`/discussion/${room.id}`)}>참여</button>
-          {isMine && onDelete && (
-              <button onClick={() => onDelete(room.id)}>삭제</button>
-          )}
-        </div>
+      <div className="keyword-tags" aria-label="키워드">
+        {room.keywords.map((k, i) => (
+          <span key={i} className="keyword-tag">
+            #{k}
+          </span>
+        ))}
       </div>
+
+      <p className="dialogue-meta">
+        <span className="meta-item">💬 {room.currentParticipants}</span>
+        <span className="meta-item">👀 {room.totalVisits}</span>
+        <span className="meta-item">📅 {room.createdAt}</span>
+      </p>
+
+      <div className="card-actions">
+        <button
+          className="btn-join"
+          onClick={() => onJoin(room.id)}
+          aria-label={`${room.title} 방 참여`}
+        >
+          참여
+        </button>
+
+        {isMine && onDelete && (
+          <button
+            className="btn-delete"
+            onClick={() => onDelete(room.id)}
+            aria-label={`${room.title} 방 삭제`}
+          >
+            삭제
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -180,7 +257,11 @@ const CreateCard: React.FC<CreateCardProps> = ({
         onChange={(e) => onKeywords(e.target.value)}
         placeholder="키워드 (최대5개, 콤마 구분)"
       />
-      
+
+      <div className="point-info">
+        포인트 제한: <strong>50</strong>
+      </div>
+
       <button
         type="submit"
         className="btn-create"
@@ -216,20 +297,25 @@ export default function DiscussionPage() {
   const location = useLocation();
 
   /* ----- 상태 -------------------------------------------------- */
-  const [hotList, setHotList] = useState<Dialogue[]>([]);
-  const [allRooms, setAllRooms] = useState<Dialogue[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // 정렬 키 - 로컬스토리지 사용하지 않음
-  const [allRoomsSortKey, setAllRoomsSortKey] = useState<'recent' | 'popular'>('recent');
+  const [hotList, setHotList] = useState<Dialogue[]>(hotSeed);
+  const [myList, setMyList] = useState<Dialogue[]>(() => {
+    const s = localStorage.getItem('myDiscussionRooms');
+    return s ? (JSON.parse(s) as Dialogue[]) : [];
+  });
 
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
-  const [searchPageSize, setSearchPageSize] = useState(5);
+  const [searchPageSize, setSearchPageSize] = useState(4);
 
-  // 정렬 키 - 로컬스토리지 사용하지 않음
-  const [sortKey, setSortKey] = useState<'recent' | 'popular'>('recent');
+  const [sortKey, setSortKey] = useState<'recent' | 'popular'>(
+    localStorage.getItem('discussionSortKey') === 'popular'
+      ? 'popular'
+      : 'recent',
+  );
+
+  const [hotPageSize, setHotPageSize] = useState(8);
+  const [myPageSize, setMyPageSize] = useState(4);
 
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -242,13 +328,9 @@ export default function DiscussionPage() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMsg(msg);
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
-
   /* ----- refs & side-effects ----------------------------------- */
   const scrollKeep = useRef<number>(0);
   const hotRef = useRef<HTMLDivElement>(null);
-
-  const { isAuthenticated, checkAuth } = useAuth();
 
   // 스크롤 기억
   useEffect(() => {
@@ -262,6 +344,14 @@ export default function DiscussionPage() {
     window.scrollTo(0, scrollKeep.current);
   }, [location.key]);
 
+  // 로컬스토리지
+  useEffect(() => {
+    localStorage.setItem('discussionSortKey', sortKey);
+  }, [sortKey]);
+  useEffect(() => {
+    localStorage.setItem('myDiscussionRooms', JSON.stringify(myList));
+  }, [myList]);
+
   // 토스트 타이머
   useEffect(() => {
     if (!toastMsg) return;
@@ -269,106 +359,7 @@ export default function DiscussionPage() {
     return () => clearTimeout(id);
   }, [toastMsg]);
 
-  // API URL 상수 추가
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-
-  // API 호출 함수 수정
-  const fetchHotRooms = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/hot`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include' // 세션 쿠키 포함
-      });
-
-      if (!response.ok) {
-        // 응답이 JSON이 아닌 경우를 처리하기 위한 코드
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          const errorData = await response.json();
-          console.error('Hot rooms error:', errorData);
-          throw new Error(errorData.message || '인기 토론방을 불러오는데 실패했습니다');
-        } else {
-          const errorText = await response.text();
-          console.error('Non-JSON error response:', errorText);
-          throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
-        }
-      }
-
-      const data = await response.json();
-      console.log('핫 룸 데이터:', data);
-      
-      // API 응답 구조에 따라 조정
-      const hotRoomsData = data.result || data || [];
-      setHotList(hotRoomsData);
-    } catch (error) {
-      console.error('Error fetching hot rooms:', error);
-      // 오류가 발생해도 UI가 중단되지 않도록 빈 배열 설정
-      setHotList([]);
-    }
-  };
-
-  const fetchAllRooms = async () => {
-    try {
-      // 로드 중 표시
-      console.log("모든 토론방 로딩 중...");
-      
-      // API 호출 시도
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        // 5초 타임아웃 설정
-        signal: AbortSignal.timeout(5000)
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('로그인이 필요합니다');
-        }
-        throw new Error('토론방 목록을 불러오는데 실패했습니다');
-      }
-      
-      const data = await response.json();
-      console.log('모든 토론방 데이터:', data);
-      
-      // API 응답 구조에 따라 조정
-      const roomsData = data.result || data || [];
-      setAllRooms(sortRoomsBy(roomsData, allRoomsSortKey));
-    } catch (error) {
-      console.error('Error fetching all rooms:', error);
-      showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
-    }
-  };
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchHotRooms(),
-        fetchAllRooms()
-      ]);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
-
   /* ----- 정렬 & 필터 ------------------------------------------ */
-  // 모든 토론방 정렬 변경 이벤트 핸들러 (로컬스토리지 저장 제거)
-  const handleAllRoomsSortChange = (newSortKey: 'recent' | 'popular') => {
-    setAllRoomsSortKey(newSortKey);
-    
-    // 모든 토론방 재정렬
-    setAllRooms(prev => sortRoomsBy(prev, newSortKey));
-  };
-
   const sortRooms = (rooms: Dialogue[]) =>
     [...rooms].sort((a, b) =>
       sortKey === 'popular'
@@ -378,13 +369,13 @@ export default function DiscussionPage() {
 
   const filtered = React.useMemo(
     () =>
-      [...hotList, ...allRooms].filter(
+      [...hotList, ...myList].filter(
         (r) =>
           r.title.includes(searchTerm) ||
           r.description.includes(searchTerm) ||
           r.keywords.some((k) => k.includes(searchTerm)),
       ),
-    [searchTerm, hotList, allRooms],
+    [searchTerm, hotList, myList],
   );
 
   /* ----- 이벤트 핸들러 ---------------------------------------- */
@@ -397,81 +388,50 @@ export default function DiscussionPage() {
     setIsLoadingSearch(false);
   };
 
-  const createRoom = async () => {
-    if (isCreating) return;
+  const createRoom = async (e: FormEvent) => {
+    e.preventDefault();
+    setTitleError('');
+    setDescError('');
+    const t = newTitle.trim();
+    const d = newDesc.trim();
 
-    // 입력 유효성 검사
-    let hasError = false;
-    
-    if (!newTitle.trim() || newTitle.length < 3 || newTitle.length > 50) {
-      setTitleError('제목은 3~50자 사이여야 합니다');
-      hasError = true;
-    } else {
-      setTitleError('');
+    if (t.length < 3 || t.length > 50) {
+      setTitleError('제목은 3~50자 사이입니다.');
+      return;
     }
-    
-    if (!newDesc.trim() || newDesc.length < 10 || newDesc.length > 200) {
-      setDescError('설명은 10~200자 사이여야 합니다');
-      hasError = true;
-    } else {
-      setDescError('');
+    if (d.length < 10 || d.length > 200) {
+      setDescError('설명은 10~200자 사이입니다.');
+      return;
     }
-    
-    if (hasError) return;
 
-    // 키워드 처리
-    const keywordList = newKeywords
-      .split(',')
-      .map(k => k.trim())
-      .filter(k => k !== '')
-      .slice(0, 5);
+    const kws = Array.from(
+      new Set(
+        newKeywords
+          .split(',')
+          .map((k) => k.trim())
+          .filter(Boolean),
+      ),
+    ).slice(0, 5);
 
     try {
       setIsCreating(true);
-      
-      // API URL 수정 - 백엔드 서버 URL 추가
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          topic: newDesc.trim(),
-          keywords: keywordList
-        }),
-        credentials: 'include' // 세션 쿠키 포함
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('방 생성 응답 오류:', response.status, errorText);
-        throw new Error(errorText || '방 생성에 실패했습니다');
-      }
-
-      const data = await response.json();
-      
-      // 폼 초기화
+      await delay(500);
+      const next: Dialogue = {
+        id: Date.now(),
+        title: t,
+        description: d,
+        currentParticipants: 1,
+        totalVisits: 1,
+        createdAt: new Date().toISOString().slice(0, 10),
+        keywords: kws,
+      };
+      setMyList((prev) => [next, ...prev]);
       setNewTitle('');
       setNewDesc('');
       setNewKeywords('');
-      setShowCreateForm(false);
-      
-      // 토론방 목록 새로고침
-      await Promise.all([
-        fetchHotRooms(),
-        fetchAllRooms()
-      ]);
-      
       showToast('토론방이 생성되었습니다!');
-
-      // 생성된 방으로 바로 입장
-      navigate(`/discussion/${data.id}`);
-
-    } catch (error) {
-      console.error('방 생성 오류:', error);
-      showToast(error instanceof Error ? error.message : '방 생성 중 오류가 발생했습니다');
+    } catch {
+      showToast('생성 중 오류가 발생했습니다.');
     } finally {
       setIsCreating(false);
     }
@@ -483,153 +443,116 @@ export default function DiscussionPage() {
 
     try {
       setDeletingRoomId(id);
-      
-      const response = await fetch(`/api/debate-rooms/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include' // 세션 쿠키 포함
-      });
-
-      if (!response.ok) {
-        throw new Error('토론방 삭제에 실패했습니다');
-      }
-
-      // 목록 갱신
-      await Promise.all([
-        fetchAllRooms(),
-        fetchHotRooms()
-      ]);
-      
+      await delay(300);
+      setMyList((prev) => prev.filter((r) => r.id !== id));
       showToast('토론방이 삭제되었습니다.');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다');
+    } catch {
+      showToast('삭제 중 오류가 발생했습니다.');
     } finally {
       setDeletingRoomId(null);
     }
   };
 
-  const joinRoom = async (id: number) => {
-    if (!isAuthenticated) {
-        showToast('로그인이 필요합니다.');
-        return;
+  const joinRoom = (id: number) => {
+    const mine = myList.some((r) => r.id === id);
+
+    if (mine) {
+      setMyList((arr) =>
+        arr.map((r) =>
+          r.id === id ? { ...r, totalVisits: r.totalVisits + 1 } : r,
+        ),
+      );
+    } else {
+      setHotList((arr) =>
+        arr.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                currentParticipants: r.currentParticipants + 1,
+                totalVisits: r.totalVisits + 1,
+              }
+            : r,
+        ),
+      );
     }
 
-    try {
-        const response = await fetch(`/api/debate-rooms/${id}/join`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include' // 세션 쿠키 포함
-        });
-
-        if (!response.ok) {
-            throw new Error('토론방 참여에 실패했습니다.');
-        }
-
-        const updatedRoom = await response.json();
-        
-        // 참여자 수와 방문자 수 업데이트
-        setAllRooms(prev => 
-            prev.map(r => r.id === id ? {
-                ...r, 
-                currentParticipants: updatedRoom.currentParticipants,
-                totalVisits: updatedRoom.totalVisits
-            } : r)
-        );
-        setHotList(prev => 
-            prev.map(r => r.id === id ? {
-                ...r, 
-                currentParticipants: updatedRoom.currentParticipants,
-                totalVisits: updatedRoom.totalVisits
-            } : r)
-        );
-
-        navigate(`/discussion/${id}`);
-    } catch (error) {
-        showToast(error instanceof Error ? error.message : '참여 중 오류가 발생했습니다');
-    }
+    navigate(`/discussion/${id}`);
   };
 
   const scrollHot = (dir: number) =>
     hotRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
-
-  // 데이터 로드 함수 개선
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchHotRooms(),
-        fetchAllRooms()
-      ]);
-    } catch (error) {
-      console.error('데이터 로드 오류:', error);
-      showToast('데이터를 불러오는 데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 초기 데이터 로드 및 주기적 새로고침
-  useEffect(() => {
-    loadAllData();
-    
-    // 5분마다 데이터 새로고침 (선택적)
-    const refreshInterval = setInterval(() => {
-      fetchHotRooms();
-      fetchAllRooms();
-    }, 300000); // 5분
-    
-    return () => clearInterval(refreshInterval);
-  }, []);
 
   /* =============================================================
      렌더링
   ============================================================ */
   return (
     <>
-      <Header />
 
       {/* ────────────────── 메인 ────────────────── */}
       <main className="discussion-container container">
         {/* ── 검색 + 정렬 ─────────────────────── */}
-        <div className="search-sort-row">
-          <form className="search-bar" onSubmit={handleSearchSubmit}>
+        <form
+          className="search-sort-row"
+          onSubmit={handleSearchSubmit}
+          aria-label="토론방 검색 및 정렬"
+        >
+          {/* 검색바 */}
+          <div className="search-bar">
             <input
               type="text"
+              placeholder="검색어를 입력하세요..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="토론방 검색..."
             />
+
             {searchInput && (
               <button
                 type="button"
                 className="clear-btn"
-                onClick={() => setSearchInput('')}
-                aria-label="검색어 지우기"
+                aria-label="검색어 삭제"
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchTerm('');
+                }}
               >
                 ×
               </button>
             )}
-            <button
-              type="submit"
-              className="search-btn"
-              disabled={isLoadingSearch}
-              aria-label="검색"
-            >
-              🔍
+
+            <button type="submit" className="search-btn">
+              검색
             </button>
-          </form>
-        </div>
+          </div>
+
+          {/* 정렬 pill */}
+          <div className="sort-toggle" role="group" aria-label="정렬 옵션">
+            <button
+              type="button"
+              className={`sort-pill ${
+                sortKey === 'recent' ? 'active' : ''
+              }`}
+              onClick={() => setSortKey('recent')}
+            >
+              최신순
+            </button>
+            <button
+              type="button"
+              className={`sort-pill ${
+                sortKey === 'popular' ? 'active' : ''
+              }`}
+              onClick={() => setSortKey('popular')}
+            >
+              인기순
+            </button>
+          </div>
+        </form>
 
         {/* ── 이모지 레전드 ──────────────────── */}
         <EmojiLegend />
 
         {/* ── 검색 결과 Active ────────────────── */}
         {searchTerm ? (
-          <Section title={`"${searchTerm}" 검색 결과`}>
+          <Section title={`“${searchTerm}” 검색 결과`}>
             {isLoadingSearch ? (
               <div className="skeleton-grid">
                 {Array(4)
@@ -649,9 +572,9 @@ export default function DiscussionPage() {
                         room={r}
                         onJoin={joinRoom}
                         onDelete={
-                          allRooms.some((m) => m.id === r.id) ? deleteRoom : undefined
+                          myList.some((m) => m.id === r.id) ? deleteRoom : undefined
                         }
-                        isMine={allRooms.some((m) => m.id === r.id)}
+                        isMine={myList.some((m) => m.id === r.id)}
                         highlight={searchTerm}
                       />
                     ))}
@@ -673,116 +596,83 @@ export default function DiscussionPage() {
           </Section>
         ) : (
           <>
-            {/* ── HOT한 토론방 ───────────────── */}
-            <Section title="HOT한 토론방">
-              <div className="hot-rooms-grid">
-                {hotList.length > 0 ? (
-                  hotList.map((r) => (
-                    <Card 
-                      key={r.id} 
-                      room={r} 
-                      onJoin={joinRoom} 
-                      isMine={false} 
-                    />
-                  ))
-                ) : (
-                  <EmptyState message="아직 HOT한 토론방이 없습니다. 첫 토론을 시작해보세요! 🎉" />
-                )}
+            {/* ── Hot한 토론방 ───────────────── */}
+            <Section title="Hot한 토론방">
+              <div className="carousel-wrapper">
+                <button
+                  className="hot-nav hot-nav--prev"
+                  onClick={() => scrollHot(-1)}
+                  aria-label="이전 Hot 방"
+                >
+                  ◀
+                </button>
+
+                <div
+                  ref={hotRef}
+                  className="hot-carousel"
+                  role="region"
+                  aria-label="Hot 토론방 목록"
+                >
+                  {sortRooms(hotList)
+                    .slice(0, hotPageSize)
+                    .map((r) => (
+                      <Card key={r.id} room={r} onJoin={joinRoom} isMine={false} />
+                    ))}
+                </div>
+
+                <button
+                  className="hot-nav hot-nav--next"
+                  onClick={() => scrollHot(1)}
+                  aria-label="다음 Hot 방"
+                >
+                  ▶
+                </button>
               </div>
             </Section>
 
-            {/* ── 모든 토론방 ────────────────── */}
-            <Section title="모든 토론방">
-              <div className="section-header-with-sort">
-                <div className="create-room-button">
-                  <button 
-                    onClick={() => setShowCreateForm(!showCreateForm)}
-                    className="btn-create-room"
-                  >
-                    {showCreateForm ? '✕ 닫기' : '+ 새 토론방 만들기'}
-                  </button>
-                </div>
-                <div className="sort-controls">
-                  <button
-                    className={allRoomsSortKey === 'recent' ? 'active' : ''}
-                    onClick={() => handleAllRoomsSortChange('recent')}
-                  >
-                    최신순
-                  </button>
-                  <button
-                    className={allRoomsSortKey === 'popular' ? 'active' : ''}
-                    onClick={() => handleAllRoomsSortChange('popular')}
-                  >
-                    참여자순
-                  </button>
-                </div>
+            {/* ── 내 방 ──────────────────────── */}
+            <Section title="내 방">
+              <div className="room-grid">
+                <CreateCard
+                  title={newTitle}
+                  desc={newDesc}
+                  keywords={newKeywords}
+                  titleError={titleError}
+                  descError={descError}
+                  onTitle={setNewTitle}
+                  onDesc={setNewDesc}
+                  onKeywords={setNewKeywords}
+                  onCreate={createRoom}
+                  isCreating={isCreating}
+                />
+
+                {myList.length > 0 ? (
+                  sortRooms(myList)
+                    .slice(0, myPageSize)
+                    .map((r) => (
+                      <Card
+                        key={r.id}
+                        room={r}
+                        onJoin={joinRoom}
+                        onDelete={
+                          deletingRoomId === r.id ? undefined : deleteRoom
+                        }
+                        isMine
+                      />
+                    ))
+                ) : (
+                  <EmptyState message="아직 생성된 방이 없습니다. ✨" />
+                )}
               </div>
 
-              {/* 토론방 생성 폼 */}
-              {showCreateForm && (
-                <div className="create-room-form">
-                  <div className="form-group">
-                    <input
-                      type="text"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="토론 주제를 입력하세요 (3~50자)"
-                      className={titleError ? 'error' : ''}
-                    />
-                    {titleError && <div className="error-text">{titleError}</div>}
-                  </div>
-                  
-                  <div className="form-group">
-                    <textarea
-                      value={newDesc}
-                      onChange={(e) => setNewDesc(e.target.value)}
-                      placeholder="토론 설명을 입력하세요 (10~200자)"
-                      className={descError ? 'error' : ''}
-                    />
-                    {descError && <div className="error-text">{descError}</div>}
-                  </div>
-                  
-                  <div className="form-group">
-                    <input
-                      type="text"
-                      value={newKeywords}
-                      onChange={(e) => setNewKeywords(e.target.value)}
-                      placeholder="키워드를 입력하세요 (쉼표로 구분, 최대 5개)"
-                    />
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      onClick={createRoom}
-                      disabled={isCreating}
-                      className="btn-submit"
-                    >
-                      {isCreating ? '생성 중...' : '토론방 생성하기'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* 토론방 목록 */}
-              {loading && allRooms.length === 0 ? (
-                <div className="skeleton-grid">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={`skeleton-all-${i}`} className="skeleton-card" />
-                  ))}
-                </div>
-              ) : allRooms.length > 0 ? (
-                <div className="room-grid">
-                  {allRooms.map((room) => (
-                    <Card 
-                      key={`all-${room.id}`} 
-                      room={room} 
-                      onJoin={joinRoom}
-                      highlight={searchTerm} 
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState message="등록된 토론방이 없습니다." />
+              {myList.length > myPageSize && (
+                <button
+                  className="load-more"
+                  onClick={() => setMyPageSize((s) => s + 4)}
+                  aria-label="더 보기"
+                >
+                  더 보기
+                </button>
               )}
             </Section>
           </>

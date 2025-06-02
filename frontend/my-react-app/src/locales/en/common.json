@@ -1,0 +1,225 @@
+{
+  "header": {
+    "navAria": "Site navigation",
+    "home": "Home",
+    "discussion": "Discussion",
+    "videos": "Videos",
+    "mypage": "My Page",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "settings": {
+    "ariaOpen": "Open settings",
+    "ariaClose": "Close settings",
+    "ariaLang": "Language settings",
+    "ariaPrivacy": "Privacy policy",
+    "ariaNotice": "Notice"
+  },
+  "footer": {
+    "tagline1": "Media as a beacon of truth with accurate information",
+    "tagline2": "A lamp that illuminates truth and cuts through darkness",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "contact": "Report / Contact",
+    "copyright": "Together with NewsBalance toward a fairer world."
+  },
+  "index": {
+    "quote": "The press should be a lamp that illuminates truth and cuts through darkness",
+    "goalsTitle": "Go to Development Goals Page",
+    "searchPlaceholder": "Enter a search term...",
+    "search": "Search",
+    "hotKeywords": "Real-time Hot Keywords"
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "remember": "Remember Me",
+    "submit": "Log In",
+    "signup": "Sign Up",
+    "forgot": "Forgot Password",
+    "quick": "Quick Login",
+    "lang": "Language:",
+    "help": "Help",
+    "privacy": "Privacy Policy",
+    "terms": "Terms",
+    "success": "Login Successful!",
+    "passwordPlaceholder": "Enter password",
+    "errors": {
+      "emailRequired": "Please enter your email.",
+      "emailInvalid": "Invalid email format.",
+      "passwordRequired": "Please enter your password.",
+      "passwordLength": "Password must be at least 4 characters.",
+      "loginFailed": "Username or password is incorrect.",
+      "server": "A server error occurred."
+    }
+  },
+  "terms": {
+    "title": "Terms of Service"
+  },
+  "privacy": {
+    "title": "Privacy Policy"
+  },
+  "videos": {
+    "searchPlaceholder": "Enter a search term...",
+    "searchAria": "Enter video search term",
+    "search": "Search",
+    "searching": "Searching…",
+    "bias": {
+      "left": "Progressive",
+      "center": "Centrist",
+      "right": "Conservative"
+    },
+    "error": {
+      "apiKeyMissing": "YouTube API key is not set.",
+      "default": "An error occurred."
+    },
+    "noResults": "No results"
+  },
+  "videoDetail": {
+    "testTitle": "Test Title",
+    "testChannel": "Test Channel",
+    "biasLabel": {
+      "left": "Progressive",
+      "center": "Centrist",
+      "right": "Conservative"
+    },
+    "biasDesc": {
+      "left": "Many progressive keywords are included.",
+      "center": "Neutral keywords dominate.",
+      "right": "Many conservative keywords are included."
+    },
+    "error": {
+      "stats": "Failed to load metadata",
+      "transcript": "Transcript analysis failed",
+      "articles": "Failed to load related articles",
+      "rooms": "Failed to load discussion rooms"
+    },
+    "titleBased": "Title-based",
+    "subtitleBased": "Subtitle-based",
+    "relatedArticlesTitle": "📰 Related News Articles",
+    "loading": "Loading…",
+    "transcriptSummaryTitle": "📝 Transcript Analysis Summary",
+    "sentiment": "Sentiment",
+    "sentimentPositive": "Positive",
+    "sentimentNegative": "Negative",
+    "sentimentNeutral": "Neutral",
+    "keywords": "Keywords",
+    "summary": "Summary",
+    "videoStatsTitle": "📊 Video Statistics",
+    "publishedAt": "📅 {{date}}",
+    "viewCount": "👁️ {{count}} views",
+    "likeCount": "👍 {{count}} likes",
+    "commentCount": "💬 {{count}} comments",
+    "discussionRoomsTitle": "💬 Discussion Rooms",
+    "participants": "{{count}} participants",
+    "back": "Back"
+  },
+  "signup": {
+    "title": "Sign Up",
+    "email": "Email",
+    "nickname": "Nickname",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "birthdate": "Birthdate",
+    "phone": "Phone",
+    "regionLabel": "Select Region",
+    "selectedRegion": "Selected Region",
+    "placeholders": {
+      "email": "Enter your email",
+      "nickname": "Enter your nickname",
+      "password": "Password (at least 8 chars)",
+      "confirmPassword": "Re-enter password",
+      "phone": "010-0000-0000"
+    },
+    "buttons": {
+      "checkEmail": "Check Email",
+      "submit": "Sign Up"
+    },
+    "success": "Sign-up completed successfully.",
+    "failure": "Sign-up failed",
+    "errors": {
+      "emailRequired": "Please enter your email.",
+      "emailInvalid": "Invalid email format.",
+      "nicknameRequired": "Please enter your nickname.",
+      "nicknameLength": "Nickname must be between 2 and 12 characters.",
+      "passwordRequired": "Please enter your password.",
+      "passwordLength": "Password must be at least 8 characters.",
+      "passwordMatch": "Passwords do not match.",
+      "birthdateRequired": "Please enter your birthdate.",
+      "ageRestriction": "You must be at least 14 years old.",
+      "phoneRequired": "Please enter your phone number.",
+      "phoneInvalid": "Invalid phone number format.",
+      "termsRequired": "Please agree to all required terms.",
+      "server": "A server error occurred."
+    },
+    "emailCheck": {
+      "noInput": "Please enter an email first.",
+      "duplicate": "This email is already in use.",
+      "available": "Email is available.",
+      "label": {
+        "duplicate": "Duplicate",
+        "available": "OK"
+      },
+      "error": "Failed to check email."
+    },
+    "passwordStrength": {
+      "strong": "Password strength: Strong",
+      "medium": "Password strength: Medium",
+      "weak": "Password strength: Weak"
+    },
+    "terms": {
+      "agreeAll": "Agree to all",
+      "service": "[Required] Agree to Terms of Service",
+      "age": "[Required] I am at least 14 years old",
+      "collect": "[Required] Agree to Personal Data Collection & Use",
+      "thirdParty": "[Required] Agree to Third-Party Personal Data Sharing",
+      "marketing": "[Optional] Agree to Receive Marketing Info",
+      "location": "[Optional] Agree to Use Location Data"
+    },
+    "termsContent": {
+      "service": "1. [Required] Terms of Service Agreement\n\nThese terms govern the use of all services (\"Services\") provided by NewsBalance (\"Company\"), defining the rights, obligations, and responsibilities of both the Company and the user.\n\nArticle 1 Purpose\nThese terms set forth detailed procedures and conditions for using the Services provided by the Company.\n\nArticle 2 Definitions\n\"Services\" means any service provided by the Company through online or other electronic media.\n\nArticle 3 Posting and Amendment of Terms\n1. The Company shall post these terms and any amendments to the terms in a manner that is easily accessible to users on the initial screen or a linked screen of the Services.\n2. The Company may amend these terms for reasons such as changes in related laws or improvements to Services. The Company shall specify the effective date and reasons for the amendments and notify users accordingly.\n\nArticle 4 Provision and Change of Services\n1. The Company provides the following types of Services: content provision, personalized recommendations, customer support, etc.\n2. The Company may change the provided Services for operational or technical reasons but shall notify users in advance of such changes.\n\nArticle 5 Service Subscription\n1. A user is deemed to have agreed to these terms by applying for membership to use the Services.\n2. Subscription procedures include email verification, agreement to terms, and entering personal information.\n\nArticle 6 Obligations of Users\n1. Users must not engage in any activities prohibited by these terms.\n2. Users are responsible for managing their passwords and securing their information.\n\nArticle 7 Obligations of the Company\n1. The Company shall not engage in any acts prohibited by laws and these terms.\n2. The Company shall maintain the system so that users can use the Services stably.\n\nArticle 8 Restriction and Termination of Use\n1. If a user violates these terms or disrupts the operation of Services, the Company may restrict usage or terminate the contract.\n\nArticle 9 Limitation of Liability\nThe Company is not responsible for Service interruptions caused by force majeure such as natural disasters or communication failures.\n\nArticle 10 Jurisdiction and Governing Law\nThese terms are governed by the laws of the Republic of Korea, and any disputes arising in relation to these terms shall be subject to the exclusive jurisdiction of the court where the Company's head office is located.",
+      "age": "I confirm that I am at least 14 years old in accordance with the \"Protection of Children and Juveniles’ Sexual Traffic and Sexual Exploitation Prevention Act\" and other related laws.",
+      "collect": "2. [Required] Agreement to Personal Data Collection & Use\n\nNewsBalance collects and uses personal data as follows to provide smooth Services and manage membership.\n\n1) Purpose of Collection & Use\n• Membership management: verify subscription intent, identify/authenticate users, provide member-only Services\n• Service provision: provide content, personalized Services, customer support\n• Transaction fulfillment: product delivery, payment processing, invoice issuance\n• Service improvement: statistical analysis, surveys\n\n2) Collected Items\n• Mandatory: name, user ID, password, phone number, email\n• Optional: address, birthdate, gender\n\n3) Retention & Use Period\n• Personal data is retained until membership withdrawal. After withdrawal, data is stored for 5 years in accordance with internal policies and relevant laws, then destroyed.\n\n4) Outsourcing of Personal Data Processing\n• Outsourcers: payment gateways, delivery agencies, SMS/email service providers, etc.\n• Outsourced tasks: payment processing, delivery, notification message transmission, etc.\n• Outsourcing period: until the outsourcing contract ends.\n\n5) Right to Refuse Consent & Disadvantages of Refusal\n• Users have the right to refuse consent to personal data collection/use.\n• However, refusal to consent to mandatory items will limit membership registration and Service usage.\n\n6) Rights and Means of Exercise\n• Users may request access, correction, deletion, or suspension of processing of their personal data at any time.\n• Methods: via MyPage, in writing, email, or phone.",
+      "thirdParty": "3. [Required] Agreement to Third-Party Personal Data Sharing\n\nTo fulfill the Service, the Company shares personal data with third parties as follows.\n\n1) Recipients: [Name of recipient]\n2) Purpose of sharing: service provision, delivery, payment processing, user authentication, etc.\n3) Shared items: name, phone number, address, payment information, etc.\n4) Retention & Use Period: Retained according to the third party’s policy.\n5) Method of sharing: encrypted transmission or electronic file transfer.\n\n※ Users have the right to refuse consent. However, refusal may limit Service usage.",
+      "marketing": "4. [Optional] Agreement to Receive Marketing Information\n\nCompany may send event/promotional information, new product/service announcements, and advertising information via the following channels.\n\n1) Content of Information: event/promotions, new product/service announcements, advertisements, etc.\n2) Channels: SMS, email, app push notifications, mail, etc.\n3) Retention & Use Period: Retained until consent is withdrawn.\n4) How to Withdraw Consent: MyPage → Notification Settings or contact Customer Service.\n\n※ Refusal does not affect Service usage.",
+      "location": "5. [Optional] Agreement to Use Location Data\n\nTo provide location-based Services, the Company collects and uses location information as follows.\n\n1) Purpose of collection & use: provide personalized content based on current location, local store/event information, navigation/directions, etc.\n2) Collected items: GPS data, Wi-Fi data, cellular tower data, etc.\n3) Retention & Use Period: Retained until termination of Service usage, then destroyed immediately.\n4) Third-Party Sharing & Outsourcing: Not shared with third parties, provided only to outsourced vendors for the intended purpose.\n5) Rights & Means of Exercise: Users can withdraw consent via mobile OS settings or within the app under ‘Settings → Location Services.’\n\n※ Withdrawal may limit some Services (e.g., local information, navigation)."
+    },
+    "alreadyHaveAccount": "Already have an account? Log in",
+    "regions": {
+      "Seoul": "Seoul",            
+      "Busan": "Busan",
+      "Incheon": "Incheon",
+      "Daegu": "Daegu",
+      "Gwangju": "Gwangju",
+      "Daejeon": "Daejeon",
+      "Ulsan": "Ulsan",
+      "Sejong": "Sejong",
+      "Gyeonggi-do": "Gyeonggi Province",
+      "Gangwon-do": "Gangwon Province",
+      "Chungcheongbuk-do": "North Chungcheong Province",
+      "Chungcheongnam-do": "South Chungcheong Province",
+      "Jeollabuk-do": "North Jeolla Province",
+      "Jeollanam-do": "South Jeolla Province",
+      "Gyeongsangbuk-do": "North Gyeongsang Province",
+      "Gyeongsangnam-do": "South Gyeongsang Province",
+      "Jeju-do": "Jeju Special Self-Governing Province"
+    }
+  },
+  "resetPassword": {
+    "skip": "Skip to main",
+    "title": "Reset Password",
+    "instructions": "Enter your email\nto receive a reset link.",
+    "email": "Email",
+    "placeholders": {
+      "email": "example@email.com"
+    },
+    "sendButton": "Send Reset Email",
+    "sending": "Sending…",
+    "successMessage": "A reset email has been sent. Please check your inbox.",
+    "errorNotFound": "Email address not found.",
+    "errorUnknown": "An unknown error occurred. Please try again.",
+    "errorNetwork": "Network error. Please try again later.",
+    "backToLogin": "Back to Login"
+  }
+}

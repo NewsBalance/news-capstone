@@ -1,10 +1,13 @@
 // src/pages/ResetPassword.tsx
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
+import { useTranslation } from 'react-i18next';
+import SettingsMenu from '../components/SettingsMenu';
 import '../styles/AuthPages.css';
+import { API_BASE } from '../api/config';
 
 const ResetPassword: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -16,20 +19,20 @@ const ResetPassword: React.FC = () => {
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch('/api/auth/password-reset', {
+      const res = await fetch(`${API_BASE}/auth/password-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       if (res.ok) {
-        setMessage('재설정 메일을 발송했습니다. 이메일을 확인해주세요.');
+        setMessage(t('resetPassword.successMessage'));
       } else if (res.status === 404) {
-        setError('존재하지 않는 이메일입니다.');
+        setError(t('resetPassword.errorNotFound'));
       } else {
-        setError('알 수 없는 오류가 발생했습니다. 다시 시도하세요.');
+        setError(t('resetPassword.errorUnknown'));
       }
     } catch {
-      setError('네트워크 오류입니다. 잠시 후 다시 시도해주세요.');
+      setError(t('resetPassword.errorNetwork'));
     } finally {
       setLoading(false);
     }
@@ -37,37 +40,46 @@ const ResetPassword: React.FC = () => {
 
   return (
     <>
-      <Link to="#main" className="skip-link">본문 바로가기</Link>
-      <Header />
+      <SettingsMenu />
+
+      <Link to="#main" className="skip-link">
+        {t('resetPassword.skip')}
+      </Link>
 
       <section id="main" className="hero-section">
         <div className="form-card">
-          <h1>비밀번호 재설정</h1>
-          <p>이메일을 입력하면<br/>재설정 링크를 보내드립니다.</p>
+          <h1>{t('resetPassword.title')}</h1>
+          <p
+            dangerouslySetInnerHTML={{
+              __html: t('resetPassword.instructions').replace('\n', '<br/>'),
+            }}
+          />
 
           <form onSubmit={submit} noValidate>
             <div className="form-group">
-              <label htmlFor="email">이메일</label>
+              <label htmlFor="email">{t('resetPassword.email')}</label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 required
-                placeholder="example@email.com"
+                placeholder={t('resetPassword.placeholders.email')}
               />
             </div>
 
             <button type="submit" className="primary-btn" disabled={loading}>
-              {loading ? '전송 중…' : '재설정 메일 발송'}
+              {loading
+                ? t('resetPassword.sending')
+                : t('resetPassword.sendButton')}
             </button>
           </form>
 
           {message && <div className="success-message">{message}</div>}
-          {error   && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
           <div className="link-row">
-            <Link to="/login">로그인으로 돌아가기</Link>
+            <Link to="/login">{t('resetPassword.backToLogin')}</Link>
           </div>
         </div>
       </section>

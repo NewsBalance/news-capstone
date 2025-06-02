@@ -1,0 +1,72 @@
+/* src/styles/terms.css */
+
+/* 전체 래퍼 */
+.terms-page { 
+  display: flex; 
+  flex-direction: column; 
+  min-height: 100vh; 
+  background-color: #fff;
+}
+
+/* 메인 컨테이너 */
+.terms-page .terms-container {
+  max-width: 768px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  line-height: 1.8;
+  flex: 1;
+}
+
+/* 제목 */
+.terms-page .terms-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+}
+
+/* 섹션 */
+.terms-page .terms-section {
+  margin-bottom: 2.5rem;
+}
+.terms-page .terms-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.terms-page .terms-section p {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+.terms-page .terms-list {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+/* 문의 텍스트 */
+.terms-page .terms-footer-text {
+  margin-top: 4rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+  text-align: center;
+}
+
+/* 반응형: 모바일 */
+@media (max-width: 768px) {
+  .terms-page .terms-container {
+    padding: 2rem 1rem;
+  }
+  .terms-page .terms-title {
+    font-size: 1.75rem;
+  }
+  .terms-page .terms-section-title {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .terms-page .terms-container {
+    padding: 1.5rem 1rem;
+  }
+}
