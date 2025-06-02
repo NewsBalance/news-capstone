@@ -2,9 +2,6 @@ package newsbalance.demo.Controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 import newsbalance.demo.DTO.*;
 import newsbalance.demo.Service.DebateRoomService;
 import newsbalance.demo.Service.DebateService;
@@ -14,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import newsbalance.demo.Entity.Message;
 
 import java.util.List;
 
@@ -33,16 +31,6 @@ public class DebateController {
     @Autowired
     private DebateService debateService;
 
-    // Message 클래스 정의 (이미 있다면 import만 추가)
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    public static class Message {
-        private String type;
-        private String content;
-        private String sender;
-        private Long roomId;
-    }
 
     private String getNicknameFromSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
