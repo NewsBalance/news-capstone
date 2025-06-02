@@ -3,12 +3,9 @@ import React, {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState,
-  useContext
+  useState
 } from 'react';
-import Header from '../components/Header';
-import { AuthContext } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import Footer from '../components/Footer';
 import {
   PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -21,6 +18,7 @@ import {
 } from '../api';
 import { BiasPeriod, WatchTab, WatchPoint } from './MyPage.types';
 import '../styles/MyPage.css';
+import { API_BASE } from '../api/config';
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml;utf8," +
@@ -31,7 +29,6 @@ const DEFAULT_AVATAR =
 const PIE_COLORS = ['#6699FF', '#C8BFFF', '#FF6B6B'];
 const BAR_COLOR = '#5c3c91';
 const LINE_COLOR = '#5c3c91';
-const URL = 'http://localhost:8080';
 
 interface Bookmark     { id: number; title: string; url: string }
 interface Session      { id: string; device: string; lastActive: string }
@@ -40,24 +37,27 @@ interface Notification { id: number; message: string; date: string }
 interface TimelineItem { id: number; type: 'check'|'comment'|'like'|'bookmark'; title: string; date: string }
 
 async function fetchActivity(): Promise<TimelineItem[]> {
-  const res = await fetch('/api/activity');
+  const res = await fetch(`${API_BASE}/activity`);
   if (!res.ok) throw new Error('활동 히스토리를 불러오지 못했습니다.');
   return res.json();
 }
 
 interface User {
-  id: number;
+  id: string;
   nickname: string;
-  email: string;
-  role: string;
   bio: string;
-}
-
-// 서버에서 가져온 데이터
-interface userDTO {
-    nickname: string;
-    email: string;
-    bio: string;
+  avatar?: string;
+  loginEmail: string;
+  twoFactorEnabled: boolean;
+  checks: number;
+  comments: number;
+  likes: number;
+  followers: number;
+  following: number;
+  bookmarks: Bookmark[];
+  sessions?: Session[];
+  socialAccounts?: SocialAccount[];
+  notifications?: Notification[];
 }
 
 export default function MyPage() {
@@ -66,11 +66,6 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'analytics'|'security'|'activity'>('analytics');
-
-  // 로그인 정보 꺼내기
-  const { isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
-  const [profile, setProfile] = useState<userDTO | null>(null);
-  const navigate = useNavigate();
 
   // 프로필 편집
   const [editingProfile, setEditingProfile] = useState(false);
@@ -153,48 +148,43 @@ export default function MyPage() {
 
   // 사용자 정보 로드 및 타임라인 로드
   useEffect(() => {
-    // AuthContext 에서 인증 상태가 준비된 후에만 실행
-    if (authLoading || !isAuthenticated) return;
-
     setLoading(true);
-    setError(null);
+    fetchUser()
+      .then(u => {
+        const avatarURL = u.avatar || DEFAULT_AVATAR;
+        const accounts = u.socialAccounts?.map((sa: SocialAccount) => ({
+          provider: sa.provider,
+          connected: sa.connected
+        }));
+        setUser({ ...u, avatar: avatarURL, socialAccounts: accounts });
 
-    fetch(`${URL}/session/Profile/${user?.nickname}`, { credentials: 'include' })
-    .then(res => {
-      if (!res.ok) throw new Error(`프로필 조회 실패: ${res.status}`);
-      return res.json() as Promise<{
-        success: boolean;
-        code: number;
-        message: string;
-        result: userDTO | null;
-      }>;
-    })
-    .then(apiRes => {
-      if (!apiRes.success || !apiRes.result) {
-        throw new Error(apiRes.message || '프로필 데이터가 없습니다.');
-      }
-      // User 타입에 맞춰 설정
-      setProfile(apiRes.result);
-      // 편집 폼 초기값
-      setFormNickname(apiRes.result.nickname);
-      setFormBio(apiRes.result.bio);
-      setAvatarPreview(DEFAULT_AVATAR);
-    })
-    .catch(err => {
-      console.error(err);
-      setError(err.message);
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-}, [authLoading, isAuthenticated, user?.nickname]);
+        if (u.checks >= 100) {
+          setAchievements([{ id: 1, name: '팩트체크 100회 달성', icon: '/icons/check100.png' }]);
+        }
+        setCommentStats({
+          likesReceived: Math.floor(u.likes * 0.5),
+          repliesReceived: Math.floor(u.comments * 0.3),
+        });
+
+        setTimelineLoading(true);
+        fetchActivity()
+          .then(data => setTimelineItems(data))
+          .catch((e: Error) => setTimelineError(e.message || '활동 히스토리를 불러올 수 없습니다.'))
+          .finally(() => setTimelineLoading(false));
+      })
+      .catch((e: Error) => setError(e.message || '유저 정보를 불러오지 못했습니다.'))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Bias 데이터 로드
   useEffect(() => {
     setBiasLoading(true);
     fetchBias(period)
-      .then(data => setBiasData(data))
-      .catch(() => setBiasError('편향 데이터를 불러오지 못했습니다.'))
+      .then(data => {
+        const arr = Array.isArray(data) ? data : [];
+        setBiasData(arr);
+      })
+      .catch((e: Error) => setBiasError(e.message || '편향 데이터를 불러오지 못했습니다.'))
       .finally(() => setBiasLoading(false));
   }, [period]);
 
@@ -203,7 +193,7 @@ export default function MyPage() {
     setWatchLoading(true);
     fetchWatchTime(watchTab)
       .then(data => setWatchData(data))
-      .catch(() => setWatchError('시청 시간 데이터를 불러오지 못했습니다.'))
+      .catch((e: Error) => setWatchError(e.message || '시청 시간 데이터를 불러오지 못했습니다.'))
       .finally(() => setWatchLoading(false));
   }, [watchTab]);
 
@@ -214,9 +204,27 @@ export default function MyPage() {
       .then(data =>
         setActivityData(data.map(pt => ({ name: pt.name, count: pt.min })))
       )
-      .catch(() => setActivityError('활동 데이터를 불러오지 못했습니다.'))
+      .catch((e: Error) => setActivityError(e.message || '활동 데이터를 불러오지 못했습니다.'))
       .finally(() => setActivityLoading(false));
   }, [activityPeriod]);
+
+  // 세션·알림·북마크 로드
+  useEffect(() => {
+    setSessionsLoading(true);
+    Promise.resolve(user?.sessions || [])
+      .catch((e: Error) => setSessionsError(e.message || '세션 데이터를 불러오지 못했습니다.'))
+      .finally(() => setSessionsLoading(false));
+
+    setNotificationsLoading(true);
+    Promise.resolve(user?.notifications || [])
+      .catch((e: Error) => setNotificationsError(e.message || '알림 데이터를 불러오지 못했습니다.'))
+      .finally(() => setNotificationsLoading(false));
+
+    setBookmarksLoading(true);
+    Promise.resolve(user?.bookmarks || [])
+      .catch((e: Error) => setBookmarksError(e.message || '북마크 데이터를 불러오지 못했습니다.'))
+      .finally(() => setBookmarksLoading(false));
+  }, [user]);
 
   // 지도 초기화
   useLayoutEffect(() => {
@@ -252,26 +260,27 @@ export default function MyPage() {
   // 핸들러
   const handleAvatarChange = (file: File) => {
     setFormAvatarFile(file);
-    // setAvatarPreview(URL.createObjectURL(file));
+    setAvatarPreview(URL.createObjectURL(file));
   };
   const handleAvatarReset = () => {
     if (!user) return;
     setFormAvatarFile(null);
-    setAvatarPreview(DEFAULT_AVATAR);
+    setAvatarPreview(user.avatar || DEFAULT_AVATAR);
   };
   const saveProfile = () => {
     if (!user) return;
     setUser({
       ...user,
       nickname: formNickname,
-      bio: formBio
+      bio: formBio,
+      avatar: avatarPreview
     });
     setEditingProfile(false);
   };
 
   const openEmailModal = () => {
     if (!user) return;
-    setFormNewEmail(user.email);
+    setFormNewEmail(user.loginEmail);
     setIsCodeSent(false);
     setVerificationCode('');
     setIsVerified(false);
@@ -292,7 +301,19 @@ export default function MyPage() {
       alert('인증 코드가 일치하지 않습니다.');
     }
   };
-  
+  const handleEmailUpdate = () => {
+    if (!user || !isVerified) return;
+    setUser({ ...user, loginEmail: formNewEmail });
+    closeEmailModal();
+    alert('이메일이 변경되었습니다.');
+  };
+
+  const toggle2FA = () => {
+    if (!user) return;
+    const updated = !twoFA;
+    setTwoFA(updated);
+    setUser({ ...user, twoFactorEnabled: updated });
+  };
 
   const handlePwdSave = () => {
     if (newPwd !== confirmPwd) {
@@ -306,15 +327,20 @@ export default function MyPage() {
     setConfirmPwd('');
   };
 
+  const markAllNotificationsRead = () => {
+    if (!user) return;
+    setUser({ ...user, notifications: [] });
+  };
 
   if (loading) return <div className="spinner">로딩 중…</div>;
   if (error)   return <div className="error">{error}</div>;
-  if (!profile)   return null;
+  if (!user)   return null;
 
-  // const sessions      = user.sessions     ?? [];
-  // const notifications = user.notifications?? [];
-  // const bookmarks     = user.bookmarks;
+  const sessions      = user.sessions     ?? [];
+  const notifications = user.notifications?? [];
+  const bookmarks     = user.bookmarks    ?? [];
 
+  const biasArray = Array.isArray(biasData) ? biasData : [];
   const orderedBiasData = ['진보','중도','보수']
     .map(label => biasData.find(d => d.name === label) || { name: label, value: 0 });
 
@@ -325,17 +351,16 @@ export default function MyPage() {
 
   return (
     <div className="mypage">
-      <Header />
       <div className="mypage__inner">
         <aside className="sidebar">
           <div className="profile-box">
             <div className="avatar"><img src={avatarPreview} alt="avatar" /></div>
-            <h2 className="nickname">{profile.nickname}</h2>
-            <p className="bio">{profile?.bio || '소개 없음'}</p>
-            {/* <div className="follow-info">
+            <h2 className="nickname">{user.nickname}</h2>
+            <p className="bio">{user.bio || '소개 없음'}</p>
+            <div className="follow-info">
               <span>👥 {user.followers}</span>
               <span>➡️ {user.following}</span>
-            </div> */}
+            </div>
           </div>
           <nav className="sidebar-nav">
             <button className={tab==='analytics'?'active':''} onClick={()=>setTab('analytics')}>Analytics</button>
@@ -459,12 +484,20 @@ export default function MyPage() {
                 <div className="info-row">
                   <span className="label">이메일</span>
                   <div className="display-group">
-                    <span>{user?.email}</span>
+                    <span>{user.loginEmail}</span>
+                    <button className="btn edit" onClick={openEmailModal}>변경</button>
                   </div>
                 </div>
                 <div className="info-row">
                   <span className="label">비밀번호</span>
                   <button className="btn" onClick={()=>setShowPwdModal(true)}>변경</button>
+                </div>
+                <div className="info-row">
+                  <span className="label">2단계 인증</span>
+                  <label className="toggle">
+                    <input type="checkbox" checked={twoFA} onChange={toggle2FA} />
+                    <span>{twoFA?'활성화':'비활성화'}</span>
+                  </label>
                 </div>
               </article>
 
@@ -474,8 +507,8 @@ export default function MyPage() {
                   <div className="profile-display">
                     <div className="avatar-large"><img src={avatarPreview} alt="avatar" /></div>
                     <div className="profile-info">
-                      <h4 className="profile-name">{profile.nickname}</h4>
-                      <p className="profile-bio">{profile.bio || '소개가 아직 없습니다.'}</p>
+                      <h4 className="profile-name">{user.nickname}</h4>
+                      <p className="profile-bio">{user.bio || '소개가 아직 없습니다.'}</p>
                     </div>
                     <button className="btn btn-edit-profile" onClick={()=>setEditingProfile(true)}>✎ 수정</button>
                   </div>
@@ -515,14 +548,14 @@ export default function MyPage() {
                       />
                     </div>
                     <div className="form-actions">
-                      <button type="button" className="btn cancel" onClick={()=>{ setEditingProfile(false); setAvatarPreview(DEFAULT_AVATAR); }}>취소</button>
+                      <button type="button" className="btn cancel" onClick={()=>{ setEditingProfile(false); setAvatarPreview(user.avatar||DEFAULT_AVATAR); }}>취소</button>
                       <button type="submit" className="btn save">저장</button>
                     </div>
                   </form>
                 )}
               </article>
 
-              {/* <article className="card">
+              <article className="card">
                 <h3>앱 연결</h3>
                 {user.socialAccounts && user.socialAccounts.length > 0 ? (
                   <ul className="apps-list">
@@ -547,48 +580,16 @@ export default function MyPage() {
                 ) : (
                   <p className="empty">연결된 앱이 없습니다.</p>
                 )}
-              </article> */}
+              </article>
 
               <article className="card delete-card">
                 <h3 className="danger">계정 삭제</h3>
-                  <p>데이터가 영구 삭제됩니다. 신중히 결정하세요.</p>
-                  <button
-                    className="btn delete-account"
-                    onClick={async () => {
-                      if (!window.confirm('정말 삭제하시겠습니까?')) return;
-
-                      try {
-                        // 회원 탈퇴
-                        const res = await fetch(`${URL}/user/del`, {
-                          method: 'POST',
-                          credentials: 'include' // 쿠키 포함
-                        });
-                        const apiRes = await res.json()
-
-                        if (!res.ok || !apiRes.success) {
-                          throw new Error(apiRes.message || `삭제 실패: ${res.status}`);
-                        }
-
-                        // 서버 세션 무효화
-                        const loRes = await fetch(`${URL}/session/logout`, {
-                          method: 'POST',
-                          credentials: 'include',
-                        });
-                        if(!loRes.ok){
-                          console.warn('서버 로그아웃 실패:', loRes.status);
-                        }
-
-                      } catch (err: any) {
-                        console.error(err);
-                        alert(err.message || '회원 탈퇴 중 오류가 발생했습니다.');
-                      } finally {
-                        logout();
-                        navigate('/', { replace: true });
-                      }
-                    }}
-                  >
-                    계정 삭제
-                  </button>
+                <p>데이터가 영구 삭제됩니다. 신중히 결정하세요.</p>
+                <button className="btn delete-account" onClick={() => {
+                  if (window.confirm('정말 삭제하시겠습니까?')) {
+                    alert('삭제되었습니다.');
+                  }
+                }}>계정 삭제</button>
               </article>
             </div>
           )}
@@ -600,15 +601,15 @@ export default function MyPage() {
                 <h3>활동 요약</h3>
                 <div className="stats-list">
                   <div className="stat-item">
-                    <span className="stat-value">{0}</span>
+                    <span className="stat-value">{user.checks}</span>
                     <span className="stat-label">팩트체크</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-value">{0}</span>
+                    <span className="stat-value">{user.comments}</span>
                     <span className="stat-label">댓글</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-value">{0}</span>
+                    <span className="stat-value">{user.likes}</span>
                     <span className="stat-label">좋아요</span>
                   </div>
                 </div>
@@ -645,7 +646,7 @@ export default function MyPage() {
               <article className="card timeline-card">
                 <div className="notification-header">
                   <h3>활동 히스토리</h3>
-                  {/* <button className="btn mark-all-read" onClick={markAllNotificationsRead} aria-label="모든 알림 읽음 처리">모두 읽음</button> */}
+                  <button className="btn mark-all-read" onClick={markAllNotificationsRead} aria-label="모든 알림 읽음 처리">모두 읽음</button>
                 </div>
                 <div className="timeline-controls">
                   <select aria-label="활동 유형 필터" value={timelineFilter} onChange={e => { setTimelineFilter(e.target.value as any); setTimelinePage(1); }}>
@@ -680,7 +681,7 @@ export default function MyPage() {
                 )}
               </article>
 
-              {/* <article className="card bookmark-card">
+              <article className="card bookmark-card">
                 <h3>북마크</h3>
                 {bookmarksLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -689,17 +690,18 @@ export default function MyPage() {
                     : bookmarks.length > 0
                       ? (
                         <ul className="bookmark-list">
+                          {bookmarks.map(b => (
                             <li key={b.id}>
                               <a href={b.url} target="_blank" rel="noopener noreferrer">{b.title}</a>
-                              <span className="text-sub">{formatDate(b.url)}</span>
+                              <span className="text-sub">{formatDate(b.url /* date not available, replace if you have date */)}</span>
                             </li>
                           ))}
                         </ul>
                       )
                       : <p className="empty">북마크한 글이 없습니다.</p>}
-              </article> */}
+              </article>
 
-              {/* <article className="card session-card">
+              <article className="card session-card">
                 <h3>세션</h3>
                 {sessionsLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -717,9 +719,9 @@ export default function MyPage() {
                         </ul>
                       )
                       : <p className="empty">로그인 세션이 없습니다.</p>}
-              </article> */}
+              </article>
 
-              {/* <article className="card notification-card">
+              <article className="card notification-card">
                 <h3>알림</h3>
                 {notificationsLoading
                   ? <div className="spinner">로딩 중…</div>
@@ -737,13 +739,13 @@ export default function MyPage() {
                         </ul>
                       )
                       : <p className="empty">받은 알림이 없습니다.</p>}
-              </article> */}
+              </article>
             </div>
           )}
         </section>
       </div>
 
-      {/* Email Modal
+      {/* Email Modal */}
       {showEmailModal && (
         <div className="modal-overlay">
           <div tabIndex={-1} className="modal email-modal" role="dialog" aria-modal="true">
@@ -775,7 +777,7 @@ export default function MyPage() {
             </div>
           </div>
         </div>
-      )} */}
+      )}
 
       {/* Password Modal */}
       {showPwdModal && (

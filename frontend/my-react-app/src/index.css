@@ -1,3 +1,5 @@
+/* src/index.css */
+
 /* --- Tailwind CSS import (필수 3줄) --- */
 @tailwind base;
 @tailwind components;
@@ -17,3 +19,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 기본 테마 변수 */
+:root {
+  --nb-bg: #ffffff;
+  --nb-text: #333333;
+  --nb-header-bg: #ffffff;
+  --nb-border: #eeeeee;
+}
+
+[data-theme='dark'] {
+  --nb-bg: #1c1c1c;
+  --nb-text: #f0f0f0;
+  --nb-header-bg: #2a2a2a;
+  --nb-border: #444444;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--nb-bg);
+  color: var(--nb-text);
+}
+
+.site-header {
+  background-color: var(--nb-header-bg);
+  border-bottom: 1px solid var(--nb-border);
+}
+

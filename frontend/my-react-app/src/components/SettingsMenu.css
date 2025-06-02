@@ -1,0 +1,119 @@
+:root.dark-mode {
+  --card: #2a2a2a;
+  --text: #eee;
+}
+
+/* 1) ⚙️ 설정 버튼 */
+.settings-button {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  width: 48px; height: 48px;
+  border: none; border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* 2) 메뉴 컨테이너: 지름480px 전체 원, 우하단 1/4만 보이게 */
+.settings-menu {
+  position: fixed;
+  bottom: 0; right: 0;
+  width: 480px; height: 480px;
+  background: var(--card);
+  border-radius: 50%;
+  clip-path: circle(240px at 100% 100%);
+  transform: scale(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease;
+  z-index: 999;
+  pointer-events: none;
+}
+.settings-menu.open {
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* 3) ✖️ 닫기 버튼 */
+.collapse-button {
+  position: absolute;
+  bottom: 24px; right: 24px;
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+/* 4) 공통 메인 아이템 기본 */
+.menu-item {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 48px; height: 48px;
+  background: var(--primary);
+  color: #fff;
+  border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: bottom right;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+  opacity: 0; pointer-events: none;
+}
+.settings-menu.open .menu-item {
+  opacity: 1; pointer-events: auto;
+}
+
+/* 5) 메인 모드 아이템 배치 */
+.settings-menu.open .item-lang:not(.active) {
+  transform: rotate(-100deg) translateX(170px) rotate(100deg);
+}
+.settings-menu.open .item-privacy {
+  transform: rotate(-135deg) translateX(170px) rotate(135deg);
+}
+.settings-menu.open .item-notice {
+  transform: rotate(-170deg) translateX(170px) rotate(170deg);
+}
+
+/* 6) 언어 active 모드: 언어 버튼을 ✖️ 위치로 이동 */
+.settings-menu.open .menu-item.item-lang.active {
+  bottom: 24px; right: 24px;
+  transform: none;
+  z-index: 1001;
+}
+
+/* 7) 언어 서브아이템 */
+.submenu-item {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 40px; height: 40px;
+  background: var(--left);
+  color: #fff;
+  border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: bottom right;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+  opacity: 0; pointer-events: none;
+}
+.settings-menu.open .submenu-item {
+  opacity: 1; pointer-events: auto;
+}
+
+/* 8) 언어 서브아이템 배치 */
+.settings-menu.open .submenu-item.lang-ko {
+  transform: rotate(-100deg) translateX(170px) rotate(100deg);
+}
+.settings-menu.open .submenu-item.lang-en {
+  transform: rotate(-120deg) translateX(170px) rotate(120deg);
+}
+.settings-menu.open .submenu-item.lang-ja {
+  transform: rotate(-140deg) translateX(170px) rotate(140deg);
+}
+.settings-menu.open .submenu-item.lang-zh {
+  transform: rotate(-160deg) translateX(170px) rotate(160deg);
+}
+
+/* 9) 활성 언어 버튼 표시 */
+.menu-item.item-lang.active {
+  background: var(--right);
+}

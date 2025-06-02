@@ -1,7 +1,6 @@
 // src/pages/goals.tsx
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom'; // 추가
-import Header from '../components/Header';
+import Footer from '../components/Footer';
 import '../styles/Goals.css'; // 예: styles 폴더에서 가져온다면 이렇게 수정
 
 function GoalsPage() {
@@ -58,8 +57,6 @@ function GoalsPage() {
 
   return (
     <>
-      <Header />
-
       {/* 히어로 섹션 */}
       <section className="hero">
         <h1>뉴스 균형의 이정표</h1>
@@ -263,34 +260,11 @@ function GoalsPage() {
             </p>
           </div>
         </div>
-      </div>
+    </div>
 
-      {/* 푸터 영역 */}
-      <footer>
-        <div className="footer-inner">
-          <div className="footer-info">
-            <p className="footer-logo">NewsBalance</p>
-            <p className="footer-desc">
-              언론이 올바른 정보로
-              <br />
-              진실을 밝히고 어둠을 헤치는
-              <br />
-              등불이 되기 위한 플랫폼
-            </p>
-          </div>
-          <div className="footer-links">
-            <a href="#">사이트 소개</a>
-            <a href="#">이용 약관</a>
-            <a href="#">개인정보 처리방침</a>
-            <a href="#">제보/문의</a>
-          </div>
-        </div>
-        <div className="copyright">
-          © 2025 NewsBalance Team. All rights reserved.
-          <br />
-          세상을 더 공정하게 만드는 한 걸음, NewsBalance가 함께합니다.
-        </div>
-      </footer>
+
+<Footer />
+
     </>
   );
 }

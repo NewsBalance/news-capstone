@@ -1,3 +1,5 @@
+/* src/styles/Header.css */
+
 /* 헤더 공통 */
 .site-header {
   background-color: #fff;
@@ -20,6 +22,8 @@
   font-size: 1.25rem;
   color: #4b2d63;
 }
+
+/* 네비게이션 메뉴 */
 .nav-menu ul {
   display: flex;
   gap: 1.5rem;
@@ -38,38 +42,36 @@
   border-bottom: 2px solid #5f3dc4;
 }
 
-/* 로그인·로그아웃 버튼 & 링크 공통 */
-.nav-menu .login-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  /* 브라우저 기본 버튼 스타일 제거 */
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: #fff;
+/* ————— 여기서부터 헤더 전용 로그인 버튼 스타일 ————— */
+.header-login-btn {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.25rem 0;           /* nav-menu a 와 동일 */
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.header-login-btn:hover {
+  color: #5f3dc4;
+}
+.header-login-btn.active {
+  border-bottom: 2px solid #5f3dc4;
+}
+/* ————— 헤더 로그인 버튼 스타일 끝 ————— */
+
+/* 테마 토글 버튼은 원래대로 유지 (옵션) */
+.theme-toggle {
+  background: none;
   border: 1px solid #5f3dc4;
   border-radius: 4px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
   color: #5f3dc4;
-  text-decoration: none; /* <a>에도 적용 */
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 0.85rem;
 }
-.nav-menu .login-btn:hover {
+.theme-toggle:hover {
   background-color: #5f3dc4;
   color: #fff;
-}
-.nav-menu .login-btn:focus {
-  outline: none;
-}
-
-/* 닉네임 표시 스타일 */
-.nav-menu .nickname {
-  display: inline-block;
-  margin: 0 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #333;
-  line-height: 1;
 }

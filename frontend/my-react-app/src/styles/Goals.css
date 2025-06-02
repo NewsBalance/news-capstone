@@ -432,56 +432,93 @@ img {
 }
 
 /* =========================================
-   푸터
+   Footer 전체
 ========================================= */
-footer {
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  padding: 2rem 0;
+.site-footer {
+  background: #fafafa;
+  color: #666;
+  padding: 2.5rem 1rem;
+  font-size: 0.9rem;
 }
-.footer-inner {
-  width: 90%;
+
+/* 상단 info 영역 */
+.footer-main {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  padding: 0 1rem;
 }
 .footer-info {
   flex: 1;
+  min-width: 220px;
 }
 .footer-logo {
   font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-  color: #5f3dc4;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
 .footer-desc {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-bottom: 0.8rem;
   color: #555;
-  line-height: 1.6;
-  margin-bottom: 1rem;
 }
-.footer-links {
+.footer-contact {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* 하단 링크·선·카피 영역 */
+.footer-copy {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  align-items: flex-end;
 }
-.footer-links a {
-  font-size: 0.9rem;
-  color: #4b2d63;
-  transition: color 0.2s ease;
+
+/* 링크: 선 바로 위, 오른쪽 정렬 */
+.footer-nav {
+  display: flex;
+  gap: 1rem;
+  align-self: flex-end;
 }
-.footer-links a:hover {
-  color: #5f3dc4;
+.footer-nav a {
+  font-size: 0.85rem;
+  color: #999;
+  text-decoration: none;
+  transition: color 0.2s;
 }
-.copyright {
-  font-size: 0.8rem;
-  color: #777;
-  margin-top: 1.5rem;
+.footer-nav a:hover {
+  color: #666;
+}
+
+/* 구분선 */
+.footer-separator {
+  width: 100%;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* 카피문구 */
+.footer-text {
   text-align: center;
+  font-size: 0.75rem;
+  color: #aaa;
+  line-height: 1.4;
 }
+
+/* 반응형: 모바일에서는 중앙 정렬 */
+@media (max-width: 768px) {
+  .footer-copy {
+    align-items: center;
+  }
+  .footer-nav {
+    align-self: center;
+  }
+}
+
 
 /* =========================================
    반응형
