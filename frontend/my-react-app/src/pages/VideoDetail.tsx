@@ -62,6 +62,7 @@ export default function VideoDetailPage() {
   const [stats, setStats] = useState<VideoStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
+  const [biasScore, setBiasScore] = useState<number | null>(null);
 
   const [analysis, setAnalysis] = useState<TranscriptAnalysis | null>(null);
   const [subLoading, setSubLoading] = useState(false);
@@ -117,6 +118,7 @@ export default function VideoDetailPage() {
           setSentences(data.sentencesScore || []);
           setRelatedArticles(data.relatedArticles || []);
           setKeywordsList(data.keywords || []);
+          setBiasScore(data.biasScore ?? null);
         })
         .catch(() => {
           setSentError(t('videoDetail.error.analysis'));
@@ -128,19 +130,19 @@ export default function VideoDetailPage() {
   }, [videoUrl, t]);
 
   // 3) 자막 분석
-  useEffect(() => {
-    if (!video) return;
-    setSubLoading(true);
-    setSubError('');
-    fetch(`${API_BASE}/analyzeTranscript?videoId=${video.videoId}`)
-        .then(res => {
-          if (!res.ok) throw new Error();
-          return res.json();
-        })
-        .then((data: TranscriptAnalysis) => setAnalysis(data))
-        .catch(() => setSubError(t('videoDetail.error.transcript')))
-        .finally(() => setSubLoading(false));
-  }, [video, t]);
+  // useEffect(() => {
+  //   if (!video) return;
+  //   setSubLoading(true);
+  //   setSubError('');
+  //   fetch(`${API_BASE}/analyzeTranscript?videoId=${video.videoId}`)
+  //       .then(res => {
+  //         if (!res.ok) throw new Error();
+  //         return res.json();
+  //       })
+  //       .then((data: TranscriptAnalysis) => setAnalysis(data))
+  //       .catch(() => setSubError(t('videoDetail.error.transcript')))
+  //       .finally(() => setSubLoading(false));
+  // }, [video, t]);
 
   const biasDesc: Record<Bias, string> = {
     left: t('videoDetail.biasDesc.left'),
@@ -177,6 +179,21 @@ export default function VideoDetailPage() {
             <p className="bias-desc">
               {biasDesc[analysis?.bias ?? video.bias]}
             </p>
+            {biasScore !== null && (
+            <p className="bias-desc">
+              평균 편향 점수: <span
+                className={
+                  biasScore > 0.3
+                    ? 'score-positive'
+                    : biasScore < -0.3
+                    ? 'score-negative'
+                    : ''
+                }
+              >
+                {biasScore.toFixed(2)}
+              </span>
+            </p>
+          )}
           </div>
 
           <aside className="sidebar">
@@ -204,13 +221,15 @@ export default function VideoDetailPage() {
           <section className="summary-details">
             <h2>{t('videoDetail.transcriptSummaryTitle')}</h2>
 
-            {sentences.map((s, idx) => (
-                <div key={idx} className="sentence-item">
-                  <span className="sentence-text">{parse(s.content)}</span>
-                  <span className="score">
-                {t('videoDetail.biasScore')}: {s.score.toFixed(2)}
-              </span>
-                </div>
+              {sentences.map((s, idx) => (
+              <div key={idx} className="sentence-item">
+                <span className="sentence-text">{parse(s.content)}</span>
+                <span
+                  className={`score ${s.score > 0 ? 'score-positive' : s.score < 0 ? 'score-negative' : ''}`}
+                >
+                  {t('videoDetail.biasScore')}: {s.score.toFixed(2)}
+                </span>
+              </div>
             ))}
 
             {subLoading && <p className="loading">{t('videoDetail.loading')}</p>}
@@ -234,7 +253,7 @@ export default function VideoDetailPage() {
             )}
           </section>
 
-          <section className="metadata">
+          {/* <section className="metadata">
             <h2>{t('videoDetail.videoStatsTitle')}</h2>
             {statsLoading && <p className="loading">{t('videoDetail.loading')}</p>}
             {statsError && <p className="error">{statsError}</p>}
@@ -246,7 +265,7 @@ export default function VideoDetailPage() {
                   <li>{t('videoDetail.commentCount', { count: Number(stats.commentCount) })}</li>
                 </ul>
             )}
-          </section>
+          </section> */}
 
           <button className="back-button" onClick={() => navigate(-1)}>
             ← {t('videoDetail.back')}
