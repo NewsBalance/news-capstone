@@ -6,16 +6,23 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import newsbalance.demo.DTO.*;
+import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
+import newsbalance.demo.DTO.Response.APIResponse;
+import newsbalance.demo.Entity.DebateMessage;
+import newsbalance.demo.Entity.VideoInfo;
+import newsbalance.demo.Service.DebateMessageService;
 import newsbalance.demo.Service.DebateRoomService;
 import newsbalance.demo.Service.DebateService;
 import newsbalance.demo.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -32,6 +39,12 @@ public class DebateController {
 
     @Autowired
     private DebateService debateService;
+
+    @Autowired
+    private DebateMessageService debateMessageService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     // Message 클래스 정의 (이미 있다면 import만 추가)
     @Getter
@@ -183,5 +196,33 @@ public class DebateController {
         DebateRoomDto room = debateRoomService.joinAsDebaterB(roomId, nickname);
         template.convertAndSend("/topic/room/" + roomId + "/status", room);
         return ResponseEntity.ok(room);
+    }
+
+    // 토론 요약
+    @PostMapping("/debate/summary")
+    public ResponseEntity<SummarizeMessageResponseDTO> getDebateSummary(@RequestBody SummarizeMessageRequestDTO requestDTO){
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<SummarizeMessageRequestDTO> entity = new HttpEntity<>(requestDTO, headers);
+
+            ResponseEntity<SummarizeMessageResponseDTO> response = restTemplate.postForEntity(
+                    "http://localhost:5000/debate/summarize",
+                    entity,
+                    SummarizeMessageResponseDTO.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return ResponseEntity.ok(response.getBody());
+            } else {
+                System.err.println("Flask 서버 오류: 상태 코드 " + response.getStatusCode());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Flask 통신 중 예외 발생: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
