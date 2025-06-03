@@ -17,6 +17,7 @@ load_dotenv()
 nltk.download("punkt")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
+ASSISTANT2_ID = os.getenv("ASSISTANT2_ID")
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
@@ -32,7 +33,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
 app = Flask(__name__)
-
 
 
 #  1. 유튜브 자막 추출
@@ -94,7 +94,7 @@ def search_news_articles(keyword, max_articles=3):
     params = {
         "query": keyword,
         "display": 10,
-        "sort": "date"
+        "sort": "sim"
     }
     response = requests.get(url, headers=headers, params=params)
     results = []
@@ -116,14 +116,15 @@ def extract_keywords_from_summary(summary_text):
         keyword_block = parts[-1].strip()
         queries= [kw.strip() for kw in keyword_block.split(",") if kw.strip()]
         return queries
+    elif "[Query]" in summary_text:
+        parts = summary_text.split("[Query]")
+        keyword_block = parts[-1].strip()
+        queries= [kw.strip() for kw in keyword_block.split(",") if kw.strip()]
+        return queries
     return []
 
 
-
-
-
-
-#  엔드포인트
+#  유튜브 컨텐츠 요약 엔드포인트
 @app.route('/summarize', methods=['POST'])
 def summarize_endpoint():
     data = request.get_json()
@@ -163,6 +164,73 @@ def summarize_endpoint():
         
     }
     return jsonify(result)
+
+
+#  1. GPT Assistant 토론자 발언 요약 요청
+def dabate_summarize_with_assistant(text):
+    # 1. Thread 생성
+    thread = openai.beta.threads.create()
+    thread_id = thread.id
+
+    # 2. 메시지 전송 및 Assistant 실행
+    openai.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=text
+    )
+    run = openai.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=ASSISTANT2_ID
+    )
+
+    # 3. 실행 상태 대기
+    while run.status in ["queued", "in_progress"]:
+        run = openai.beta.threads.runs.retrieve(
+            thread_id=thread_id,
+            run_id=run.id,
+        )
+        time.sleep(1)
+
+    # 4. 결과 메시지 받아오기
+    messages = openai.beta.threads.messages.list(thread_id=thread_id, order="asc")
+    result = messages.data[-1].content[0].text.value
+    return result
+
+
+#  토론자 발언 요지 요약 엔드포인트
+@app.route('/debate/summarize', methods=['POST'])
+def dabate_summarize_endpoint():
+    data = request.get_json()
+    
+    # request에서 필요한 데이터 추출
+    message = data.get("message")
+    summarize_message = dabate_summarize_with_assistant(message)
+
+    if "[Query]" in summarize_message:
+        summarize_message_clean = summarize_message.split("[Query]")[0].strip()
+        
+    queries = extract_keywords_from_summary(summarize_message)
+    related_articles = {kw: search_news_articles(kw) for kw in queries}
+
+    
+    related_articles_result = []
+    for articles in related_articles.values():  
+        for art in articles:
+            related_articles_result.append({
+                "title": art["title"],
+                "link": art["link"]
+            })
+
+
+    # 데이터 반환
+    result = {
+        "summarizemessage": summarize_message_clean,
+        "relatedArticles": related_articles_result,
+        "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
+        
+    }
+    return jsonify(result)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
