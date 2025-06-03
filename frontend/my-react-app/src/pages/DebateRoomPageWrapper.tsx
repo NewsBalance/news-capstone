@@ -4,9 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import * as StompJs from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE, API_URL, WS_URL } from '../api/config';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
-const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:8080/ws';
 
 interface DebateMessage {
     speaker: string;
@@ -88,7 +87,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         if (!roomId || !userName) return;
 
         const client = new StompJs.Client({
-            webSocketFactory: () => new SockJS(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/ws`),
+            webSocketFactory: () => new SockJS(`${API_BASE}/ws`),
             connectHeaders: {
                 userName: userName // 사용자 이름을 헤더에 추가
             },
@@ -193,7 +192,7 @@ const DebateRoomPageWrapper: React.FC = () => {
 
         console.log('토론방 정보 요청:', roomId);
         
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}`, {
+        fetch(`${API_BASE}/api/debate-rooms/${roomId}`, {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -288,7 +287,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         alert('토론 규칙 안내:\n- 서로 존중하는 태도로 의견을 나눕니다.\n- 주제에서 벗어나지 않도록 합니다.\n- 각 발언은 300자 이내로 제한됩니다.\n- 상대방의 발언이 끝날 때까지 기다립니다.\n- 욕설, 비방은 제재당할 수 있습니다.');
         
         // 관전자든 토론자든 입장 처리
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/join`, {
+        fetch(`${API_BASE}/api/debate-rooms/${roomId}/join`, {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -434,7 +433,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 준비 상태 변경 함수 수정
     const handleReady = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/ready`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}/ready`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -463,7 +462,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         console.log('토론자 A 등록 API 호출...');
         
         // 토론자 A로 등록 API 호출
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/register-as-debater-a`, {
+        fetch(`${API_BASE}/api/debate-rooms/${roomId}/register-as-debater-a`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -500,7 +499,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론자 B로 참여하는 함수 추가
     const joinAsDebaterB = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/join-as-debater-b`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}/join-as-debater-b`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -549,7 +548,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             }
 
             // API 호출
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/leave`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}/leave`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -574,7 +573,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         if (!roomId || !userName) return;
         
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/join`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}/join`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -625,7 +624,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         if (!messageToCheck) return;
 
         // API를 통해 팩트체크 요청
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/fact-check`, {
+        fetch(`${API_BASE}/api/fact-check`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

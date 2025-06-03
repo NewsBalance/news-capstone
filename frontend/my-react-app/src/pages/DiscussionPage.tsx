@@ -8,6 +8,7 @@ import React, {
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/Discussion.css';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE } from '../api/config';
 
 /* ===============================================================
    타입 정의 & 샘플 데이터
@@ -268,13 +269,10 @@ export default function DiscussionPage() {
     return () => clearTimeout(id);
   }, [toastMsg]);
 
-  // API URL 상수 추가
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-
   // API 호출 함수 수정
   const fetchHotRooms = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/hot`, {
+      const response = await fetch(`${API_BASE}/api/debate-rooms/hot`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -316,7 +314,7 @@ export default function DiscussionPage() {
       console.log("모든 토론방 로딩 중...");
 
       // API 호출 시도
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
+      const response = await fetch(`${API_BASE}/api/debate-rooms`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -428,8 +426,8 @@ export default function DiscussionPage() {
     try {
       setIsCreating(true);
 
-      // API URL 수정 - 백엔드 서버 URL 추가
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms`, {
+      // API URL
+      const response = await fetch(`${API_BASE}/api/debate-rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

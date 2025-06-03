@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE } from '../api/config';
 
 interface LocationState {
   returnTo?: string;
@@ -31,7 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setError('');
     
     try {
-      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/session/login`;
+      const apiUrl = `${API_BASE}/session/login`;
       console.log('로그인 요청 시작:', apiUrl);
       
       const response = await fetch(apiUrl, {

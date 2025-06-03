@@ -2,9 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import '../styles/DebateRoom.css';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-
-// API URL 상수 추가
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+import { API_BASE } from '../api/config';
 
 interface DebateMessage {
     speaker: string;
@@ -56,9 +54,12 @@ const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: 
   const [articles, setArticles] = useState<RelatedArticle[]>([]);
 
   useEffect(() => {
+    // 메시지가 없으면 요청하지 않음
+    if (!messages || messages.length === 0) return;
+    
     const requestBody = { roomId };
 
-    fetch('http://localhost:8080/api/debate/summary', {
+    fetch(`${API_BASE}/api/debate/summary`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: 
       .catch((err) => {
         console.error('요약 또는 기사 로딩 실패:', err);
       });
-  }, [roomId]);
+  }, [roomId, messages.length]); // messages.length를 의존성 배열에 추가
 
   return { summary, articles };
 };
@@ -223,7 +224,7 @@ const DebateRoomPage: React.FC<Props> = ({
         }
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/api/debate-rooms/${roomId}/leave`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}/leave`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
