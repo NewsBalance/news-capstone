@@ -48,12 +48,15 @@ type SummarizeResponse = {
     keywords: string[];
 };
 
-// MessageList 컴포넌트 위에 추가
-const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: any[] }) => {
+// DebateSummarySection 컴포넌트 수정
+const DebateSummarySection = ({ roomId, messages }: { 
+  roomId: number; 
+  messages: any[];
+}) => {
   const [summary, setSummary] = useState<string | null>(null);
   const [articles, setArticles] = useState<RelatedArticle[]>([]);
 
-  useEffect(() => {
+  const requestSummary = () => {
     // 메시지가 없으면 요청하지 않음
     if (!messages || messages.length === 0) return;
     
@@ -78,9 +81,9 @@ const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: 
       .catch((err) => {
         console.error('요약 또는 기사 로딩 실패:', err);
       });
-  }, [roomId, messages.length]); // messages.length를 의존성 배열에 추가
+  };
 
-  return { summary, articles };
+  return { summary, articles, requestSummary };
 };
 
 // 메시지 목록 컴포넌트 개선
@@ -154,8 +157,9 @@ const DebateRoomPage: React.FC<Props> = ({
     const [isFactChecking, setIsFactChecking] = useState(false);
     const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
     const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
-    // 관전자 채팅 표시 여부를 위한 상태 추가
     const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
+    // 요약 요청 함수를 위한 참조 추가
+    const summaryRequestRef = useRef<() => void>(() => {});
     
     const debateMessagesRef = useRef<HTMLDivElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -320,10 +324,10 @@ const DebateRoomPage: React.FC<Props> = ({
         };
     }, []);
     
-    // 팩트체크 기능 수정 - 단순히 부모 함수만 호출
+    // 팩트체크 기능 수정 - 요약 기능 호출만 진행하고 기존 팩트체크 함수는 제거
     const handleFactCheck = (messageIndex: number) => {
-        // 부모 컴포넌트의 onFactCheck 함수만 호출
-        onFactCheck(messageIndex);
+        // 요약 요청 함수 호출
+        summaryRequestRef.current();
     };
 
     // 디버깅 로그 추가
@@ -358,11 +362,16 @@ const DebateRoomPage: React.FC<Props> = ({
         }
     }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
 
-    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용
-    const { summary: summaryFromComponent, articles: articlesFromComponent } = DebateSummarySection({ 
+    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용 (수정)
+    const { summary: summaryFromComponent, articles: articlesFromComponent, requestSummary } = DebateSummarySection({ 
         roomId: parseInt(roomId || '0'), 
-        messages 
+        messages
     });
+
+    // requestSummary 함수를 참조에 저장
+    useEffect(() => {
+        summaryRequestRef.current = requestSummary;
+    }, [requestSummary]);
 
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
