@@ -44,16 +44,6 @@ public class DebateController {
     @Autowired
     private RestTemplate restTemplate;
 
-    // Message 클래스 정의 (이미 있다면 import만 추가)
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    public static class Message {
-        private String type;
-        private String content;
-        private String sender;
-        private Long roomId;
-    }
 
     private String getNicknameFromSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);

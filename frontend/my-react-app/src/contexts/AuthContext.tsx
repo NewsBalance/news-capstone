@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const res = await fetch(`${URL}/session/my`, {
+        const res = await fetch(`${API_BASE}/session/my`, {
           method: 'GET',
           credentials: 'include',
           headers: {
