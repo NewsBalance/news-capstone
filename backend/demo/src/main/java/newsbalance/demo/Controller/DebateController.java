@@ -188,12 +188,17 @@ public class DebateController {
 
     // 토론 요약
     @PostMapping("/debate/summary")
-    public ResponseEntity<SummarizeMessageResponseDTO> getDebateSummary(@RequestBody SummarizeMessageRequestDTO requestDTO){
+    public ResponseEntity<SummarizeMessageResponseDTO> getDebateSummary(@RequestBody SummarizeMessageRequestDTO requestDTO) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<SummarizeMessageRequestDTO> entity = new HttpEntity<>(requestDTO, headers);
+            // Map으로 변환
+            Map<String, Object> requestMap = new HashMap<>();
+            requestMap.put("roomId", requestDTO.getRoomId());
+            requestMap.put("messages", requestDTO.getMessages());
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestMap, headers);
 
             ResponseEntity<SummarizeMessageResponseDTO> response = restTemplate.postForEntity(
                     "http://localhost:5000/debate/summarize",
@@ -202,7 +207,9 @@ public class DebateController {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return ResponseEntity.ok(response.getBody());
+                SummarizeMessageResponseDTO body = response.getBody();
+                body.setRoomId(requestDTO.getRoomId());
+                return ResponseEntity.ok(body);
             } else {
                 System.err.println("Flask 서버 오류: 상태 코드 " + response.getStatusCode());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

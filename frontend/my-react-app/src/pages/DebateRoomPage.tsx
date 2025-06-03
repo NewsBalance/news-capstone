@@ -3,6 +3,7 @@ import '../styles/DebateRoom.css';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { API_BASE } from '../api/config';
+import parse from 'html-react-parser';
 
 interface DebateMessage {
     speaker: string;
@@ -60,7 +61,7 @@ const DebateSummarySection = ({ roomId, messages }: {
     // 메시지가 없으면 요청하지 않음
     if (!messages || messages.length === 0) return;
     
-    const requestBody = { roomId };
+    const requestBody = { roomId, messages };
 
     fetch(`${API_BASE}/api/debate/summary`, {
       method: 'POST',
@@ -91,6 +92,13 @@ const MessageList = ({ messages, onFactCheck }: {
     messages: DebateMessage[], 
     onFactCheck: (messageIndex: number) => void 
 }) => {
+    const [checkedMessages, setCheckedMessages] = useState<Set<number>>(new Set());
+    const handleFactCheckClick = (index: number) => {
+        onFactCheck(index);
+        // 팩트체크 버튼을 누른 메시지 기록
+        setCheckedMessages(prev => new Set(prev).add(index));
+    };
+
     if (messages.length === 0) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -113,9 +121,9 @@ const MessageList = ({ messages, onFactCheck }: {
                         </p>
                     )}
                     <div className="message-actions mt-2 text-right">
-                        {!msg.isFactChecked && msg.speaker !== 'System' && (
+                        {!msg.isFactChecked && !checkedMessages.has(i) && msg.speaker !== 'System' && (
                             <button 
-                                onClick={() => onFactCheck(i)}
+                                onClick={() => handleFactCheckClick(i)}
                                 className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 px-2 py-1 rounded border border-orange-200 transition-colors"
                             >
                                 팩트체크
@@ -492,22 +500,22 @@ const DebateRoomPage: React.FC<Props> = ({
                                 <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참고 자료</h3>
                                 <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                                     <div className="text-sm text-gray-700">
-                                    {articlesFromComponent.length > 0 ? (
-                                        articlesFromComponent.map((article, idx) => (
-                                            <a
-                                            key={idx}
-                                            href={article.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block text-blue-700 underline whitespace-normal break-words mb-1"
-                                            dangerouslySetInnerHTML={{ __html: `• ${article.title}` }}
-                                            />
-                                        ))
+                                        {articlesFromComponent.length > 0 ? (
+                                        articlesFromComponent.map((article, idx) => {
+                                            const htmlContent = `<a href="${article.link}" target="_blank" rel="noopener noreferrer" class="text-blue-700 underline whitespace-normal break-words"> ${article.title}</a>`;
+                                            return (
+                                            <div key={idx} className="mb-1">
+                                                {parse(htmlContent)}
+                                            </div>
+                                            );
+                                        })
                                         ) : (
                                         <p className="text-gray-500">관련 기사가 없습니다</p>
                                         )}
                                         <div className="mt-3 pt-2 border-t border-gray-200">
-                                            <p className="text-xs text-gray-500 italic text-center">마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}</p>
+                                        <p className="text-xs text-gray-500 italic text-center">
+                                            마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}
+                                        </p>
                                         </div>
                                     </div>
                                 </div>

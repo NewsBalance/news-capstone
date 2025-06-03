@@ -201,10 +201,13 @@ def dabate_summarize_with_assistant(text):
 @app.route('/debate/summarize', methods=['POST'])
 def dabate_summarize_endpoint():
     data = request.get_json()
+    print(">>> 수신 데이터:", data)
     
     # request에서 필요한 데이터 추출
-    message = data.get("message")
-    summarize_message = dabate_summarize_with_assistant(message)
+    message = data.get("messages", [])
+    combined_message = "\n".join([m.get("text", "") for m in message])
+    
+    summarize_message = dabate_summarize_with_assistant(combined_message)
 
     if "[Query]" in summarize_message:
         summarize_message_clean = summarize_message.split("[Query]")[0].strip()

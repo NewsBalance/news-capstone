@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SummarizeMessageResponseDTO {
+    private Long roomId;
     private String summarizemessage;
     private List<RelatedArticleDTO> relatedArticles;
     private List<String> keywords;
