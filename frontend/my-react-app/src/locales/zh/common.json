@@ -74,7 +74,12 @@
       "apiKeyMissing": "未设置 YouTube API 密钥。",
       "default": "发生错误。"
     },
-    "noResults": "无结果"
+    "noResults": "无结果",
+    "uploaded": "上传",
+    "biasScore": "偏移图",
+    "sort": "排序",
+    "newest": "最新顺序",
+    "oldest": "老顺序"
   },
   "videoDetail": {
     "testTitle": "测试标题",
@@ -113,7 +118,8 @@
     "commentCount": "💬 {{count}} 条评论",
     "discussionRoomsTitle": "💬 讨论房间",
     "participants": "{{count}} 人参与",
-    "back": "返回"
+    "back": "返回",
+    "biasScore": "偏移分数"
   },
   "signup": {
     "title": "注册",

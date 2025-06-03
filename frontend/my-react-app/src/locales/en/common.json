@@ -74,7 +74,12 @@
       "apiKeyMissing": "YouTube API key is not set.",
       "default": "An error occurred."
     },
-    "noResults": "No results"
+    "noResults": "No results",
+    "uploaded": "uploaded",
+    "biasScore": "biasScore",
+    "sort": "sort",
+    "newest": "newest",
+    "oldest": "oldest"
   },
   "videoDetail": {
     "testTitle": "Test Title",
@@ -113,7 +118,8 @@
     "commentCount": "💬 {{count}} comments",
     "discussionRoomsTitle": "💬 Discussion Rooms",
     "participants": "{{count}} participants",
-    "back": "Back"
+    "back": "Back",
+    "biasScore": "biasScore"
   },
   "signup": {
     "title": "Sign Up",

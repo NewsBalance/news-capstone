@@ -74,7 +74,12 @@
       "apiKeyMissing": "YouTube API 키가 설정되지 않았습니다.",
       "default": "오류가 발생했습니다."
     },
-    "noResults": "결과 없음"
+    "noResults": "결과 없음",
+    "uploaded": "업로드",
+    "biasScore": "편향도",
+    "sort": "정렬",
+    "newest": "최신 순",
+    "oldest": "오래된 순"
   },
   "videoDetail": {
     "testTitle": "테스트용 제목",
@@ -113,7 +118,8 @@
     "commentCount": "💬 {{count}}개",
     "discussionRoomsTitle": "💬 토론방",
     "participants": "{{count}}명 참여",
-    "back": "뒤로"
+    "back": "뒤로",
+    "biasScore": "편향 점수"
   },
   "signup": {
     "title": "회원가입",
