@@ -22,6 +22,12 @@ import java.time.LocalDateTime;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +39,15 @@ public class DebateService {
     private final ChatMessageRepository chatMessageRepository;
     private final DebateRoomService debateRoomService;
     private final RoomParticipantRepository roomParticipantRepository;
+    
+    // 턴 타이머를 관리하는 맵 (룸ID -> 타이머 작업)
+    private final Map<Long, ScheduledFuture<?>> turnTimers = new ConcurrentHashMap<>();
+    
+    // 스케줄러 추가
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+    
+    // 턴 타임아웃 시간 (5분 = 300초)
+    private static final long TURN_TIMEOUT_SECONDS = 300;
 
     public void handleMessage(Message message) {
         User sender = userRepository.findByNickname(message.getSender())
@@ -42,9 +57,13 @@ public class DebateService {
                 .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + message.getRoomId()));
 
         switch (message.getType()) {
-            case "CHAT" -> handleChat(sender, room, message);
+            case "CHAT", "DEBATE" -> handleChat(sender, room, message);
             case "READY" -> handleReady(sender, room);
             case "FORFEIT", "EXIT", "ACK" -> endDebate(message, room);
+            default -> {
+                // 알 수 없는 메시지 타입 로깅
+                System.out.println("알 수 없는 메시지 타입: " + message.getType());
+            }
         }
     }
 
@@ -64,9 +83,12 @@ public class DebateService {
             return;
         }
 
-        // 메시지 저장
+        // 메시지가 수신되면 기존 타이머를 취소합니다
+        cancelTurnTimer(room.getId());
+
+        // 메시지 저장 - 타입 하드코딩 대신 메시지 타입 사용
         DebateMessage debateMessage = DebateMessage.builder()
-                .type("CHAT")
+                .type(message.getType())  // 원본 메시지 타입 사용
                 .content(message.getContent())
                 .sender(message.getSender())
                 .debateRoom(room)
@@ -103,6 +125,9 @@ public class DebateService {
                 ? room.getDebaterA().getNickname() : room.getDebaterB().getNickname();
         messagingTemplate.convertAndSend("/topic/turn/" + room.getId(), 
                 new Message("TURN", nextUser, "System", room.getId()));
+        
+        // 새로운 턴에 대한 타이머 시작
+        startTurnTimer(room.getId());
     }
 
     @Transactional
@@ -341,5 +366,104 @@ public class DebateService {
 
         // 방 퇴장 알림 전송 (선택적)
         // ...
+    }
+
+    // 토론이 시작될 때 타이머 시작
+    @Transactional
+    public void startDebate(Long roomId) {
+        DebateRoom room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + roomId));
+        
+        if (!room.isStarted()) {
+            room.setStarted(true);
+            roomRepository.save(room);
+            
+            // 토론 시작 메시지 전송
+            messagingTemplate.convertAndSend("/topic/room/" + roomId, 
+                    new Message("SYSTEM", "토론이 시작되었습니다.", "System", roomId));
+            
+            // 첫 턴에 대한 타이머 시작
+            startTurnTimer(roomId);
+        }
+    }
+    
+    // 턴 타이머 시작
+    private void startTurnTimer(Long roomId) {
+        // 기존 타이머가 있으면 취소
+        cancelTurnTimer(roomId);
+        
+        // 새 타이머 시작
+        ScheduledFuture<?> timerTask = scheduler.schedule(() -> {
+            try {
+                handleTurnTimeout(roomId);
+            } catch (Exception e) {
+                System.err.println("턴 타임아웃 처리 중 오류: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        
+        turnTimers.put(roomId, timerTask);
+        System.out.println("토론방 " + roomId + "의 턴 타이머 시작 (" + TURN_TIMEOUT_SECONDS + "초)");
+    }
+    
+    // 턴 타이머 취소
+    private void cancelTurnTimer(Long roomId) {
+        ScheduledFuture<?> timerTask = turnTimers.remove(roomId);
+        if (timerTask != null && !timerTask.isDone()) {
+            timerTask.cancel(false);
+            System.out.println("토론방 " + roomId + "의 턴 타이머 취소됨");
+        }
+    }
+    
+    // 턴 타임아웃 처리
+    @Transactional
+    public void handleTurnTimeout(Long roomId) {
+        DebateRoom room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("토론방을 찾을 수 없습니다: " + roomId));
+        
+        if (!room.isStarted()) {
+            return; // 토론이 시작되지 않았으면 무시
+        }
+        
+        // 현재 턴 사용자 찾기
+        User currentUser = userRepository.findById(room.getCurrentTurnUserId())
+                .orElseThrow(() -> new EntityNotFoundException("현재 턴 사용자를 찾을 수 없습니다"));
+        
+        // 시스템 메시지 저장
+        DebateMessage timeoutMessage = DebateMessage.builder()
+                .type("SYSTEM")
+                .content(currentUser.getNickname() + "님이 5분 동안 응답이 없어 턴이 넘어갑니다.")
+                .sender("System")
+                .debateRoom(room)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        messageRepository.save(timeoutMessage);
+        
+        // 시스템 메시지 전송
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, 
+                new Message("SYSTEM", currentUser.getNickname() + "님이 5분 동안 응답이 없어 턴이 넘어갑니다.", "System", roomId));
+        
+        // 턴 변경
+        if (room.getCurrentTurnUserId().equals(room.getDebaterA().getId())) {
+            room.setCurrentTurnUserId(room.getDebaterB().getId());
+        } else {
+            room.setCurrentTurnUserId(room.getDebaterA().getId());
+        }
+        roomRepository.save(room);
+        
+        // 턴 변경 알림
+        String nextUser = room.getCurrentTurnUserId().equals(room.getDebaterA().getId()) 
+                ? room.getDebaterA().getNickname() : room.getDebaterB().getNickname();
+        messagingTemplate.convertAndSend("/topic/turn/" + roomId, 
+                new Message("TURN", nextUser, "System", roomId));
+        
+        // 새 턴에 대한 타이머 시작
+        startTurnTimer(roomId);
+    }
+    
+    // 토론방 삭제 또는 종료 시 타이머 정리
+    public void cleanupRoomTimers(Long roomId) {
+        cancelTurnTimer(roomId);
     }
 }

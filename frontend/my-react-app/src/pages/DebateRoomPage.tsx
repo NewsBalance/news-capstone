@@ -35,7 +35,52 @@ interface Props {
     onLeave: () => void;
     isLoggedIn: boolean;
     onFactCheck: (messageIndex: number) => void;
+    currentTurnUserNickname?: string;
+    roomData?: any;
 }
+
+type RelatedArticle = {
+    link: string;
+    title: string;
+};
+
+type SummarizeResponse = {
+    summarizemessage: string;
+    relatedArticles: RelatedArticle[];
+    keywords: string[];
+};
+
+// MessageList 컴포넌트 위에 추가
+const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: any[] }) => {
+  const [summary, setSummary] = useState<string | null>(null);
+  const [articles, setArticles] = useState<RelatedArticle[]>([]);
+
+  useEffect(() => {
+    const requestBody = { roomId };
+
+    fetch('http://localhost:8080/api/debate/summary', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('요약 응답 오류');
+        return res.json();
+      })
+      .then((data: SummarizeResponse) => {
+        setSummary(data.summarizemessage);
+        setArticles(data.relatedArticles);
+      })
+      .catch((err) => {
+        console.error('요약 또는 기사 로딩 실패:', err);
+      });
+  }, [roomId]);
+
+  return { summary, articles };
+};
 
 // 메시지 목록 컴포넌트 개선
 const MessageList = ({ messages, onFactCheck }: {
@@ -60,11 +105,11 @@ const MessageList = ({ messages, onFactCheck }: {
                     <p className="message-content text-gray-700 whitespace-normal break-all overflow-hidden">{msg.text}</p>
                     {msg.summary && (
                         <p className="message-summary text-gray-600 text-sm italic mt-2 pt-2 border-t border-gray-100 whitespace-normal break-all overflow-hidden">
-                            요약: {msg.summary}
+                       
                         </p>
                     )}
                     <div className="message-actions mt-2 text-right">
-                        {!msg.isFactChecked && (
+                        {!msg.isFactChecked && msg.speaker !== 'System' && (
                             <button 
                                 onClick={() => onFactCheck(i)}
                                 className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 px-2 py-1 rounded border border-orange-200 transition-colors"
@@ -99,11 +144,17 @@ const DebateRoomPage: React.FC<Props> = ({
     onJoinAsDebaterB,
     onLeave,
     onFactCheck,
+    currentTurnUserNickname,
+    roomData,
 }) => {
     const [input, setInput] = useState("");
     const [chatInput, setChatInput] = useState("");
     const [isReady, setIsReady] = useState(false);
     const [isFactChecking, setIsFactChecking] = useState(false);
+    const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
+    const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
+    // 관전자 채팅 표시 여부를 위한 상태 추가
+    const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
     
     const debateMessagesRef = useRef<HTMLDivElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -274,40 +325,93 @@ const DebateRoomPage: React.FC<Props> = ({
         onFactCheck(messageIndex);
     };
 
+    // 디버깅 로그 추가
+    useEffect(() => {
+        console.log('현재 턴 정보:', {
+            currentTurnUserNickname,
+            userName,
+            isMyTurn,
+            roomStarted: roomData?.started
+        });
+    }, [currentTurnUserNickname, userName, isMyTurn, roomData?.started]);
+
+    // useEffect 수정 - 서버에서 받은 currentTurnUserNickname 사용
+    useEffect(() => {
+        // 서버에서 제공하는 currentTurnUserNickname이 있으면 사용
+        if (currentTurnUserNickname) {
+            setCurrentSpeaker(currentTurnUserNickname);
+            const myTurn = currentTurnUserNickname === userName;
+            setIsMyTurn(myTurn);
+            console.log(`턴 업데이트: ${currentTurnUserNickname}, 내 턴: ${myTurn}`);
+        } else {
+            // 기존 로직은 fallback으로 유지
+            const lastMessage = messages[messages.length - 1];
+            const nextSpeaker = lastMessage ? 
+                (lastMessage.speaker === debaterA ? debaterB : debaterA) : 
+                (debaterAReady && debaterBReady ? debaterA : null);
+            
+            setCurrentSpeaker(nextSpeaker);
+            const myTurn = nextSpeaker === userName;
+            setIsMyTurn(myTurn);
+            console.log(`턴 업데이트(fallback): ${nextSpeaker}, 내 턴: ${myTurn}`);
+        }
+    }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
+
+    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용
+    const { summary: summaryFromComponent, articles: articlesFromComponent } = DebateSummarySection({ 
+        roomId: parseInt(roomId || '0'), 
+        messages 
+    });
+
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
-            {/* 헤더 섹션 */}
-            <div className="debate-header p-4 bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto flex justify-between items-center">
+            {/* 헤더 섹션 - 크기 조정 */}
+            <div className="debate-header py-2 px-4 bg-white border-b border-gray-200 shadow-sm">
+                <div className="container mx-auto flex justify-between items-center px-4">
                     <div className="room-info">
-                        <h1 className="room-title text-2xl font-bold text-purple-600">{roomTitle || '제목 없음'}</h1>
-                        <p className="room-topic text-sm text-gray-600">{roomTopic || '주제 없음'}</p>
+                        <h1 className="room-title text-xl font-bold text-purple-600">{roomTitle || '제목 없음'}</h1>
+                        <p className="room-topic text-xs text-gray-600">{roomTopic || '주제 없음'}</p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <AuthStatus />
+                        {/* 모든 버튼의 디자인 일관성 유지 */}
                         {role === 'debater' && (
                             <button
                                 onClick={handleReady}
-                                className={`ready-button ${isReady ? 'bg-red-500' : 'bg-purple-600'} text-white px-4 py-2 rounded shadow-sm`}
+                                className={`ready-button ${isReady ? 'bg-red-500 hover:bg-red-600' : 'bg-purple-600 hover:bg-purple-700'} text-white px-2 py-0.5 rounded text-xs transition-colors`}
                             >
                                 {isReady ? '준비 취소' : '준비'}
                             </button>
                         )}
                         <button
                             onClick={handleLeave}
-                            className="leave-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow-sm"
+                            className="leave-button bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-xs transition-colors"
                         >
                             나가기
+                        </button>
+                        <button 
+                            onClick={() => setShowSpectatorChat(!showSpectatorChat)}
+                            className="ml-1 bg-green-500 hover:bg-green-600 text-white px-2 py-0.5 rounded text-xs transition-colors"
+                        >
+                            {showSpectatorChat ? "관전자 채팅 숨기기" : "관전자 채팅 보기"}
                         </button>
                     </div>
                 </div>
             </div>
             
-            {/* 컨텐츠 섹션 - 전체를 가운데 정렬 */}
-            <div className="flex flex-1 overflow-hidden justify-center items-center bg-neutral-50 p-4">
-                <div className="grid grid-cols-4 h-full max-w-7xl w-full mx-auto bg-white rounded-lg shadow-md" style={{ minHeight: '600px', tableLayout: 'fixed' }}>
-                    {/* 왼쪽: 토론자 영역 (2/4) */}
-                    <div className="col-span-2 border-r border-gray-200 h-full overflow-hidden flex flex-col" style={{ maxWidth: '100%' }}>
+            {/* 컨텐츠 섹션 - 전체 너비를 사용하도록 수정 */}
+            <div className="flex-1 overflow-hidden bg-neutral-50">
+                <div className="h-full w-full grid" 
+                     style={{ 
+                         minHeight: '600px', 
+                         maxHeight: '100%',
+                         gridTemplateColumns: showSpectatorChat ? 
+                             '2fr 1fr 1fr' : 
+                             '3fr 1fr', // 관전자 채팅 숨김 시 컬럼 비율 변경 (토론자 영역 확장)
+                         transition: 'grid-template-columns 0.3s ease-in-out'
+                     }}>
+                    {/* 왼쪽: 토론자 영역 */}
+                    <div className="border-r border-gray-200 h-full overflow-hidden flex flex-col" style={{ maxWidth: '100%' }}>
                         <div className="chat-header p-4 bg-white border-b border-gray-200 sticky top-0 z-10">
                             <h2 className="text-lg font-semibold text-pink-600">토론자 메시지</h2>
                         </div>
@@ -324,66 +428,74 @@ const DebateRoomPage: React.FC<Props> = ({
                             <input
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder={`${role === 'debater' ? '당신의 주장을 입력하세요...' : '관전자는 메시지를 보낼 수 없습니다'}`}
+                                placeholder={`${role === 'debater' ? (isMyTurn ? '당신의 주장을 입력하세요...' : '지금은 발언할 수 없습니다.') : '관전자는 메시지를 보낼 수 없습니다'}`}
                                 className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                disabled={role !== 'debater'}
+                                disabled={!(role === 'debater' && isMyTurn)}
                             />
                             <button
                                 onClick={() => {
-                                    if (input.trim() && role === 'debater') {
+                                    if (input.trim() && role === 'debater' && isMyTurn) {
                                         onSendMessage(input.trim());
                                         setInput("");
                                     }
                                 }}
-                                className={`send-button ${role !== 'debater' ? 'opacity-50 cursor-not-allowed' : ''} bg-pink-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-pink-700 transition-colors`}
-                                disabled={role !== 'debater'}
+                                className={`send-button ${!(role === 'debater' && isMyTurn) ? 'opacity-50 cursor-not-allowed' : ''} bg-pink-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-pink-700 transition-colors`}
+                                disabled={!(role === 'debater' && isMyTurn)}
                             >
                                 전송
                             </button>
                         </div>
                     </div>
 
-                    {/* 중앙: 정보 패널 (1/4) */}
-                    <div className="col-span-1 bg-neutral-50 border-r border-gray-200 h-full overflow-hidden flex flex-col" style={{ maxWidth: '100%' }}>
-                        <div className="chat-header p-4 bg-white border-b border-gray-200 sticky top-0 z-10 text-center">
+                    {/* 중앙: 정보 패널 */}
+                    <div className="bg-neutral-50 border-r border-gray-200 h-full overflow-hidden flex flex-col" style={{ 
+                        maxWidth: '100%',
+                        borderRight: showSpectatorChat ? '1px solid #e5e7eb' : 'none' // 관전자 채팅 숨김 시 오른쪽 테두리 제거
+                    }}>
+                        <div className="chat-header py-2 px-4 bg-white border-b border-gray-200 sticky top-0 z-10 text-center">
                             <h2 className="text-lg font-semibold text-purple-600">토론 정보</h2>
                         </div>
                         
-                        <div className="info-content flex-1 overflow-y-auto overflow-x-hidden p-4" style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-all' }}>
-                            <div className="info-section mb-4">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">토론 규칙</h3>
-                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                    <ul className="text-sm text-gray-700 list-disc pl-4 space-y-1">
-                                        <li>서로 존중하는 태도로 의견을 나눕니다.</li>
-                                        <li>주제에서 벗어나지 않도록 합니다.</li>
-                                        <li>각 발언은 300자 이내로 제한됩니다.</li>
-                                        <li>상대방의 발언이 끝날 때까지 기다립니다.</li>
-                                        <li>욕설, 비방은 제재당할 수 있습니다.</li>
-                                    </ul>
-                                </div>
-                            </div>
+                        <div className="info-content flex-1 overflow-y-auto overflow-x-hidden p-3" style={{ width: '100%', wordBreak: 'break-all' }}>
+                           
                             
                             {/* 참가자 정보 컴포넌트 사용 */}
                             <ParticipantInfo />
+
+
+                            <div className="info-section mb-4">
+                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">발언 요지</h3>
+                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                                    <ul className="text-sm text-gray-700 list-disc pl-4 space-y-1">
+                                    {summaryFromComponent ? (
+                                        <li>{summaryFromComponent}</li>
+                                         ) : (
+                                        <li>요약을 불러오는 중...</li>
+                                    )}
+                                    </ul>
+                                </div>
+                            </div>
+
+
                             
                             <div className="info-section">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">토론 실시간 요약</h3>
+                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참고 자료</h3>
                                 <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                                     <div className="text-sm text-gray-700">
-                                        <p className="mb-2 whitespace-normal break-all overflow-hidden">
-                                            <span className="text-pink-600 font-semibold">토론자 A:</span> 
-                                            {messages.filter(m => 
-                                                m.speaker === debaterA && 
-                                                !(typeof m.text === 'string' && m.text.startsWith('{') && m.text.endsWith('}'))
-                                            ).slice(-1)[0]?.text || '아직 발언이 없습니다'}
-                                        </p>
-                                        <p className="mb-2 whitespace-normal break-all overflow-hidden">
-                                            <span className="text-blue-600 font-semibold">토론자 B:</span> 
-                                            {messages.filter(m => 
-                                                m.speaker === debaterB && 
-                                                !(typeof m.text === 'string' && m.text.startsWith('{') && m.text.endsWith('}'))
-                                            ).slice(-1)[0]?.text || '아직 발언이 없습니다'}
-                                        </p>
+                                    {articlesFromComponent.length > 0 ? (
+                                        articlesFromComponent.map((article, idx) => (
+                                            <a
+                                            key={idx}
+                                            href={article.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-blue-700 underline whitespace-normal break-words mb-1"
+                                            dangerouslySetInnerHTML={{ __html: `• ${article.title}` }}
+                                            />
+                                        ))
+                                        ) : (
+                                        <p className="text-gray-500">관련 기사가 없습니다</p>
+                                        )}
                                         <div className="mt-3 pt-2 border-t border-gray-200">
                                             <p className="text-xs text-gray-500 italic text-center">마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}</p>
                                         </div>
@@ -393,45 +505,65 @@ const DebateRoomPage: React.FC<Props> = ({
                         </div>
                     </div>
 
-                    {/* 오른쪽: 관전자 채팅 (1/4) */}
-                    <div className="col-span-1 h-full bg-neutral-50 overflow-hidden flex flex-col" style={{ maxWidth: '100%' }}>
-                        <div className="chat-header p-4 bg-white border-b border-gray-200 sticky top-0 z-10 text-center">
-                            <h2 className="text-lg font-semibold text-green-600">관전자 채팅</h2>
-                        </div>
-                        
-                        <div 
-                            ref={chatMessagesRef}
-                            className="chat-messages flex-1 overflow-y-auto overflow-x-hidden p-4 bg-neutral-50"
-                            style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-all' }}
-                        >
-                            {chatMessages.length > 0 ? (
-                                chatMessages.map((msg, idx) => (
-                                    <div key={idx} className="chat-bubble bg-white border border-gray-200 rounded-lg p-2 mb-2 shadow-sm" style={{ wordBreak: 'break-all', width: '100%', maxWidth: '100%' }}>
-                                        {msg}
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-gray-500 italic text-center">채팅 메시지가 없습니다.</p>
-                            )}
-                        </div>
-                        
-                        <div className="chat-input-container p-4 bg-white border-t border-gray-200 sticky bottom-0">
-                            <input
-                                value={chatInput}
-                                onChange={(e) => setChatInput(e.target.value)}
-                                onKeyDown={handleChatKeyDown}
-                                placeholder="메시지를 입력하세요..."
-                                className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
-                            <button
-                                onClick={handleSendChat}
-                                className="send-button bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 transition-colors"
+                    {/* 오른쪽: 관전자 채팅 - 숨기기 가능 */}
+                    {showSpectatorChat && (
+                        <div className="h-full bg-neutral-50 overflow-hidden flex flex-col">
+                            <div className="chat-header py-2 px-4 bg-white border-b border-gray-200 sticky top-0 z-10 text-center">
+                                <h2 className="text-lg font-semibold text-green-600">관전자 채팅</h2>
+                            </div>
+                            
+                            <div 
+                                ref={chatMessagesRef}
+                                className="chat-messages flex-1 overflow-y-auto overflow-x-hidden p-4 bg-neutral-50"
+                                style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-all' }}
                             >
-                                채팅
-                            </button>
+                                {chatMessages.length > 0 ? (
+                                    chatMessages.map((msg, idx) => (
+                                        <div key={idx} className="chat-bubble bg-white border border-gray-200 rounded-lg p-2 mb-2 shadow-sm" style={{ wordBreak: 'break-all', width: '100%', maxWidth: '100%' }}>
+                                            {msg}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-500 italic text-center">채팅 메시지가 없습니다.</p>
+                                )}
+                            </div>
+                            
+                            <div className="chat-input-container p-4 bg-white border-t border-gray-200 sticky bottom-0">
+                                <input
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyDown={handleChatKeyDown}
+                                    placeholder={`${role === 'viewer' ? '메시지를 입력하세요...' : '토론자는 메시지를 보낼 수 없습니다'}`}
+                                    className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    disabled={role !== 'viewer'}
+                                />
+                                <button
+                                    onClick={handleSendChat}
+                                    className={`send-button ${role !== 'viewer' ? 'opacity-50 cursor-not-allowed' : ''} bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 transition-colors`}
+                                    disabled={role !== 'viewer'}
+                                >
+                                    전송
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
+            </div>
+
+            {/* 현재 발언자 표시 */}
+            <div className="current-speaker-info fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded-lg shadow-md border border-gray-200 flex flex-col items-center animate-fadeIn">
+                <h3 className="text-lg font-medium mb-1">
+                    <span className="text-gray-700">현재 발언자:</span> 
+                    <span className={`ml-2 font-bold ${currentSpeaker === debaterA ? 'text-pink-600' : 'text-blue-600'}`}>
+                        {currentSpeaker || '대기 중'}
+                    </span>
+                </h3>
+                {isMyTurn && (
+                    <div className="my-turn-indicator mt-2 text-center">
+                        <span className="turn-badge bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">내 차례</span>
+                        <p className="turn-notice text-sm text-gray-600 mt-1">5분 이내에 발언하지 않으면 턴이 넘어갑니다.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

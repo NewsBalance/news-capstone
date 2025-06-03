@@ -2,9 +2,6 @@ package newsbalance.demo.Controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 import newsbalance.demo.DTO.*;
 import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
 import newsbalance.demo.DTO.Response.APIResponse;
@@ -18,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import newsbalance.demo.Entity.Message;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;

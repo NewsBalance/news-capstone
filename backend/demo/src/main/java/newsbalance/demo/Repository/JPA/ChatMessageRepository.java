@@ -13,6 +13,8 @@ import java.util.List;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     List<ChatMessage> findByDebateRoomIdOrderByCreatedAtAsc(Long debateRoomId);
     
+    List<ChatMessage> findByDebateRoomId(Long roomId);
+    
     // JPQL 쿼리를 사용한 중복 메시지 검사 메서드
     @Query("SELECT COUNT(c) > 0 FROM ChatMessage c WHERE c.message = :message " +
            "AND c.debateRoom.id = :roomId AND c.user.id = :userId " +

@@ -4,12 +4,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 const URL = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}`;
 
 interface AuthContextType {
-    isAuthenticated: boolean;
-    user: User | null;
-    loading: boolean;
-    login: (user: User) => void;
-    logout: () => void;
-    checkAuth: () => boolean;
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  login: (user: User) => void;
+  logout: () => void;
+  checkAuth: () => boolean;
 }
 
 interface User {
@@ -40,8 +40,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // 기본 에러 처리를 위한 타임아웃 설정
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const res = await fetch(`${URL}/session/my`, { 
+
+        const res = await fetch(`${URL}/session/my`, {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           },
           signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
 
         if (!res.ok) {
@@ -108,17 +108,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         'Content-Type': 'application/json'
       }
     })
-    .then(() => {
-      // 클라이언트 상태 초기화
-      setUser(null);
-      setIsAuthenticated(false);
-    })
-    .catch(error => {
-      console.error('로그아웃 중 오류 발생:', error);
-      // 오류가 발생해도 클라이언트 상태는 초기화
-      setUser(null);
-      setIsAuthenticated(false);
-    });
+        .then(() => {
+          // 클라이언트 상태 초기화
+          setUser(null);
+          setIsAuthenticated(false);
+        })
+        .catch(error => {
+          console.error('로그아웃 중 오류 발생:', error);
+          // 오류가 발생해도 클라이언트 상태는 초기화
+          setUser(null);
+          setIsAuthenticated(false);
+        });
   };
 
   const checkAuth = () => {
@@ -127,11 +127,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider
-      value={{ isAuthenticated, user, loading, login, logout, checkAuth }}
-    >
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider
+          value={{ isAuthenticated, user, loading, login, logout, checkAuth }}
+      >
+        {children}
+      </AuthContext.Provider>
   );
 };
 

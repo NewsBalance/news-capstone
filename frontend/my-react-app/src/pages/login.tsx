@@ -2,7 +2,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import Header from '../components/Header';          // ★ 공통 헤더
 import '../styles/Login.css';
 
 const URL = 'http://localhost:8080';
@@ -53,11 +52,11 @@ function LoginPage() {
     try{
       const response = await fetch(`${URL}/session/login`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email,
           password
         }),
@@ -65,11 +64,11 @@ function LoginPage() {
       });
 
       console.log('응답 상태:', response.status);
-      
+
       // 모든 응답 결과 확인
       const responseText = await response.text();
       console.log('응답 텍스트:', responseText);
-      
+
       let result;
       try {
         result = JSON.parse(responseText);
@@ -87,9 +86,17 @@ function LoginPage() {
           id: result.id || 0,
           role: result.role || 'USER'
         });
-        
-        navigate('/');
+
+        // 로그인 성공 메시지
         alert('로그인이 완료되었습니다.');
+        
+        // 메인 화면으로 이동
+        navigate('/');
+        
+        // 메인 화면 도착 후 잠시 대기 후 새로고침
+        setTimeout(() => {
+          window.location.reload();
+        }, 300); // 1.5초 후 새로고침
       } else {
         alert(`로그인 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
       }
@@ -103,94 +110,93 @@ function LoginPage() {
 
   /* -------------------- UI -------------------- */
   return (
-    <>
-      <Header />   {/* 공통 상단바 */}
+      <>
 
-      <section className="login-section">
-        <div className="login-box">
-          <h2>로그인</h2>
+        <section className="login-section">
+          <div className="login-box">
+            <h2>로그인</h2>
 
-          {successMessage && <div className="success-message">{successMessage}</div>}
+            {successMessage && <div className="success-message">{successMessage}</div>}
 
-          <form onSubmit={handleSubmit} noValidate>
-            {/* 이메일 */}
-            <div className="form-group">
-              <label htmlFor="email">이메일</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                className={EmailError ? 'error' : ''}
-                disabled={loading}
-              />
-              {EmailError && <div className="error-message">{EmailError}</div>}
-            </div>
-
-            {/* 비밀번호 */}
-            <div className="form-group">
-              <label htmlFor="password">비밀번호</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="비밀번호 입력"
-                className={passwordError ? 'error' : ''}
-                disabled={loading}
-              />
-              {passwordError && <div className="error-message">{passwordError}</div>}
-            </div>
-
-            {/* 옵션 */}
-            <div className="form-group options">
-              <div className="remember-me-wrap">
+            <form onSubmit={handleSubmit} noValidate>
+              {/* 이메일 */}
+              <div className="form-group">
+                <label htmlFor="email">이메일</label>
                 <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  disabled={loading}
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    className={EmailError ? 'error' : ''}
+                    disabled={loading}
                 />
-                <label htmlFor="rememberMe" className="remember-me-label">
-                  로그인 상태 유지
-                </label>
+                {EmailError && <div className="error-message">{EmailError}</div>}
               </div>
+
+              {/* 비밀번호 */}
+              <div className="form-group">
+                <label htmlFor="password">비밀번호</label>
+                <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="비밀번호 입력"
+                    className={passwordError ? 'error' : ''}
+                    disabled={loading}
+                />
+                {passwordError && <div className="error-message">{passwordError}</div>}
+              </div>
+
+              {/* 옵션 */}
+              <div className="form-group options">
+                <div className="remember-me-wrap">
+                  <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      disabled={loading}
+                  />
+                  <label htmlFor="rememberMe" className="remember-me-label">
+                    로그인 상태 유지
+                  </label>
+                </div>
+              </div>
+
+              <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={loading}
+              >
+                {loading ? '로그인 중...' : '로그인'}
+              </button>
+            </form>
+
+            {/* 추가 링크 */}
+            <div className="login-actions">
+              <Link to="/signup">회원가입</Link>
+              {/* <Link to="/find-id">아이디 찾기</Link> 삭제 */}
+              <Link to="/reset-password">비밀번호 찾기</Link>
             </div>
-
-            <button 
-              type="submit" 
-              className="submit-btn"
-              disabled={loading}
-            >
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
-          </form>
-
-          {/* 추가 링크 */}
-          <div className="login-actions">
-            <Link to="/signup">회원가입</Link>
-            {/* <Link to="/find-id">아이디 찾기</Link> 삭제 */}
-            <Link to="/reset-password">비밀번호 찾기</Link>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 하단 고정 링크 */}
-      <div className="footer-left">
-        <label htmlFor="langSelect">언어:</label>
-        <select id="langSelect">
-          <option value="ko">한국어</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-          <option value="zh">中文</option>
-        </select>
-      </div>
-      <div className="footer-right">
-        <a>도움말</a><a>개인정보처리방침</a><a>약관</a>
-      </div>
-    </>
+        {/* 하단 고정 링크 */}
+        <div className="footer-left">
+          <label htmlFor="langSelect">언어:</label>
+          <select id="langSelect">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+          </select>
+        </div>
+        <div className="footer-right">
+          <a>도움말</a><a>개인정보처리방침</a><a>약관</a>
+        </div>
+      </>
   );
 }
 

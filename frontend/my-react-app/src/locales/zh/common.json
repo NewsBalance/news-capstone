@@ -1,0 +1,225 @@
+{
+  "header": {
+    "navAria": "网站导航",
+    "home": "首页",
+    "discussion": "讨论区",
+    "videos": "视频分析",
+    "mypage": "我的页面",
+    "login": "登录",
+    "logout": "登出"
+  },
+  "settings": {
+    "ariaOpen": "打开设置",
+    "ariaClose": "关闭设置",
+    "ariaLang": "语言设置",
+    "ariaPrivacy": "隐私政策",
+    "ariaNotice": "公告"
+  },
+  "footer": {
+    "tagline1": "以准确信息照亮真相的媒体",
+    "tagline2": "成为划破黑暗的灯塔",
+    "terms": "服务条款",
+    "privacy": "隐私政策",
+    "contact": "举报/联系",
+    "copyright": "与 NewsBalance 一起，迈向更公正的世界。"
+  },
+  "index": {
+    "quote": "媒体应成为照亮真相、划破黑暗的灯塔",
+    "goalsTitle": "前往开发目标页面",
+    "searchPlaceholder": "请输入搜索词…",
+    "search": "搜索",
+    "hotKeywords": "实时热门关键词"
+  },
+  "login": {
+    "title": "登录",
+    "email": "电子邮箱",
+    "password": "密码",
+    "remember": "记住登录状态",
+    "submit": "登录",
+    "signup": "注册",
+    "forgot": "找回密码",
+    "quick": "快速登录",
+    "lang": "语言：",
+    "help": "帮助",
+    "privacy": "隐私政策",
+    "terms": "条款",
+    "success": "登录成功！",
+    "passwordPlaceholder": "输入密码",
+    "errors": {
+      "emailRequired": "请输入电子邮箱。",
+      "emailInvalid": "邮箱格式不正确。",
+      "passwordRequired": "请输入密码。",
+      "passwordLength": "密码长度至少为4位。",
+      "loginFailed": "用户名或密码错误。",
+      "server": "服务器错误。"
+    }
+  },
+  "terms": {
+    "title": "服务条款"
+  },
+  "privacy": {
+    "title": "隐私政策"
+  },
+  "videos": {
+    "searchPlaceholder": "请输入搜索词…",
+    "searchAria": "输入视频搜索词",
+    "search": "搜索",
+    "searching": "搜索中…",
+    "bias": {
+      "left": "进步",
+      "center": "中立",
+      "right": "保守"
+    },
+    "error": {
+      "apiKeyMissing": "未设置 YouTube API 密钥。",
+      "default": "发生错误。"
+    },
+    "noResults": "无结果"
+  },
+  "videoDetail": {
+    "testTitle": "测试标题",
+    "testChannel": "测试频道",
+    "biasLabel": {
+      "left": "进步",
+      "center": "中立",
+      "right": "保守"
+    },
+    "biasDesc": {
+      "left": "包含许多进步关键词。",
+      "center": "以中立关键词为主。",
+      "right": "包含许多保守关键词。"
+    },
+    "error": {
+      "stats": "元数据加载失败",
+      "transcript": "字幕分析失败",
+      "articles": "关联文章加载失败",
+      "rooms": "讨论房间加载失败"
+    },
+    "titleBased": "基于标题",
+    "subtitleBased": "基于字幕",
+    "relatedArticlesTitle": "📰 相关新闻文章",
+    "loading": "加载中…",
+    "transcriptSummaryTitle": "📝 字幕分析摘要",
+    "sentiment": "情感",
+    "sentimentPositive": "积极",
+    "sentimentNegative": "消极",
+    "sentimentNeutral": "中立",
+    "keywords": "关键词",
+    "summary": "摘要",
+    "videoStatsTitle": "📊 视频统计",
+    "publishedAt": "📅 {{date}}",
+    "viewCount": "👁️ {{count}} 次观看",
+    "likeCount": "👍 {{count}} 赞",
+    "commentCount": "💬 {{count}} 条评论",
+    "discussionRoomsTitle": "💬 讨论房间",
+    "participants": "{{count}} 人参与",
+    "back": "返回"
+  },
+  "signup": {
+    "title": "注册",
+    "email": "电子邮箱",
+    "nickname": "昵称",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "birthdate": "出生日期",
+    "phone": "手机号",
+    "regionLabel": "选择地区",
+    "selectedRegion": "已选地区",
+    "placeholders": {
+      "email": "请输入电子邮箱",
+      "nickname": "请输入昵称",
+      "password": "密码（至少8位）",
+      "confirmPassword": "再次输入密码",
+      "phone": "010-0000-0000"
+    },
+    "buttons": {
+      "checkEmail": "检查邮箱",
+      "submit": "注册"
+    },
+    "success": "注册成功。",
+    "failure": "注册失败",
+    "errors": {
+      "emailRequired": "请输入电子邮箱。",
+      "emailInvalid": "无效的邮箱格式。",
+      "nicknameRequired": "请输入昵称。",
+      "nicknameLength": "昵称长度应为2到12个字符。",
+      "passwordRequired": "请输入密码。",
+      "passwordLength": "密码长度至少为8位。",
+      "passwordMatch": "两次密码不一致。",
+      "birthdateRequired": "请输入出生日期。",
+      "ageRestriction": "您必须年满14岁。",
+      "phoneRequired": "请输入手机号。",
+      "phoneInvalid": "无效的手机号码格式。",
+      "termsRequired": "请同意所有必选条款。",
+      "server": "服务器通信时出错。"
+    },
+    "emailCheck": {
+      "noInput": "请先输入电子邮箱。",
+      "duplicate": "该邮箱已被使用。",
+      "available": "该邮箱可用。",
+      "label": {
+        "duplicate": "重复",
+        "available": "OK"
+      },
+      "error": "邮箱检查失败。"
+    },
+    "passwordStrength": {
+      "strong": "密码强度：强",
+      "medium": "密码强度：中等",
+      "weak": "密码强度：弱"
+    },
+    "terms": {
+      "agreeAll": "全部同意",
+      "service": "[必选] 同意服务条款",
+      "age": "[必选] 我已年满14周岁",
+      "collect": "[必选] 同意个人信息收集与使用",
+      "thirdParty": "[必选] 同意向第三方提供个人信息",
+      "marketing": "[可选] 同意接收营销信息",
+      "location": "[可选] 同意收集与使用位置信息"
+    },
+    "termsContent": {
+      "service": "1. [必选] 同意服务条款\n\n本条款旨在规范NewsBalance（以下简称“公司”）所提供的所有服务（以下简称“服务”）的使用，\n约定公司与用户之间的权利、义务及责任等相关事项。\n\n第一条 目的\n本条款规定公司所提供服务的使用相关事宜和程序。\n\n第二条 定义\n“服务”系指公司通过在线或其他有线、无线媒体向用户提供的所有形式的服务。\n\n第三条 条款的公告与修改\n1. 公司应通过服务首页或相关链接页面向用户公告本条款内容，使用户能够方便、直接地查阅。\n2. 公司可因相关法律法规的变更、服务改进等原因修订本条款，并应在修订时说明修订生效日期及修订理由，并公告。\n\n第四条 服务的提供与变更\n1. 公司提供如下服务：内容提供、个性化推荐、客户支持等。\n2. 公司因运营或技术原因变更服务内容时，应事先公告。\n\n第五条 服务使用的申请\n1. 用户申请使用服务即视为同意本条款。\n2. 注册流程：电子邮箱验证、条款同意、个人信息输入等。\n\n第六条 用户义务\n1. 用户不得违反本条款禁止的行为。\n2. 用户应对密码保管及信息安全负责。\n\n第七条 公司的义务\n1. 公司不得违反法律法规及本条款的行为。\n2. 公司应维护系统稳定，以便用户正常使用服务。\n\n第八条 使用限制与解约\n1. 用户违反本条款或妨碍服务运营时，公司可限制其使用或解约。\n\n第九条 责任限制\n公司对于因自然灾害、通信故障等不可抗力原因导致的服务中断不承担责任。\n\n第十条 管辖与准据法\n本条款适用中华人民共和国法律，如发生争议，应提交公司所在地法院管辖。",
+      "age": "本人确认已年满14周岁，符合相关法律法规。",
+      "collect": "2. [必选] 同意个人信息收集与使用\n\nNewsBalance为提供流畅的服务和进行会员管理，将收集并使用如下个人信息：\n\n1) 收集与使用目的\n• 会员管理：确认注册意愿、身份识别与认证、提供会员制服务\n• 服务提供：内容推送、个性化服务、客户支持\n• 交易履行：商品配送、支付处理、发票开具\n• 服务改进：统计分析、问卷调查\n\n2) 收集项目\n• 必选项目：姓名、用户ID、密码、手机号码、电子邮箱\n• 可选项目：地址、出生日期、性别\n\n3) 保留与使用期限\n• 用户注销帐号时，个人信息保留至注销之日；注销后，根据公司内部规定和相关法律法规，保留5年后销毁。\n\n4) 委托处理\n• 委托方：支付代行公司、物流配送公司、短信/邮件发送代行公司等\n• 委托业务：支付处理、物流配送、通知消息发送等\n• 委托期间：委托合同终止前\n\n5) 同意拒绝权与不利后果\n• 用户可拒绝同意个人信息收集与使用。\n• 但若拒绝同意必选项目，将限制注册及服务使用。\n\n6) 权利与行使方式\n• 用户可随时要求查询、更正、删除或暂停处理其个人信息。\n• 方法：通过“我的页面”或书面、邮件、电话等方式提出。",
+      "thirdParty": "3. [必选] 同意向第三方提供个人信息\n\n为履行服务，公司将向第三方提供如下个人信息：\n\n1) 接收方：[接收方名称]\n2) 提供目的：服务提供、商品配送、支付处理、会员认证等\n3) 提供项目：姓名、手机号码、地址、支付信息等\n4) 保留与使用期限：以第三方信息保留期限为准\n5) 提供方式：加密传输或电子文件传输\n\n※ 用户享有拒绝权，但若拒绝同意，将影响服务使用。",
+      "marketing": "4. [可选] 同意接收营销信息\n\n公司可通过以下渠道发送活动/促销、新品/新服务公告及广告信息：\n\n1) 信息内容：活动/促销、新品/新服务公告、广告等\n2) 渠道：短信、邮件、应用推送、邮寄等\n3) 保留与使用期限：用户撤销同意前\n4) 撤销方式：在“我的页面”→“通知设置”或联系客服撤销\n\n※ 用户拒绝后，不影响服务使用。",
+      "location": "5. [可选] 同意收集与使用位置信息\n\n为提供基于位置的服务，公司将收集并使用如下位置信息：\n\n1) 收集与使用目的：提供基于当前位置的个性化内容、周边商家/活动信息、导航/路线指导等\n2) 收集项目：GPS 数据、Wi-Fi 信息、基站信息等\n3) 保留与使用期限：服务终止后立即销毁\n4) 第三方提供与委托：仅限于委托方，不向第三方提供\n5) 权利与行使方式：在手机操作系统或应用内“设置→位置信息服务”中撤销\n\n※ 如果撤销，部分功能（如周边信息、导航）可能受限。"
+    },
+    "alreadyHaveAccount": "已有账号？请登录",
+    "regions": {
+      "Seoul": "首尔特别市",
+      "Busan": "釜山广域市",
+      "Incheon": "仁川广域市",
+      "Daegu": "大邱广域市",
+      "Gwangju": "光州广域市",
+      "Daejeon": "大田广域市",
+      "Ulsan": "蔚山广域市",
+      "Sejong": "世宗特别自治市",
+      "Gyeonggi-do": "京畿道",
+      "Gangwon-do": "江原道",
+      "Chungcheongbuk-do": "忠清北道",
+      "Chungcheongnam-do": "忠清南道",
+      "Jeollabuk-do": "全罗北道",
+      "Jeollanam-do": "全罗南道",
+      "Gyeongsangbuk-do": "庆尚北道",
+      "Gyeongsangnam-do": "庆尚南道",
+      "Jeju-do": "济州特别自治道"
+    }
+  },
+  "resetPassword": {
+    "skip": "跳至正文",
+    "title": "重置密码",
+    "instructions": "输入您的邮箱\n以获取重置链接。",
+    "email": "电子邮箱",
+    "placeholders": {
+      "email": "example@email.com"
+    },
+    "sendButton": "发送重置邮件",
+    "sending": "发送中…",
+    "successMessage": "重置邮件已发送，请查收您的邮箱。",
+    "errorNotFound": "未找到该邮箱地址。",
+    "errorUnknown": "发生未知错误，请重试。",
+    "errorNetwork": "网络错误，请稍后重试。",
+    "backToLogin": "返回登录"
+  }
+}
