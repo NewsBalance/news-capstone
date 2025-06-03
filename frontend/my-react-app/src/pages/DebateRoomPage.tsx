@@ -39,6 +39,49 @@ interface Props {
     roomData?: any;
 }
 
+type RelatedArticle = {
+    link: string;
+    title: string;
+};
+
+type SummarizeResponse = {
+    summarizemessage: string;
+    relatedArticles: RelatedArticle[];
+    keywords: string[];
+};
+
+// MessageList 컴포넌트 위에 추가
+const DebateSummarySection = ({ roomId, messages }: { roomId: number; messages: any[] }) => {
+  const [summary, setSummary] = useState<string | null>(null);
+  const [articles, setArticles] = useState<RelatedArticle[]>([]);
+
+  useEffect(() => {
+    const requestBody = { roomId };
+
+    fetch('http://localhost:8080/api/debate/summary', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('요약 응답 오류');
+        return res.json();
+      })
+      .then((data: SummarizeResponse) => {
+        setSummary(data.summarizemessage);
+        setArticles(data.relatedArticles);
+      })
+      .catch((err) => {
+        console.error('요약 또는 기사 로딩 실패:', err);
+      });
+  }, [roomId]);
+
+  return { summary, articles };
+};
+
 // 메시지 목록 컴포넌트 개선
 const MessageList = ({ messages, onFactCheck }: {
     messages: DebateMessage[], 
@@ -314,6 +357,12 @@ const DebateRoomPage: React.FC<Props> = ({
         }
     }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
 
+    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용
+    const { summary: summaryFromComponent, articles: articlesFromComponent } = DebateSummarySection({ 
+        roomId: parseInt(roomId || '0'), 
+        messages 
+    });
+
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
             {/* 헤더 섹션 - 크기 조정 */}
@@ -408,36 +457,45 @@ const DebateRoomPage: React.FC<Props> = ({
                         </div>
                         
                         <div className="info-content flex-1 overflow-y-auto overflow-x-hidden p-3" style={{ width: '100%', wordBreak: 'break-all' }}>
-                            <div className="info-section mb-4">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참고 자료</h3>
-                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                    <ul className="text-sm text-gray-700 list-disc pl-4 space-y-1">
-                                      /*관련 기사*/
-                                    </ul>
-                                </div>
-                            </div>
+                           
                             
                             {/* 참가자 정보 컴포넌트 사용 */}
                             <ParticipantInfo />
+
+
+                            <div className="info-section mb-4">
+                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">발언 요지</h3>
+                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                                    <ul className="text-sm text-gray-700 list-disc pl-4 space-y-1">
+                                    {summaryFromComponent ? (
+                                        <li>{summaryFromComponent}</li>
+                                         ) : (
+                                        <li>요약을 불러오는 중...</li>
+                                    )}
+                                    </ul>
+                                </div>
+                            </div>
+
+
                             
                             <div className="info-section">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">토론 실시간 요약</h3>
+                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참고 자료</h3>
                                 <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                                     <div className="text-sm text-gray-700">
-                                        <p className="mb-2 whitespace-normal break-all overflow-hidden">
-                                            <span className="text-pink-600 font-semibold">토론자 A:</span> 
-                                            {messages.filter(m => 
-                                                m.speaker === debaterA && 
-                                                !(typeof m.text === 'string' && m.text.startsWith('{') && m.text.endsWith('}'))
-                                            ).slice(-1)[0]?.text || '아직 발언이 없습니다'}
-                                        </p>
-                                        <p className="mb-2 whitespace-normal break-all overflow-hidden">
-                                            <span className="text-blue-600 font-semibold">토론자 B:</span> 
-                                            {messages.filter(m => 
-                                                m.speaker === debaterB && 
-                                                !(typeof m.text === 'string' && m.text.startsWith('{') && m.text.endsWith('}'))
-                                            ).slice(-1)[0]?.text || '아직 발언이 없습니다'}
-                                        </p>
+                                    {articlesFromComponent.length > 0 ? (
+                                        articlesFromComponent.map((article, idx) => (
+                                            <a
+                                            key={idx}
+                                            href={article.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-blue-700 underline whitespace-normal break-words mb-1"
+                                            dangerouslySetInnerHTML={{ __html: `• ${article.title}` }}
+                                            />
+                                        ))
+                                        ) : (
+                                        <p className="text-gray-500">관련 기사가 없습니다</p>
+                                        )}
                                         <div className="mt-3 pt-2 border-t border-gray-200">
                                             <p className="text-xs text-gray-500 italic text-center">마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}</p>
                                         </div>
