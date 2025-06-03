@@ -3,8 +3,8 @@ import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import '../styles/Login.css';
+import { API_BASE } from '../api/config';
 
-const URL = 'http://localhost:8080';
 
 function LoginPage() {
   /* -------------------- 상태 -------------------- */
@@ -50,7 +50,7 @@ function LoginPage() {
     }
 
     try{
-      const response = await fetch(`${URL}/session/login`, {
+      const response = await fetch(`${API_BASE}/session/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE } from '../api/config';
 
-const URL = `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}`;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     // 서버에 로그아웃 요청 보내기
-    fetch(`${URL}/session/logout`, {
+    fetch(`${API_BASE}/session/logout`, {
       method: 'POST',
       credentials: 'include',
       headers: {
