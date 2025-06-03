@@ -7,8 +7,8 @@ import '../styles/Header.css';
 
 const Header: React.FC = () => {
   const { pathname } = useLocation();
-  const { token, logout } = useAuth();
   const { t } = useTranslation();                  // ← useTranslation 훅 사용
+  const { isAuthenticated, logout } = useAuth(); // token 대신 isAuthenticated 사용
 
   const isActive = (path: string) =>
     pathname === path ? 'active' : '';
@@ -44,7 +44,7 @@ const Header: React.FC = () => {
               </Link>
             </li>
 
-            {token ? (
+            {isAuthenticated ? ( // token 대신 isAuthenticated 사용
               <li>
                 <button
                   type="button"

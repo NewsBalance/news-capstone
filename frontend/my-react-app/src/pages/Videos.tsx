@@ -1,7 +1,6 @@
 // src/pages/Videos.tsx
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import Header from '../components/Header';
 import '../styles/Videos.css';
 import parse from 'html-react-parser';
 import { useTranslation } from 'react-i18next';
@@ -156,8 +155,6 @@ export default function VideosPage() {
   };
 
   return (
-      <>
-        <Header />
         <main className="videos-page">
           <div className="container hero-middle">
             <form onSubmit={handleSearch} className="search-bar-container" role="search">
@@ -192,6 +189,5 @@ export default function VideosPage() {
             </div>
           </div>
         </main>
-      </>
   );
 }

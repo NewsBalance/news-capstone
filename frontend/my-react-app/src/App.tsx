@@ -23,7 +23,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
-    <BrowserRouter>
       <Routes>
         {/* 공통 레이아웃으로 모든 페이지를 감쌉니다 */}
         <Route element={<Layout />}>
@@ -87,6 +86,5 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
           </Route>
       </Routes>
-    </BrowserRouter>
   );
 }

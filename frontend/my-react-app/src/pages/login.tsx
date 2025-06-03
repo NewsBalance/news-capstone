@@ -2,7 +2,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import Header from '../components/Header';          // ★ 공통 헤더
 import '../styles/Login.css';
 
 const URL = 'http://localhost:8080';
@@ -88,8 +87,16 @@ function LoginPage() {
           role: result.role || 'USER'
         });
 
-        navigate('/');
+        // 로그인 성공 메시지
         alert('로그인이 완료되었습니다.');
+        
+        // 메인 화면으로 이동
+        navigate('/');
+        
+        // 메인 화면 도착 후 잠시 대기 후 새로고침
+        setTimeout(() => {
+          window.location.reload();
+        }, 300); // 1.5초 후 새로고침
       } else {
         alert(`로그인 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
       }
@@ -104,7 +111,6 @@ function LoginPage() {
   /* -------------------- UI -------------------- */
   return (
       <>
-        <Header />   {/* 공통 상단바 */}
 
         <section className="login-section">
           <div className="login-box">

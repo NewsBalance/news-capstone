@@ -6,7 +6,6 @@ import React, {
   FormEvent,
 } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
 import '../styles/Discussion.css';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -590,7 +589,6 @@ export default function DiscussionPage() {
   ============================================================ */
   return (
       <>
-        <Header />
 
         {/* ────────────────── 메인 ────────────────── */}
         <main className="discussion-container container">

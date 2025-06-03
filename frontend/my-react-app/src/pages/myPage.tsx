@@ -11,14 +11,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   LineChart, Line
 } from 'recharts';
-import {
-  fetchUser,
-  fetchBias,
-  fetchWatchTime
-} from '../api';
-import { BiasPeriod, WatchTab, WatchPoint } from './MyPage.types';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/MyPage.css';
 import { API_BASE } from '../api/config';
+import { useNavigate } from 'react-router-dom';
+
+// 타입 정의
+type Tab = 'analytics' | 'security' | 'activity';
+type BiasPeriod = '7' | '30' | '90' | '180' | 'Y';
+type WatchTab = 'day' | 'week' | 'month';
+interface WatchPoint { name: string; min: number; }
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml;utf8," +
@@ -36,36 +38,121 @@ interface SocialAccount{ provider: string; connected: boolean }
 interface Notification { id: number; message: string; date: string }
 interface TimelineItem { id: number; type: 'check'|'comment'|'like'|'bookmark'; title: string; date: string }
 
-async function fetchActivity(): Promise<TimelineItem[]> {
-  const res = await fetch(`${API_BASE}/activity`);
-  if (!res.ok) throw new Error('활동 히스토리를 불러오지 못했습니다.');
-  return res.json();
-}
+// async function fetchActivity(): Promise<TimelineItem[]> {
+//   const res = await fetch(`${API_BASE}/activity`);
+//   if (!res.ok) throw new Error('활동 히스토리를 불러오지 못했습니다.');
+//   return res.json();
+// }
 
+// User 인터페이스 수정 (AuthContext와 호환되도록)
 interface User {
-  id: string;
+  id: number; // AuthContext에서는 number 타입
   nickname: string;
-  bio: string;
+  email: string; // loginEmail 대신 email 사용
+  role: string;
+  bio?: string;
   avatar?: string;
-  loginEmail: string;
-  twoFactorEnabled: boolean;
-  checks: number;
-  comments: number;
-  likes: number;
-  followers: number;
-  following: number;
-  bookmarks: Bookmark[];
+  twoFactorEnabled?: boolean;
+  checks?: number;
+  comments?: number;
+  likes?: number;
+  followers?: number;
+  following?: number;
+  bookmarks?: Bookmark[];
   sessions?: Session[];
   socialAccounts?: SocialAccount[];
   notifications?: Notification[];
 }
 
+// API 함수 수정
+const changePassword = async (newPassword: string) => {
+  try {
+    const response = await fetch(`${API_BASE}/user/changePassword`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: newPassword }),
+      credentials: 'include' // 세션 쿠키 포함
+    });
+    
+    if (!response.ok) {
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '비밀번호 변경 실패');
+      } else {
+        throw new Error('비밀번호 변경 실패');
+      }
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    throw new Error(error.message || '비밀번호 변경 중 오류가 발생했습니다.');
+  }
+};
+
+const changeNickname = async (nickname: string) => {
+  try {
+    const response = await fetch(`${API_BASE}/user/changeNickname`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ nickname }),
+      credentials: 'include' // 세션 쿠키 포함
+    });
+    
+    if (!response.ok) {
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '닉네임 변경 실패');
+      } else {
+        throw new Error('닉네임 변경 실패');
+      }
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    throw new Error(error.message || '닉네임 변경 중 오류가 발생했습니다.');
+  }
+};
+
+const setBio = async (bio: string) => {
+  try {
+    const response = await fetch(`${API_BASE}/user/setBio`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ bio }),
+      credentials: 'include' // 세션 쿠키 포함
+    });
+    
+    if (!response.ok) {
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '자기소개 변경 실패');
+      } else {
+        throw new Error('자기소개 변경 실패');
+      }
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    throw new Error(error.message || '자기소개 변경 중 오류가 발생했습니다.');
+  }
+};
+
 export default function MyPage() {
+  // AuthContext에서 사용자 정보 가져오기
+  const { user: authUser, loading: authLoading, logout } = useAuth();
+  const navigate = useNavigate();
+  
   // 기본 상태
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'analytics'|'security'|'activity'>('analytics');
+  const [tab, setTab] = useState<Tab>('security');
 
   // 프로필 편집
   const [editingProfile, setEditingProfile] = useState(false);
@@ -132,6 +219,112 @@ export default function MyPage() {
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
 
+  // AuthContext의 사용자 정보를 활용하여 상태 초기화
+  useEffect(() => {
+    if (authLoading) return; // 인증 정보가 로딩 중이면 대기
+    
+    if (authUser) {
+      // AuthContext에서 가져온 기본 정보로 사용자 상태 설정
+      const userData: User = {
+        id: authUser.id,
+        nickname: authUser.nickname,
+        email: authUser.email,
+        role: authUser.role,
+        avatar: DEFAULT_AVATAR, // 기본값
+        bio: '', // 기본값
+        checks: 0,
+        comments: 0,
+        likes: 0,
+        followers: 0,
+        following: 0,
+        bookmarks: [],
+        twoFactorEnabled: false
+      };
+      
+      setUser(userData);
+      setFormNickname(userData.nickname);
+      setFormBio(userData.bio || '');
+      setAvatarPreview(userData.avatar || DEFAULT_AVATAR);
+      setTwoFA(userData.twoFactorEnabled || false);
+
+    } else {
+      setError('로그인이 필요합니다.');
+    }
+    
+    setLoading(false);
+  }, [authUser, authLoading]);
+
+  // 추가 사용자 정보 가져오기 (필요한 경우)
+  // const fetchAdditionalUserData = async (userId: number) => {
+  //   try {
+  //     // 필요한 추가 정보가 있을 경우 API 호출
+  //     const res = await fetch(`${API_BASE}/api/users/${userId}/profile`, {
+  //       credentials: 'include' // 세션 쿠키 포함
+  //     });
+      
+  //     if (!res.ok) {
+  //       // 서버 오류 응답 처리
+  //       throw new Error('프로필 정보를 불러오지 못했습니다.');
+  //     }
+      
+  //     // 응답 헤더 확인
+  //     const contentType = res.headers.get('content-type');
+  //     if (!contentType || !contentType.includes('application/json')) {
+  //       console.error('서버가 JSON 응답을 반환하지 않았습니다:', contentType);
+  //     }
+      
+  //     const additionalData = await res.json();
+      
+  //     // 사용자 정보 업데이트
+  //     setUser(prevUser => {
+  //       if (!prevUser) return null;
+  //       return {
+  //         ...prevUser,
+  //         bio: additionalData.bio || prevUser.bio,
+  //         avatar: additionalData.avatar || prevUser.avatar,
+  //         checks: additionalData.checks || 0,
+  //         comments: additionalData.comments || 0,
+  //         likes: additionalData.likes || 0,
+  //         followers: additionalData.followers || 0,
+  //         following: additionalData.following || 0,
+  //         bookmarks: additionalData.bookmarks || [],
+  //         sessions: additionalData.sessions || [],
+  //         socialAccounts: additionalData.socialAccounts || [],
+  //         notifications: additionalData.notifications || [],
+  //         twoFactorEnabled: additionalData.twoFactorEnabled || false
+  //       };
+  //     });
+      
+  //     // 업적 설정
+  //     if (additionalData.checks >= 100) {
+  //       setAchievements([{ id: 1, name: '팩트체크 100회 달성', icon: '/icons/check100.png' }]);
+  //     }
+      
+  //     // 댓글 통계 설정
+  //     setCommentStats({
+  //       likesReceived: Math.floor(additionalData.likes * 0.5) || 0,
+  //       repliesReceived: Math.floor(additionalData.comments * 0.3) || 0,
+  //     });
+      
+  //     return additionalData;
+  //   } catch (error) {
+  //     console.error('추가 사용자 정보 로드 오류:', error);
+  //   }
+  // };
+
+  // 타임라인 데이터 로드
+  // const loadTimelineData = async () => {
+  //   setTimelineLoading(true);
+  //   try {
+  //     const data = await fetchActivity();
+  //     setTimelineItems(data);
+  //   } catch (error: any) {
+  //     setTimelineError(error.message || '활동 히스토리를 불러올 수 없습니다.');
+  //   } finally {
+  //     setTimelineLoading(false);
+  //   }
+  // };
+
   // 카운트다운 타이머
   useEffect(() => {
     let interval: number;
@@ -146,85 +339,161 @@ export default function MyPage() {
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
 
-  // 사용자 정보 로드 및 타임라인 로드
-  useEffect(() => {
-    setLoading(true);
-    fetchUser()
-      .then(u => {
-        const avatarURL = u.avatar || DEFAULT_AVATAR;
-        const accounts = u.socialAccounts?.map((sa: SocialAccount) => ({
-          provider: sa.provider,
-          connected: sa.connected
-        }));
-        setUser({ ...u, avatar: avatarURL, socialAccounts: accounts });
+  // // Bias 데이터 로드
+  // useEffect(() => {
+  //   setBiasLoading(true);
+  //   fetchBias(period)
+  //     .then(data => {
+  //       const arr = Array.isArray(data) ? data : [];
+  //       setBiasData(arr);
+  //     })
+  //     .catch((e: Error) => setBiasError(e.message || '편향 데이터를 불러오지 못했습니다.'))
+  //     .finally(() => setBiasLoading(false));
+  // }, [period]);
 
-        if (u.checks >= 100) {
-          setAchievements([{ id: 1, name: '팩트체크 100회 달성', icon: '/icons/check100.png' }]);
-        }
-        setCommentStats({
-          likesReceived: Math.floor(u.likes * 0.5),
-          repliesReceived: Math.floor(u.comments * 0.3),
-        });
+  // // Watch time 데이터 로드
+  // useEffect(() => {
+  //   setWatchLoading(true);
+  //   fetchWatchTime(watchTab)
+  //     .then(data => setWatchData(data))
+  //     .catch((e: Error) => setWatchError(e.message || '시청 시간 데이터를 불러오지 못했습니다.'))
+  //     .finally(() => setWatchLoading(false));
+  // }, [watchTab]);
 
-        setTimelineLoading(true);
-        fetchActivity()
-          .then(data => setTimelineItems(data))
-          .catch((e: Error) => setTimelineError(e.message || '활동 히스토리를 불러올 수 없습니다.'))
-          .finally(() => setTimelineLoading(false));
-      })
-      .catch((e: Error) => setError(e.message || '유저 정보를 불러오지 못했습니다.'))
-      .finally(() => setLoading(false));
-  }, []);
+  // // 활동량 (주간/월간) 로드
+  // useEffect(() => {
+  //   setActivityLoading(true);
+  //   fetchWatchTime(activityPeriod)
+  //     .then(data =>
+  //       setActivityData(data.map(pt => ({ name: pt.name, count: pt.min })))
+  //     )
+  //     .catch((e: Error) => setActivityError(e.message || '활동 데이터를 불러오지 못했습니다.'))
+  //     .finally(() => setActivityLoading(false));
+  // }, [activityPeriod]);
 
-  // Bias 데이터 로드
-  useEffect(() => {
-    setBiasLoading(true);
-    fetchBias(period)
-      .then(data => {
-        const arr = Array.isArray(data) ? data : [];
-        setBiasData(arr);
-      })
-      .catch((e: Error) => setBiasError(e.message || '편향 데이터를 불러오지 못했습니다.'))
-      .finally(() => setBiasLoading(false));
-  }, [period]);
+  // 핸들러
+  const handleAvatarChange = (file: File) => {
+    setFormAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+  
+  const handleAvatarReset = () => {
+    if (!user) return;
+    setFormAvatarFile(null);
+    setAvatarPreview(user.avatar || DEFAULT_AVATAR);
+  };
+  
+  const saveProfile = async () => {
+    if (!user) return;
+    
+    try {
+      // 닉네임 변경 (원래 닉네임과 다를 경우에만)
+      if (formNickname !== user.nickname) {
+        await changeNickname(formNickname);
+        
+        // 닉네임 변경 후 로그아웃 및 로그인 페이지로 이동
+        alert('닉네임이 변경되었습니다. 다시 로그인해주세요.');
+        await logout(); // AuthContext의 logout 함수 호출
+        navigate('/login'); // 로그인 페이지로 이동
+        return; // 함수 종료
+      }
+      
+      // 자기소개 변경 (원래 자기소개와 다를 경우에만)
+      if (formBio !== user.bio) {
+        await setBio(formBio);
+      }
+      
+      // 상태 업데이트
+      setUser({
+        ...user,
+        bio: formBio,
+        avatar: avatarPreview
+      });
+      
+      setEditingProfile(false);
+      alert('프로필이 성공적으로 업데이트되었습니다.');
+    } catch (error: any) {
+      alert(error.message || '프로필 업데이트 중 오류가 발생했습니다.');
+      console.error('프로필 업데이트 오류:', error);
+    }
+  };
 
-  // Watch time 데이터 로드
-  useEffect(() => {
-    setWatchLoading(true);
-    fetchWatchTime(watchTab)
-      .then(data => setWatchData(data))
-      .catch((e: Error) => setWatchError(e.message || '시청 시간 데이터를 불러오지 못했습니다.'))
-      .finally(() => setWatchLoading(false));
-  }, [watchTab]);
+  const openEmailModal = () => {
+    if (!user) return;
+    setFormNewEmail(user.email);
+    setIsCodeSent(false);
+    setVerificationCode('');
+    setIsVerified(false);
+    setTimer(0);
+    setShowEmailModal(true);
+  };
+  
+  const closeEmailModal = () => setShowEmailModal(false);
+  
+  const sendVerification = () => {
+    alert('인증 메일을 전송했습니다.');
+    setIsCodeSent(true);
+    setTimer(300);
+  };
+  
+  const verifyCode = () => {
+    if (verificationCode === '123456') {
+      setIsVerified(true);
+      alert('이메일 인증 완료');
+    } else {
+      alert('인증 코드가 일치하지 않습니다.');
+    }
+  };
+  
+  const handleEmailUpdate = () => {
+    if (!user || !isVerified) return;
+    setUser({ ...user, email: formNewEmail });
+    closeEmailModal();
+    alert('이메일이 변경되었습니다.');
+  };
 
-  // 활동량 (주간/월간) 로드
-  useEffect(() => {
-    setActivityLoading(true);
-    fetchWatchTime(activityPeriod)
-      .then(data =>
-        setActivityData(data.map(pt => ({ name: pt.name, count: pt.min })))
-      )
-      .catch((e: Error) => setActivityError(e.message || '활동 데이터를 불러오지 못했습니다.'))
-      .finally(() => setActivityLoading(false));
-  }, [activityPeriod]);
+  const toggle2FA = () => {
+    if (!user) return;
+    const updated = !twoFA;
+    setTwoFA(updated);
+    setUser({ ...user, twoFactorEnabled: updated });
+  };
 
-  // 세션·알림·북마크 로드
-  useEffect(() => {
-    setSessionsLoading(true);
-    Promise.resolve(user?.sessions || [])
-      .catch((e: Error) => setSessionsError(e.message || '세션 데이터를 불러오지 못했습니다.'))
-      .finally(() => setSessionsLoading(false));
+  const handlePwdSave = async () => {
+    // 현재 비밀번호 입력 검증
+    if (!currentPwd) {
+      alert('현재 비밀번호를 입력해주세요.');
+      return;
+    }
+    
+    // 새 비밀번호와 확인 비밀번호 일치 여부 검증
+    if (newPwd !== confirmPwd) {
+      alert('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    
+    try {
+      await changePassword(newPwd);
+      
+      alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+      setShowPwdModal(false);
+      setCurrentPwd('');
+      setNewPwd('');
+      setConfirmPwd('');
+      
+      // 비밀번호 변경 후 로그아웃 및 로그인 페이지로 이동
+      await logout(); // AuthContext의 logout 함수 호출
+      navigate('/login'); // 로그인 페이지로 이동
+    } catch (error: any) {
+      alert(error.message || '비밀번호 변경 중 오류가 발생했습니다.');
+      console.error('비밀번호 변경 오류:', error);
+    }
+  };
 
-    setNotificationsLoading(true);
-    Promise.resolve(user?.notifications || [])
-      .catch((e: Error) => setNotificationsError(e.message || '알림 데이터를 불러오지 못했습니다.'))
-      .finally(() => setNotificationsLoading(false));
-
-    setBookmarksLoading(true);
-    Promise.resolve(user?.bookmarks || [])
-      .catch((e: Error) => setBookmarksError(e.message || '북마크 데이터를 불러오지 못했습니다.'))
-      .finally(() => setBookmarksLoading(false));
-  }, [user]);
+  const markAllNotificationsRead = () => {
+    if (!user) return;
+    setUser({ ...user, notifications: [] });
+  };
 
   // 지도 초기화
   useLayoutEffect(() => {
@@ -257,88 +526,13 @@ export default function MyPage() {
     };
   }, [tab, user]);
 
-  // 핸들러
-  const handleAvatarChange = (file: File) => {
-    setFormAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-  };
-  const handleAvatarReset = () => {
-    if (!user) return;
-    setFormAvatarFile(null);
-    setAvatarPreview(user.avatar || DEFAULT_AVATAR);
-  };
-  const saveProfile = () => {
-    if (!user) return;
-    setUser({
-      ...user,
-      nickname: formNickname,
-      bio: formBio,
-      avatar: avatarPreview
-    });
-    setEditingProfile(false);
-  };
+  if (loading || authLoading) return <div className="spinner">로딩 중…</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!user) return <div className="error">사용자 정보를 불러올 수 없습니다.</div>;
 
-  const openEmailModal = () => {
-    if (!user) return;
-    setFormNewEmail(user.loginEmail);
-    setIsCodeSent(false);
-    setVerificationCode('');
-    setIsVerified(false);
-    setTimer(0);
-    setShowEmailModal(true);
-  };
-  const closeEmailModal = () => setShowEmailModal(false);
-  const sendVerification = () => {
-    alert('인증 메일을 전송했습니다.');
-    setIsCodeSent(true);
-    setTimer(300);
-  };
-  const verifyCode = () => {
-    if (verificationCode === '123456') {
-      setIsVerified(true);
-      alert('이메일 인증 완료');
-    } else {
-      alert('인증 코드가 일치하지 않습니다.');
-    }
-  };
-  const handleEmailUpdate = () => {
-    if (!user || !isVerified) return;
-    setUser({ ...user, loginEmail: formNewEmail });
-    closeEmailModal();
-    alert('이메일이 변경되었습니다.');
-  };
-
-  const toggle2FA = () => {
-    if (!user) return;
-    const updated = !twoFA;
-    setTwoFA(updated);
-    setUser({ ...user, twoFactorEnabled: updated });
-  };
-
-  const handlePwdSave = () => {
-    if (newPwd !== confirmPwd) {
-      alert('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-    alert('비밀번호가 변경되었습니다.');
-    setShowPwdModal(false);
-    setCurrentPwd('');
-    setNewPwd('');
-    setConfirmPwd('');
-  };
-
-  const markAllNotificationsRead = () => {
-    if (!user) return;
-    setUser({ ...user, notifications: [] });
-  };
-
-  if (loading) return <div className="spinner">로딩 중…</div>;
-  if (error)   return <div className="error">{error}</div>;
-  if (!user)   return null;
-
-  const sessions      = user.sessions     ?? [];
-  const notifications = user.notifications?? [];
-  const bookmarks     = user.bookmarks    ?? [];
+  const sessions = user.sessions ?? [];
+  const notifications = user.notifications ?? [];
+  const bookmarks = user.bookmarks ?? [];
 
   const biasArray = Array.isArray(biasData) ? biasData : [];
   const orderedBiasData = ['진보','중도','보수']
@@ -349,6 +543,16 @@ export default function MyPage() {
     .filter(item => item.title.includes(timelineSearch))
     .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  // 날짜 포맷 함수
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="mypage">
       <div className="mypage__inner">
@@ -356,149 +560,41 @@ export default function MyPage() {
           <div className="profile-box">
             <div className="avatar"><img src={avatarPreview} alt="avatar" /></div>
             <h2 className="nickname">{user.nickname}</h2>
-            <p className="bio">{user.bio || '소개 없음'}</p>
+            {/* <p className="bio">{user.bio || '소개 없음'}</p> */}
             <div className="follow-info">
               <span>👥 {user.followers}</span>
               <span>➡️ {user.following}</span>
             </div>
           </div>
           <nav className="sidebar-nav">
-            <button className={tab==='analytics'?'active':''} onClick={()=>setTab('analytics')}>Analytics</button>
             <button className={tab==='security'?'active':''} onClick={()=>setTab('security')}>Security</button>
-            <button className={tab==='activity'?'active':''} onClick={()=>setTab('activity')}>Activity</button>
           </nav>
         </aside>
 
         <section className="content">
-          {/* Analytics Tab */}
-          {tab==='analytics' && (
-            <div className="content-grid">
-              <article className="card">
-                <h3>정치 성향</h3>
-                <div className="inline-group">
-                  {(['7','30','90','180','Y'] as BiasPeriod[]).map(p => (
-                    <button
-                      key={p}
-                      className={period===p?'btn-mini active':'btn-mini'}
-                      onClick={()=>setPeriod(p)}
-                    >{label(p)}</button>
-                  ))}
-                </div>
-                {biasLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : biasError
-                    ? <div className="error">{biasError}</div>
-                    : (
-                      <ResponsiveContainer width="100%" height={180}>
-                        <PieChart>
-                          <Pie
-                            data={orderedBiasData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={40}
-                            outerRadius={70}
-                            paddingAngle={3}
-                            cornerRadius={6}
-                            stroke="#f0f2f5"
-                            strokeWidth={2}
-                          >
-                            {orderedBiasData.map((_, i) => (
-                              <Cell key={i} fill={PIE_COLORS[i]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend verticalAlign="bottom" height={20} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    )}
-              </article>
-
-              <article className="card">
-                <h3>활동량</h3>
-                <div className="inline-group">
-                  {(['week','month'] as ('week'|'month')[]).map(p => (
-                    <button
-                      key={p}
-                      className={activityPeriod===p?'btn-mini active':'btn-mini'}
-                      onClick={()=>setActivityPeriod(p)}
-                    >{p==='week'?'주간':'월간'}</button>
-                  ))}
-                </div>
-                {activityLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : activityError
-                    ? <div className="error">{activityError}</div>
-                    : (
-                      <ResponsiveContainer width="100%" height={180}>
-                        <LineChart data={activityData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" height={20} />
-                          <YAxis />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="count" stroke={LINE_COLOR} dot />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    )}
-              </article>
-
-              <article className="card">
-                <h3>시청 시간</h3>
-                <div className="inline-group">
-                  {(['day','week','month'] as WatchTab[]).map(t => (
-                    <button
-                      key={t}
-                      className={watchTab===t?'btn-mini active':'btn-mini'}
-                      onClick={()=>setWatchTab(t)}
-                    >{t==='day'?'Day': t==='week'?'Week':'Month'}</button>
-                  ))}
-                </div>
-                {watchLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : watchError
-                    ? <div className="error">{watchError}</div>
-                    : (
-                      <ResponsiveContainer width="100%" height={180}>
-                        <BarChart data={watchData} barSize={10} barCategoryGap="25%">
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" height={20} />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="min" fill={BAR_COLOR} radius={[3,3,0,0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-              </article>
-
-              <article className="card korea-card">
-                <h3>팩트체크 분포</h3>
-                <div className="korea-map"><div id="koreaMap" /></div>
-              </article>
-            </div>
-          )}
-
           {/* Security Tab */}
           {tab==='security' && (
             <div className="security-grid">
               <article className="card">
                 <h3>계정 & 보안</h3>
-                <div className="info-row">
+                {/* <div className="info-row">
                   <span className="label">이메일</span>
                   <div className="display-group">
                     <span>{user.loginEmail}</span>
                     <button className="btn edit" onClick={openEmailModal}>변경</button>
                   </div>
-                </div>
+                </div> */}
                 <div className="info-row">
                   <span className="label">비밀번호</span>
                   <button className="btn" onClick={()=>setShowPwdModal(true)}>변경</button>
                 </div>
-                <div className="info-row">
+                {/* <div className="info-row">
                   <span className="label">2단계 인증</span>
                   <label className="toggle">
                     <input type="checkbox" checked={twoFA} onChange={toggle2FA} />
                     <span>{twoFA?'활성화':'비활성화'}</span>
                   </label>
-                </div>
+                </div> */}
               </article>
 
               <article className="card">
@@ -537,7 +633,7 @@ export default function MyPage() {
                         className="input-field"
                       />
                     </div>
-                    <div className="form-row">
+                    {/* <div className="form-row">
                       <label htmlFor="bioInput">소개</label>
                       <textarea
                         id="bioInput"
@@ -546,39 +642,12 @@ export default function MyPage() {
                         onChange={e=>setFormBio(e.target.value)}
                         className="textarea-field"
                       />
-                    </div>
+                    </div> */}
                     <div className="form-actions">
                       <button type="button" className="btn cancel" onClick={()=>{ setEditingProfile(false); setAvatarPreview(user.avatar||DEFAULT_AVATAR); }}>취소</button>
                       <button type="submit" className="btn save">저장</button>
                     </div>
                   </form>
-                )}
-              </article>
-
-              <article className="card">
-                <h3>앱 연결</h3>
-                {user.socialAccounts && user.socialAccounts.length > 0 ? (
-                  <ul className="apps-list">
-                    {user.socialAccounts.map(sa => (
-                      <li key={sa.provider} className="app-item">
-                        <span>{sa.provider}</span>
-                        <button className="btn edit" onClick={() => {
-                          setUser({
-                            ...user,
-                            socialAccounts: user.socialAccounts!.map(x =>
-                              x.provider === sa.provider
-                                ? { ...x, connected: !x.connected }
-                                : x
-                            )
-                          });
-                        }}>
-                          {sa.connected ? '해제' : '연결'}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="empty">연결된 앱이 없습니다.</p>
                 )}
               </article>
 
@@ -594,238 +663,55 @@ export default function MyPage() {
             </div>
           )}
 
-          {/* Activity Tab */}
-          {tab==='activity' && (
-            <div className="activity-grid">
-              <article className="card stats-card">
-                <h3>활동 요약</h3>
-                <div className="stats-list">
-                  <div className="stat-item">
-                    <span className="stat-value">{user.checks}</span>
-                    <span className="stat-label">팩트체크</span>
+          {/* 비밀번호 변경 모달 */}
+          {showPwdModal && (
+            <div className="modal-overlay">
+              <div className="modal">
+                <h2>비밀번호 변경</h2>
+                <form onSubmit={e => { e.preventDefault(); handlePwdSave(); }}>
+                  <div className="form-row">
+                    <label htmlFor="currentPwd">현재 비밀번호</label>
+                    <input
+                      id="currentPwd"
+                      type="password"
+                      value={currentPwd}
+                      onChange={e => setCurrentPwd(e.target.value)}
+                      className="input-field"
+                      required
+                    />
                   </div>
-                  <div className="stat-item">
-                    <span className="stat-value">{user.comments}</span>
-                    <span className="stat-label">댓글</span>
+                  <div className="form-row">
+                    <label htmlFor="newPwd">새 비밀번호</label>
+                    <input
+                      id="newPwd"
+                      type="password"
+                      value={newPwd}
+                      onChange={e => setNewPwd(e.target.value)}
+                      className="input-field"
+                      required
+                    />
                   </div>
-                  <div className="stat-item">
-                    <span className="stat-value">{user.likes}</span>
-                    <span className="stat-label">좋아요</span>
+                  <div className="form-row">
+                    <label htmlFor="confirmPwd">비밀번호 확인</label>
+                    <input
+                      id="confirmPwd"
+                      type="password"
+                      value={confirmPwd}
+                      onChange={e => setConfirmPwd(e.target.value)}
+                      className="input-field"
+                      required
+                    />
                   </div>
-                </div>
-              </article>
-
-              <article className="card">
-                <h3>업적 배지</h3>
-                {achievements.length > 0 ? (
-                  <ul className="achievements-list">
-                    {achievements.map(a => (
-                      <li key={a.id} className="achievement-item">
-                        <img src={a.icon} alt="" className="achievement-icon" />
-                        <span className="achievement-name">{a.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="empty">🏅 달성한 업적이 없습니다.</p>
-                )}
-              </article>
-
-              <article className="card">
-                <h3>댓글 반응 통계</h3>
-                {commentStats ? (
-                  <ul className="comment-stats-list">
-                    <li>받은 좋아요: {commentStats.likesReceived}</li>
-                    <li>받은 답글: {commentStats.repliesReceived}</li>
-                  </ul>
-                ) : (
-                  <p className="empty">통계가 없습니다.</p>
-                )}
-              </article>
-
-              <article className="card timeline-card">
-                <div className="notification-header">
-                  <h3>활동 히스토리</h3>
-                  <button className="btn mark-all-read" onClick={markAllNotificationsRead} aria-label="모든 알림 읽음 처리">모두 읽음</button>
-                </div>
-                <div className="timeline-controls">
-                  <select aria-label="활동 유형 필터" value={timelineFilter} onChange={e => { setTimelineFilter(e.target.value as any); setTimelinePage(1); }}>
-                    <option value="all">전체</option>
-                    <option value="check">팩트체크</option>
-                    <option value="comment">댓글</option>
-                    <option value="like">좋아요</option>
-                    <option value="bookmark">북마크</option>
-                  </select>
-                  <input type="text" placeholder="검색어 입력" aria-label="활동 검색" value={timelineSearch} onChange={e => { setTimelineSearch(e.target.value); setTimelinePage(1); }} />
-                </div>
-                {timelineLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : timelineError
-                    ? <div className="error">{timelineError}</div>
-                    : filteredTimeline.length === 0
-                      ? <p className="empty">활동 기록이 없습니다.</p>
-                      : (
-                        <ul className="timeline-list">
-                          {filteredTimeline
-                            .slice(0, timelinePage * 5)
-                            .map(item => (
-                              <li key={item.id} className="timeline-item">
-                                <span className="timeline-time">{formatDate(item.date)}</span>
-                                <span className="timeline-desc">[{item.type}] {item.title}</span>
-                              </li>
-                            ))}
-                        </ul>
-                      )}
-                {filteredTimeline.length > timelinePage * 5 && (
-                  <button className="btn load-more" onClick={() => setTimelinePage(p => p + 1)} aria-label="더 많은 활동 보기">더 보기</button>
-                )}
-              </article>
-
-              <article className="card bookmark-card">
-                <h3>북마크</h3>
-                {bookmarksLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : bookmarksError
-                    ? <div className="error">{bookmarksError}</div>
-                    : bookmarks.length > 0
-                      ? (
-                        <ul className="bookmark-list">
-                          {bookmarks.map(b => (
-                            <li key={b.id}>
-                              <a href={b.url} target="_blank" rel="noopener noreferrer">{b.title}</a>
-                              <span className="text-sub">{formatDate(b.url /* date not available, replace if you have date */)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                      : <p className="empty">북마크한 글이 없습니다.</p>}
-              </article>
-
-              <article className="card session-card">
-                <h3>세션</h3>
-                {sessionsLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : sessionsError
-                    ? <div className="error">{sessionsError}</div>
-                    : sessions.length > 0
-                      ? (
-                        <ul className="session-list">
-                          {sessions.map(s => (
-                            <li key={s.id}>
-                              <span>{s.device}</span>
-                              <span className="text-sub">{formatDate(s.lastActive)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                      : <p className="empty">로그인 세션이 없습니다.</p>}
-              </article>
-
-              <article className="card notification-card">
-                <h3>알림</h3>
-                {notificationsLoading
-                  ? <div className="spinner">로딩 중…</div>
-                  : notificationsError
-                    ? <div className="error">{notificationsError}</div>
-                    : notifications.length > 0
-                      ? (
-                        <ul className="notification-list">
-                          {notifications.map(n => (
-                            <li key={n.id}>
-                              <p>{n.message}</p>
-                              <span className="text-sub">{formatDate(n.date)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                      : <p className="empty">받은 알림이 없습니다.</p>}
-              </article>
+                  <div className="form-actions">
+                    <button type="button" className="btn cancel" onClick={() => setShowPwdModal(false)}>취소</button>
+                    <button type="submit" className="btn save">저장</button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </section>
       </div>
-
-      {/* Email Modal */}
-      {showEmailModal && (
-        <div className="modal-overlay">
-          <div tabIndex={-1} className="modal email-modal" role="dialog" aria-modal="true">
-            <div className="modal-header">
-              <h3 className="modal-title">이메일 변경</h3>
-              <button className="close-btn" onClick={closeEmailModal} aria-label="모달 닫기">×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="newEmail">새 이메일</label>
-                <input id="newEmail" type="email" className="input-field" value={formNewEmail} onChange={e => setFormNewEmail(e.target.value)} />
-                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formNewEmail) && formNewEmail && (
-                  <p className="error-text">유효한 이메일을 입력하세요.</p>
-                )}
-              </div>
-              <div className="form-group">
-                <button className="btn send-code" disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formNewEmail) || timer>0} onClick={sendVerification}>인증 메일 보내기</button>
-                {isCodeSent && timer>0 && <span className="timer">{formatTime(timer)} 남음</span>}
-              </div>
-              <div className="form-group inline-group">
-                <input id="verificationCode" type="text" className="input-field" placeholder="인증 코드" value={verificationCode} onChange={e => setVerificationCode(e.target.value)} />
-                <button className="btn verify-code" disabled={!verificationCode || timer===0} onClick={verifyCode}>인증하기</button>
-              </div>
-              {isVerified && <p className="success-text">이메일 인증 완료</p>}
-            </div>
-            <div className="modal-footer">
-              <button className="btn cancel-btn" onClick={closeEmailModal}>취소</button>
-              <button className="btn save-btn" disabled={!isVerified} onClick={handleEmailUpdate}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Password Modal */}
-      {showPwdModal && (
-        <div className="modal-overlay">
-          <div tabIndex={-1} className="modal password-modal" role="dialog" aria-modal="true">
-            <div className="modal-header">
-              <h3 className="modal-title">비밀번호 변경</h3>
-              <button className="close-btn" onClick={() => setShowPwdModal(false)} aria-label="모달 닫기">×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="currentPwd">현재 비밀번호</label>
-                <input id="currentPwd" type="password" className="input-field" value={currentPwd} onChange={e => setCurrentPwd(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="newPwd">새 비밀번호</label>
-                <input id="newPwd" type="password" className="input-field" value={newPwd} onChange={e => setNewPwd(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirmPwd">확인</label>
-                <input id="confirmPwd" type="password" className="input-field" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn cancel-btn" onClick={() => setShowPwdModal(false)}>취소</button>
-              <button className="btn save-btn" onClick={handlePwdSave}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
-
-// Helper: bias label
-function label(p: BiasPeriod) {
-  switch(p) {
-    case '7': return '7일';
-    case '30': return '30일';
-    case '90': return '90일';
-    case '180': return '180일';
-    default: return '연간';
-  }
-}
-
-// Helper: format date/time consistently
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
