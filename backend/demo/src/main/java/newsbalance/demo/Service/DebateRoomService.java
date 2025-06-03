@@ -465,4 +465,24 @@ public class DebateRoomService {
             }
         }
     }
+
+    @Transactional(readOnly = true)
+    public List<DebateRoomDto> searchDebateRooms(String query) {
+        // 검색어를 소문자로 변환하여 대소문자 구분 없이 검색
+        String lowerCaseQuery = query.toLowerCase();
+        
+        // 모든 토론방을 가져와서 필터링 (JPA 커스텀 쿼리 메서드가 있으면 더 효율적임)
+        return debateRoomRepository.findAll().stream()
+            .filter(room -> 
+                // 제목에 검색어가 포함된 경우
+                room.getTitle().toLowerCase().contains(lowerCaseQuery) || 
+                // 설명(토픽)에 검색어가 포함된 경우
+                (room.getTopic() != null && room.getTopic().toLowerCase().contains(lowerCaseQuery)) ||
+                // 키워드에 검색어가 포함된 경우
+                room.getKeywords().stream().anyMatch(keyword -> 
+                    keyword.getName().toLowerCase().contains(lowerCaseQuery))
+            )
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
+    }
 } 

@@ -37,6 +37,24 @@ const sortRoomsBy = (rooms: Dialogue[], key: 'recent' | 'popular') =>
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 입력 검증 및 소독 함수
+const sanitizeInput = (input: string): string => {
+  // HTML 태그 제거
+  let sanitized = input.replace(/<[^>]*>?/gm, '');
+  
+  // 스크립트 실행 방지를 위한 문자열 치환
+  sanitized = sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/\\/g, ''); // 백슬래시 제거 (이스케이프 시도 방지)
+  
+  // 길이 제한 (예: 50자)
+  sanitized = sanitized.substring(0, 50);
+  
+  return sanitized;
+};
+
 /* ===============================================================
    재사용 컴포넌트
 ================================================================ */
@@ -80,6 +98,7 @@ const Card: React.FC<CardProps> = ({
   const hl = (text: string) => {
     if (!highlight) return text;
     const re = new RegExp(`(${highlight})`, 'gi');
+    if (typeof text !== 'string') return '';
     return text.split(re).map((part, i) =>
         part.toLowerCase() === highlight.toLowerCase() ? (
             <mark key={i}>{part}</mark>
@@ -223,10 +242,12 @@ export default function DiscussionPage() {
   // 정렬 키 - 로컬스토리지 사용하지 않음
   const [allRoomsSortKey, setAllRoomsSortKey] = useState<'recent' | 'popular'>('recent');
 
+  // 검색 관련 상태
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [searchPageSize, setSearchPageSize] = useState(5);
+  const [searchResults, setSearchResults] = useState<Dialogue[]>([]);
 
   // 정렬 키 - 로컬스토리지 사용하지 않음
   const [sortKey, setSortKey] = useState<'recent' | 'popular'>('recent');
@@ -377,37 +398,129 @@ export default function DiscussionPage() {
       () =>
           [...hotList, ...allRooms].filter(
               (r) =>
-                  r.title.includes(searchTerm) ||
-                  r.description.includes(searchTerm) ||
-                  r.keywords.some((k) => k.includes(searchTerm)),
+                  (r.title?.includes(searchTerm) || false) ||
+                  (r.description?.includes(searchTerm) || false) ||
+                  (r.keywords && Array.isArray(r.keywords) && r.keywords.some((k) => k?.includes(searchTerm) || false))
           ),
       [searchTerm, hotList, allRooms],
   );
 
   /* ----- 이벤트 핸들러 ---------------------------------------- */
+  // API 검색 함수 개선
+  const searchRooms = async (term: string) => {
+    try {
+      setIsLoadingSearch(true);
+      
+      // API 검색 요청
+      const response = await fetch(`${API_BASE}/api/debate-rooms/search?q=${encodeURIComponent(term)}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        // 5초 타임아웃 설정
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (!response.ok) {
+        // 404가 아닌 모든 오류를 여기서 처리
+        if (response.status === 404) {
+          // 검색 결과가 없는 경우
+          console.log('검색 결과 없음');
+          setSearchResults([]);
+          return;
+        }
+        
+        // 응답 내용 확인 (JSON 또는 텍스트)
+        let errorMessage = '검색 요청에 실패했습니다';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          const errorText = await response.text();
+          console.error('검색 오류 응답:', errorText);
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // 응답이 JSON인지 확인
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
+      }
+
+      const data = await response.json();
+      console.log('검색 결과:', data);
+
+      // API 응답 구조 확인 및 안전하게 처리
+      let results = [];
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data)) {
+          results = data;
+        } else if (data.result && Array.isArray(data.result)) {
+          results = data.result;
+        }
+      }
+      
+      setSearchResults(results);
+    } catch (error) {
+      console.error('검색 오류:', error);
+      showToast(error instanceof Error ? error.message : '검색 중 오류가 발생했습니다');
+      setSearchResults([]);
+    } finally {
+      setIsLoadingSearch(false);
+    }
+  };
+
+  // 검색 제출 핸들러 개선
   const handleSearchSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setIsLoadingSearch(true);
-    await delay(300);
-    setSearchTerm(searchInput.trim());
+    
+    // 입력값 검증 및 소독
+    const sanitizedInput = sanitizeInput(searchInput.trim());
+    
+    // 입력값이 비어있는 경우
+    if (!sanitizedInput) {
+      if (searchInput.trim()) {
+        showToast('유효하지 않은 검색어입니다.');
+      }
+      setSearchTerm('');
+      setSearchResults([]);
+      return;
+    }
+    
+    setSearchTerm(sanitizedInput);
     setSearchPageSize(4);
-    setIsLoadingSearch(false);
+    
+    // 검색 실행
+    await searchRooms(sanitizedInput);
   };
 
   const createRoom = async () => {
     if (isCreating) return;
 
+    // 입력값 검증 및 소독
+    const sanitizedTitle = sanitizeInput(newTitle.trim());
+    const sanitizedDesc = sanitizeInput(newDesc.trim());
+    const sanitizedKeywords = newKeywords
+        .split(',')
+        .map(k => sanitizeInput(k.trim()))
+        .filter(k => k !== '')
+        .slice(0, 5);
+
     // 입력 유효성 검사
     let hasError = false;
 
-    if (!newTitle.trim() || newTitle.length < 3 || newTitle.length > 50) {
+    if (!sanitizedTitle || sanitizedTitle.length < 3 || sanitizedTitle.length > 50) {
       setTitleError('제목은 3~50자 사이여야 합니다');
       hasError = true;
     } else {
       setTitleError('');
     }
 
-    if (!newDesc.trim() || newDesc.length < 10 || newDesc.length > 200) {
+    if (!sanitizedDesc || sanitizedDesc.length < 10 || sanitizedDesc.length > 200) {
       setDescError('설명은 10~200자 사이여야 합니다');
       hasError = true;
     } else {
@@ -415,13 +528,6 @@ export default function DiscussionPage() {
     }
 
     if (hasError) return;
-
-    // 키워드 처리
-    const keywordList = newKeywords
-        .split(',')
-        .map(k => k.trim())
-        .filter(k => k !== '')
-        .slice(0, 5);
 
     try {
       setIsCreating(true);
@@ -434,9 +540,9 @@ export default function DiscussionPage() {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          title: newTitle.trim(),
-          topic: newDesc.trim(),
-          keywords: keywordList
+          title: sanitizedTitle,
+          topic: sanitizedDesc,
+          keywords: sanitizedKeywords
         }),
         credentials: 'include' // 세션 쿠키 포함
       });
@@ -592,12 +698,14 @@ export default function DiscussionPage() {
         <main className="discussion-container container">
           {/* ── 검색 + 정렬 ─────────────────────── */}
           <div className="search-sort-row">
-            <form className="search-bar" onSubmit={handleSearchSubmit}>
+            <form className="search-bar" onSubmit={handleSearchSubmit} role="search">
               <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="토론방 검색..."
+                  aria-label="토론방 검색"
+                  maxLength={50} // 최대 입력 길이 제한
               />
               {searchInput && (
                   <button
@@ -634,10 +742,10 @@ export default function DiscussionPage() {
                               <div key={i} className="skeleton-card" />
                           ))}
                     </div>
-                ) : filtered.length > 0 ? (
+                ) : searchResults.length > 0 ? (
                     <>
                       <div className="room-grid">
-                        {sortRooms(filtered)
+                        {sortRooms(searchResults)
                             .slice(0, searchPageSize)
                             .map((r) => (
                                 <Card
@@ -653,7 +761,7 @@ export default function DiscussionPage() {
                             ))}
                       </div>
 
-                      {filtered.length > searchPageSize && (
+                      {searchResults.length > searchPageSize && (
                           <button
                               className="load-more"
                               onClick={() => setSearchPageSize((s) => s + 4)}
@@ -724,17 +832,19 @@ export default function DiscussionPage() {
                               onChange={(e) => setNewTitle(e.target.value)}
                               placeholder="토론 주제를 입력하세요 (3~50자)"
                               className={titleError ? 'error' : ''}
+                              maxLength={50} // 최대 입력 길이 제한
                           />
                           {titleError && <div className="error-text">{titleError}</div>}
                         </div>
 
                         <div className="form-group">
-                    <textarea
-                        value={newDesc}
-                        onChange={(e) => setNewDesc(e.target.value)}
-                        placeholder="토론 설명을 입력하세요 (10~200자)"
-                        className={descError ? 'error' : ''}
-                    />
+                          <textarea
+                              value={newDesc}
+                              onChange={(e) => setNewDesc(e.target.value)}
+                              placeholder="토론 설명을 입력하세요 (10~200자)"
+                              className={descError ? 'error' : ''}
+                              maxLength={200} // 최대 입력 길이 제한
+                          />
                           {descError && <div className="error-text">{descError}</div>}
                         </div>
 
@@ -744,6 +854,7 @@ export default function DiscussionPage() {
                               value={newKeywords}
                               onChange={(e) => setNewKeywords(e.target.value)}
                               placeholder="키워드를 입력하세요 (쉼표로 구분, 최대 5개)"
+                              maxLength={100} // 최대 입력 길이 제한
                           />
                         </div>
 

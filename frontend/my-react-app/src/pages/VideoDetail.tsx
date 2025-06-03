@@ -6,10 +6,10 @@ import '../styles/VideoDetail.css';
 import parse from 'html-react-parser';
 import { YTVideo, LABEL } from './Videos';
 import { useTranslation } from 'react-i18next';
+import { API_BASE } from '../api/config';
 
 type Bias = YTVideo['bias'];
 
-const API_BASE = 'http://localhost:8080';
 
 interface TranscriptAnalysis {
   sentiment: 'positive' | 'neutral' | 'negative';

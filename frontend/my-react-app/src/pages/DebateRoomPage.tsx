@@ -136,6 +136,23 @@ const MessageList = ({ messages, onFactCheck }: {
     );
 };
 
+// 입력 텍스트 검증 및 소독 함수
+const sanitizeInput = (input: string): string => {
+  // HTML 태그 제거
+  let sanitized = input.replace(/<[^>]*>?/gm, '');
+  
+  // 스크립트 실행 방지를 위한 문자열 치환
+  sanitized = sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
+    .replace(/data:/gi, '');
+  
+  // 길이 제한 (예: 300자)
+  sanitized = sanitized.substring(0, 300);
+  
+  return sanitized;
+};
+
 const DebateRoomPage: React.FC<Props> = ({
     role,
     userName,
@@ -213,13 +230,37 @@ const DebateRoomPage: React.FC<Props> = ({
         );
     };
     
+    // 메시지 전송 로직 수정
+    const handleSendMessage = () => {
+      if (input.trim() && role === 'debater' && isMyTurn) {
+        // 입력 검증 및 소독
+        const sanitizedInput = sanitizeInput(input.trim());
+        
+        // 빈 문자열이거나 공격 코드만 있었던 경우 전송하지 않음
+        if (sanitizedInput) {
+          onSendMessage(sanitizedInput);
+          setInput("");
+        } else {
+          toast.error("유효하지 않은 입력입니다.");
+        }
+      }
+    };
+    
     // 채팅 메시지 전송 핸들러 수정
     const handleSendChat = () => {
-        if (chatInput.trim()) {
-            // WebSocket을 통해서만 메시지 전송
-            onSendChat(chatInput.trim());
-            setChatInput("");
+      if (chatInput.trim()) {
+        // 입력 검증 및 소독
+        const sanitizedChatInput = sanitizeInput(chatInput.trim());
+        
+        // 빈 문자열이거나 공격 코드만 있었던 경우 전송하지 않음
+        if (sanitizedChatInput) {
+          // WebSocket을 통해서만 메시지 전송
+          onSendChat(sanitizedChatInput);
+          setChatInput("");
+        } else {
+          toast.error("유효하지 않은 입력입니다.");
         }
+      }
     };
     
     // 키보드 이벤트 핸들러
@@ -449,14 +490,10 @@ const DebateRoomPage: React.FC<Props> = ({
                                 placeholder={`${role === 'debater' ? (isMyTurn ? '당신의 주장을 입력하세요...' : '지금은 발언할 수 없습니다.') : '관전자는 메시지를 보낼 수 없습니다'}`}
                                 className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                 disabled={!(role === 'debater' && isMyTurn)}
+                                maxLength={300}  // 최대 글자 수 제한
                             />
                             <button
-                                onClick={() => {
-                                    if (input.trim() && role === 'debater' && isMyTurn) {
-                                        onSendMessage(input.trim());
-                                        setInput("");
-                                    }
-                                }}
+                                onClick={handleSendMessage}  // 수정된 핸들러 사용
                                 className={`send-button ${!(role === 'debater' && isMyTurn) ? 'opacity-50 cursor-not-allowed' : ''} bg-pink-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-pink-700 transition-colors`}
                                 disabled={!(role === 'debater' && isMyTurn)}
                             >
@@ -554,9 +591,10 @@ const DebateRoomPage: React.FC<Props> = ({
                                     placeholder={`${role === 'viewer' ? '메시지를 입력하세요...' : '토론자는 메시지를 보낼 수 없습니다'}`}
                                     className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     disabled={role !== 'viewer'}
+                                    maxLength={150}  // 최대 글자 수 제한
                                 />
                                 <button
-                                    onClick={handleSendChat}
+                                    onClick={handleSendChat}  // 수정된 핸들러 사용
                                     className={`send-button ${role !== 'viewer' ? 'opacity-50 cursor-not-allowed' : ''} bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 transition-colors`}
                                     disabled={role !== 'viewer'}
                                 >

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import newsbalance.demo.Entity.Message;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +132,16 @@ public class DebateController {
         DebateRoomDto room = debateRoomService.toggleReady(roomId, nickname);
         template.convertAndSend("/topic/room/" + roomId + "/status", room);
         return ResponseEntity.ok(room);
+    }
+
+    // 토론방 검색 엔드포인트
+    @GetMapping("/debate-rooms/search")
+    public ResponseEntity<List<DebateRoomDto>> searchDebateRooms(@RequestParam("q") String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(debateRoomService.searchDebateRooms(query));
     }
 
     // 인기 토론방 조회
