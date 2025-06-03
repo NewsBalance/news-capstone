@@ -31,7 +31,7 @@ export default function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          <Route path="/goals" element={<GoalsPage />} />
+          <Route path="/goals" element={<IndexPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/contact" element={<ContactPage />} />

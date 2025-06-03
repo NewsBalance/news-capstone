@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/Index.css';
 
-const HOT_KEYWORDS = ['정치', '경제', '선거', '탄핵', '관세', '노마크'];
+const HOT_KEYWORDS = ['정치', '경제', '선거', '탄핵', '관세'];
 
 export default function IndexPage() {
   const navigate = useNavigate();
