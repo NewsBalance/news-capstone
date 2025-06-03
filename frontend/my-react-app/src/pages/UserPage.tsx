@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams }          from 'react-router-dom';
 import Header                 from '../components/Header';
 import '../styles/MyPage.css';  // 동일한 스타일 재활용
-
-const URL = "http://localhost:8080";
+import { API_BASE } from '../api/config';
 const DEFAULT_AVATAR =
     "data:image/svg+xml;utf8," +
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'>" +
@@ -52,7 +51,7 @@ export default function UserPage() {
     useEffect(() => {
         if (!nickname) return;
         setLoading(true);
-        fetch(`${URL}/session/Profile/${nickname}`, { credentials: 'include' })
+        fetch(`${API_BASE}/session/Profile/${nickname}`, { credentials: 'include' })
         .then(res => {
             if (!res.ok) throw new Error('사용자 조회 실패');
             return res.json() as Promise<{
