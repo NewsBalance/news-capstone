@@ -618,36 +618,11 @@ const DebateRoomPageWrapper: React.FC = () => {
         }
     };
 
-    // 팩트체크 핸들러 함수 간소화
+    // 팩트체크 핸들러 함수 변경 - 단순히 이벤트를 DebateRoomPage로 전달
     const handleFactCheck = (messageIndex: number) => {
-        const messageToCheck = messages[messageIndex];
-        if (!messageToCheck) return;
-
-        // API를 통해 팩트체크 요청
-        fetch(`${API_BASE}/api/fact-check`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: messageToCheck.text,
-                roomId: Number(roomId),
-                messageIndex: messageIndex
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // 팩트체크 결과 알림 표시
-            alert(`${messageToCheck.speaker}의 주장 팩트체크 결과: ${data.factCheckResult || '팩트체크 결과가 없습니다'}`);
-            
-            // 버튼 비활성화 (선택적)
-            const updatedMessages = [...messages];
-            updatedMessages[messageIndex] = {
-                ...updatedMessages[messageIndex],
-                isFactChecked: true
-            };
-            setMessages(updatedMessages);
-        });
+        // 이 함수는 이제 단순히 이벤트를 전달하는 역할만 함
+        // 실제 요약 요청은 DebateRoomPage.tsx에서 수행됨
+        console.log('팩트체크/요약 요청 - 메시지 인덱스:', messageIndex);
     };
 
     // 웹소켓 메시지 처리에서 팩트체크 관련 메시지 필터링 제거
