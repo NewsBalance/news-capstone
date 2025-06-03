@@ -66,7 +66,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const data = await res.json();
         if (data.success) {
-          console.log('세션 정보:', data.result);
           setIsAuthenticated(true);
           setUser({
             id: data.result.id || 0,
@@ -79,7 +78,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(null);
         }
       } catch (error) {
-        console.error('세션 확인 중 오류:', error);
         setIsAuthenticated(false);
         setUser(null);
       } finally {

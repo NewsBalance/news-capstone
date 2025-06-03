@@ -136,7 +136,7 @@ const MessageList = ({ messages, onFactCheck }: {
     );
 };
 
-// 입력 텍스트 검증 및 소독 함수
+// 옵션: 입력 텍스트 검증 및 소독 함수
 const sanitizeInput = (input: string): string => {
   // HTML 태그 제거
   let sanitized = input.replace(/<[^>]*>?/gm, '');
@@ -272,7 +272,6 @@ const DebateRoomPage: React.FC<Props> = ({
     
     const handleLeave = async () => {
         if (!roomId) {
-            console.error('Room ID is undefined');
             return;
         }
 
@@ -292,7 +291,6 @@ const DebateRoomPage: React.FC<Props> = ({
 
             navigate('/discussion');
         } catch (error) {
-            console.error('Error leaving room:', error);
             alert(error instanceof Error ? error.message : '오류가 발생했습니다');
         }
     };
@@ -379,16 +377,6 @@ const DebateRoomPage: React.FC<Props> = ({
         summaryRequestRef.current();
     };
 
-    // 디버깅 로그 추가
-    useEffect(() => {
-        console.log('현재 턴 정보:', {
-            currentTurnUserNickname,
-            userName,
-            isMyTurn,
-            roomStarted: roomData?.started
-        });
-    }, [currentTurnUserNickname, userName, isMyTurn, roomData?.started]);
-
     // useEffect 수정 - 서버에서 받은 currentTurnUserNickname 사용
     useEffect(() => {
         // 서버에서 제공하는 currentTurnUserNickname이 있으면 사용
@@ -396,7 +384,6 @@ const DebateRoomPage: React.FC<Props> = ({
             setCurrentSpeaker(currentTurnUserNickname);
             const myTurn = currentTurnUserNickname === userName;
             setIsMyTurn(myTurn);
-            console.log(`턴 업데이트: ${currentTurnUserNickname}, 내 턴: ${myTurn}`);
         } else {
             // 기존 로직은 fallback으로 유지
             const lastMessage = messages[messages.length - 1];
@@ -407,7 +394,6 @@ const DebateRoomPage: React.FC<Props> = ({
             setCurrentSpeaker(nextSpeaker);
             const myTurn = nextSpeaker === userName;
             setIsMyTurn(myTurn);
-            console.log(`턴 업데이트(fallback): ${nextSpeaker}, 내 턴: ${myTurn}`);
         }
     }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
 

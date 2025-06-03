@@ -307,23 +307,18 @@ export default function DiscussionPage() {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
           const errorData = await response.json();
-          console.error('Hot rooms error:', errorData);
           throw new Error(errorData.message || '인기 토론방을 불러오는데 실패했습니다');
         } else {
           const errorText = await response.text();
-          console.error('Non-JSON error response:', errorText);
           throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
         }
       }
 
       const data = await response.json();
-      console.log('핫 룸 데이터:', data);
-
       // API 응답 구조에 따라 조정
       const hotRoomsData = data.result || data || [];
       setHotList(hotRoomsData);
     } catch (error) {
-      console.error('Error fetching hot rooms:', error);
       // 오류가 발생해도 UI가 중단되지 않도록 빈 배열 설정
       setHotList([]);
     }
@@ -331,9 +326,6 @@ export default function DiscussionPage() {
 
   const fetchAllRooms = async () => {
     try {
-      // 로드 중 표시
-      console.log("모든 토론방 로딩 중...");
-
       // API 호출 시도
       const response = await fetch(`${API_BASE}/api/debate-rooms`, {
         method: 'GET',
@@ -354,13 +346,10 @@ export default function DiscussionPage() {
       }
 
       const data = await response.json();
-      console.log('모든 토론방 데이터:', data);
-
       // API 응답 구조에 따라 조정
       const roomsData = data.result || data || [];
       setAllRooms(sortRoomsBy(roomsData, allRoomsSortKey));
     } catch (error) {
-      console.error('Error fetching all rooms:', error);
       showToast(error instanceof Error ? error.message : '오류가 발생했습니다');
     }
   };
@@ -427,7 +416,6 @@ export default function DiscussionPage() {
         // 404가 아닌 모든 오류를 여기서 처리
         if (response.status === 404) {
           // 검색 결과가 없는 경우
-          console.log('검색 결과 없음');
           setSearchResults([]);
           return;
         }
@@ -439,7 +427,6 @@ export default function DiscussionPage() {
           errorMessage = errorData.message || errorMessage;
         } catch {
           const errorText = await response.text();
-          console.error('검색 오류 응답:', errorText);
         }
         
         throw new Error(errorMessage);
@@ -452,7 +439,6 @@ export default function DiscussionPage() {
       }
 
       const data = await response.json();
-      console.log('검색 결과:', data);
 
       // API 응답 구조 확인 및 안전하게 처리
       let results = [];
@@ -466,7 +452,6 @@ export default function DiscussionPage() {
       
       setSearchResults(results);
     } catch (error) {
-      console.error('검색 오류:', error);
       showToast(error instanceof Error ? error.message : '검색 중 오류가 발생했습니다');
       setSearchResults([]);
     } finally {

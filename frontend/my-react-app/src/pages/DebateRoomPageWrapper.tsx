@@ -56,26 +56,16 @@ const DebateRoomPageWrapper: React.FC = () => {
 
     // WebSocket 클라이언트 참조
     const stompClient = useRef<any>(null);
-    
-    // 디버깅 로그 추가
-    useEffect(() => {
-        console.log('현재 로딩 상태:', loading);
-        console.log('현재 에러 상태:', error);
-        console.log('현재 룸 데이터:', roomData);
-        console.log('현재 사용자 이름:', userName);
-    }, [loading, error, roomData, userName]);
 
     // 사용자 정보 설정
     useEffect(() => {
         if (user && user.nickname) {
-            console.log('Auth 컨텍스트에서 사용자 이름 설정:', user.nickname);
             setUserName(user.nickname);
             return;
         }
         
         // 인증 정보가 없는 경우
         if (!user) {
-            console.error('사용자 인증 정보가 없습니다');
             setError('로그인이 필요합니다.');
             setLoading(false);
             return;
@@ -91,21 +81,19 @@ const DebateRoomPageWrapper: React.FC = () => {
             connectHeaders: {
                 userName: userName // 사용자 이름을 헤더에 추가
             },
-            debug: str => console.log('STOMP:', str),
+            debug: function() {}, // 디버그 로그 비활성화
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000
         });
 
         client.onConnect = () => {
-            console.log('WebSocket 연결 성공!');
             stompClient.current = client;
 
             // 방 상태 구독
             client.subscribe(`/topic/room/${roomId}/status`, message => {
                 try {
                     const roomStatus = JSON.parse(message.body);
-                    console.log('받은 룸 상태 데이터:', roomStatus); // 디버깅 로그 추가
                     
                     setRoomData(prevData => {
                         // 토론 시작 상태가 변경되었을 때 시스템 메시지 추가
@@ -124,13 +112,12 @@ const DebateRoomPageWrapper: React.FC = () => {
                         };
                     });
                 } catch (err) {
-                    console.error('상태 업데이트 처리 오류:', err);
+                    // 오류 처리만 하고 로그 출력하지 않음
                 }
             });
 
             // 참여자 변경 구독
             client.subscribe(`/topic/room/${roomId}/participants`, function (message) {
-                console.log('참여자 업데이트 메시지 수신:', message.body);
                 try {
                     const participantUpdate = JSON.parse(message.body);
                     setRoomData(prev => ({
@@ -138,7 +125,7 @@ const DebateRoomPageWrapper: React.FC = () => {
                         currentParticipants: participantUpdate.currentParticipants
                     }));
                 } catch (err) {
-                    console.error('참여자 업데이트 처리 오류:', err);
+                    // 오류 처리만 하고 로그 출력하지 않음
                 }
             });
 
@@ -148,29 +135,27 @@ const DebateRoomPageWrapper: React.FC = () => {
                     const responseMessage = JSON.parse(message.body);
                     handleDebateMessage(responseMessage);
                 } catch (err) {
-                    console.error('메시지 파싱 오류:', err);
+                    // 오류 처리만 하고 로그 출력하지 않음
                 }
             });
 
             // 관전자 채팅 구독
             client.subscribe('/topic/chat/' + roomId, function (message) {
-                console.log('채팅 메시지 수신:', message.body);
                 try {
                     const responseMessage = JSON.parse(message.body);
                     setChatMessages(prev => [...prev, `${responseMessage.sender}: ${responseMessage.content}`]);
                 } catch (err) {
-                    console.error('채팅 메시지 파싱 오류:', err);
+                    // 오류 처리만 하고 로그 출력하지 않음
                 }
             });
 
             // 오류 메시지 구독
             client.subscribe('/topic/error/' + roomId, function (message) {
-                console.error('오류 메시지 수신:', message.body);
                 try {
                     const errorMessage = JSON.parse(message.body);
                     alert(`오류: ${errorMessage.content}`);
                 } catch (err) {
-                    console.error('오류 메시지 파싱 오류:', err);
+                    // 오류 처리만 하고 로그 출력하지 않음
                 }
             });
         };
@@ -185,12 +170,9 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론방 정보와 메시지 가져오기
     useEffect(() => {
         if (!roomId || !userName) {
-            console.error('roomId 또는 userName이 없습니다');
             setError('방 정보 또는 사용자 정보가 없습니다');
             return;
         }
-
-        console.log('토론방 정보 요청:', roomId);
         
         fetch(`${API_BASE}/api/debate-rooms/${roomId}`, {
             headers: {
@@ -201,7 +183,6 @@ const DebateRoomPageWrapper: React.FC = () => {
         })
         .then(res => {
             if (!res.ok) {
-                console.error('토론방 정보 응답 오류:', res.status);
                 return res.text().then(text => {
                     throw new Error(text || '토론방 정보를 가져오는데 실패했습니다');
                 });
@@ -209,32 +190,26 @@ const DebateRoomPageWrapper: React.FC = () => {
             return res.json();
         })
         .then(data => {
-            console.log('토론방 정보 응답:', data);
-            
             // 토론방 데이터 설정
             setRoomData(data);
             
             // 토론 메시지 처리
             if (Array.isArray(data.messages)) {
-                console.log('받아온 토론 메시지 수:', data.messages.length);
                 setMessages(data.messages.map((msg: any) => ({
                     speaker: msg.sender,
                     text: msg.content,
                     summary: msg.summary
                 })));
             } else {
-                console.warn('응답에 messages 필드가 없거나 배열이 아닙니다:', data);
                 setMessages([]);
             }
             
-            // 채팅 메시지 처리 (추가)
+            // 채팅 메시지 처리
             if (Array.isArray(data.chatMessages)) {
-                console.log('받아온 채팅 메시지 수:', data.chatMessages.length);
                 setChatMessages(data.chatMessages.map((msg: any) => 
                     `${msg.message}`
                 ));
             } else {
-                console.warn('응답에 chatMessages 필드가 없거나 배열이 아닙니다:', data);
                 setChatMessages([]);
             }
             
@@ -243,10 +218,8 @@ const DebateRoomPageWrapper: React.FC = () => {
             const isDebaterB = data.debaterB === userName;
             
             if (isDebaterA || isDebaterB) {
-                console.log(`사용자 ${userName}이(가) 토론자로 설정됨`);
                 setRole('debater');
             } else {
-                console.log(`사용자 ${userName}이(가) 관전자로 설정됨`);
                 setRole('viewer');
             }
             
@@ -254,12 +227,9 @@ const DebateRoomPageWrapper: React.FC = () => {
             setError(null); // 성공적으로 데이터를 가져왔으므로 에러 상태 초기화
         })
         .catch(err => {
-            console.error('토론방 정보 가져오기 오류:', err);
-            
             // 에러 상태 설정
             setError(err.message);
             setLoading(false);
-        
         });
     }, [roomId, userName]);
 
@@ -267,8 +237,6 @@ const DebateRoomPageWrapper: React.FC = () => {
     useEffect(() => {
         if (roomData) {
             const totalParticipants = Number(roomData.currentParticipants);
-            console.log('총 참여자 수:', totalParticipants);
-        
             // 그냥 참여자 수 그대로 사용
             setParticipantCount(totalParticipants);
         }
@@ -277,11 +245,8 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론방 입장 처리 로직 추가
     useEffect(() => {
         if (!roomId || !userName) {
-            console.log('사용자 정보가 없어 입장 처리를 건너뜁니다.');
             return;
         }
-        
-        console.log('토론방 입장 처리 시작:', userName);
         
         // 토론방 입장 시 알림 표시
         alert('토론 규칙 안내:\n- 서로 존중하는 태도로 의견을 나눕니다.\n- 주제에서 벗어나지 않도록 합니다.\n- 각 발언은 300자 이내로 제한됩니다.\n- 상대방의 발언이 끝날 때까지 기다립니다.\n- 욕설, 비방은 제재당할 수 있습니다.');
@@ -297,7 +262,6 @@ const DebateRoomPageWrapper: React.FC = () => {
         })
         .then(res => {
             if (!res.ok) {
-                console.error('토론방 입장 처리 실패:', res.status);
                 return res.text().then(text => {
                     throw new Error(text || '입장 처리에 실패했습니다');
                 });
@@ -305,8 +269,6 @@ const DebateRoomPageWrapper: React.FC = () => {
             return res.json();
         })
         .then(data => {
-            console.log('토론방 입장 처리 완료:', data);
-            
             // 룸 데이터 업데이트
             setRoomData(prevData => ({
                 ...prevData,
@@ -314,31 +276,20 @@ const DebateRoomPageWrapper: React.FC = () => {
                 // 기존 데이터 유지를 위한 병합
                 topic: data.topic || prevData?.topic
             }));
-            
-            // 참가자 수가 업데이트되었는지 확인
-            if (data.currentParticipants !== undefined) {
-                console.log('업데이트된 참가자 수:', data.currentParticipants);
-            }
         })
         .catch(err => {
-            console.error('토론방 입장 처리 중 오류:', err);
+            // 오류 처리만 하고 로그 출력하지 않음
         });
     }, [roomId, userName]);
 
     // 토론 메시지 전송
     const handleSendMessage = (text: string) => {
         if (!stompClient.current || !roomId) {
-            console.error("WebSocket 연결 상태:", stompClient.current ? "객체 존재" : "객체 없음");
-            console.error("연결 상태:", stompClient.current?.connected ? "연결됨" : "연결 안됨");
-            console.error("roomId:", roomId);
-            
             // 연결이 끊어진 경우 재연결 시도
             if (stompClient.current && !stompClient.current.connected) {
-                console.log("WebSocket 재연결 시도...");
                 stompClient.current.activate();
                 setTimeout(() => {
                     if (stompClient.current?.connected) {
-                        console.log("재연결 성공, 메시지 재전송 시도");
                         sendMessage(text);
                         return;
                     } else {
@@ -358,16 +309,11 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 채팅 메시지 전송
     const handleSendChat = (text: string) => {
         if (!stompClient.current || !roomId) {
-            console.error("WebSocket 연결 상태:", stompClient.current ? "객체 존재" : "객체 없음");
-            console.error("연결 상태:", stompClient.current?.connected ? "연결됨" : "연결 안됨");
-            
             // 연결이 끊어진 경우 재연결 시도
             if (stompClient.current && !stompClient.current.connected) {
-                console.log("WebSocket 재연결 시도...");
                 stompClient.current.activate();
                 setTimeout(() => {
                     if (stompClient.current?.connected) {
-                        console.log("재연결 성공, 채팅 메시지 재전송 시도");
                         sendChatMessage(text);
                         return;
                     } else {
@@ -405,7 +351,6 @@ const DebateRoomPageWrapper: React.FC = () => {
                 text: text
             }]);
         } catch (error) {
-            console.error("메시지 전송 중 오류:", error);
             alert("메시지 전송에 실패했습니다. 다시 시도해주세요.");
         }
     };
@@ -425,7 +370,6 @@ const DebateRoomPageWrapper: React.FC = () => {
                 body: JSON.stringify(message)
             });
         } catch (error) {
-            console.error("채팅 메시지 전송 중 오류:", error);
             alert("채팅 메시지 전송에 실패했습니다. 다시 시도해주세요.");
         }
     };
@@ -443,14 +387,9 @@ const DebateRoomPageWrapper: React.FC = () => {
             });
 
             if (!response.ok) {
-                console.error('준비 상태 변경 응답 오류:', response.status, response.statusText);
                 throw new Error('준비 상태 변경에 실패했습니다');
             }
-
-            // 서버에서 상태 업데이트를 받을 때까지 기다리므로 여기서는 상태를 직접 업데이트하지 않음
-            console.log('준비 상태 변경 요청 성공');
         } catch (error) {
-            console.error('Error toggling ready state:', error);
             alert(error instanceof Error ? error.message : '준비 상태 변경 중 오류가 발생했습니다');
         }
     };
@@ -458,8 +397,6 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론자 A로 등록하는 함수
     const registerAsDebaterA = () => {
         if (!roomId) return;
-        
-        console.log('토론자 A 등록 API 호출...');
         
         // 토론자 A로 등록 API 호출
         fetch(`${API_BASE}/api/debate-rooms/${roomId}/register-as-debater-a`, {
@@ -472,15 +409,12 @@ const DebateRoomPageWrapper: React.FC = () => {
         })
         .then(res => {
             if (!res.ok) {
-                console.error('토론자 A 등록 실패:', res.status);
                 return;
             }
             return res.json();
         })
         .then(data => {
             if (!data) return;
-            
-            console.log('토론자 A 등록 성공:', data);
             
             // 성공적으로 등록되면 상태 업데이트
             setRoomData(prev => {
@@ -492,7 +426,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             });
         })
         .catch(err => {
-            console.error('토론자 A 등록 API 오류:', err);
+            // 오류 처리만 하고 로그 출력하지 않음
         });
     };
 
@@ -516,7 +450,6 @@ const DebateRoomPageWrapper: React.FC = () => {
             setRole('debater');
             setRoomData(updatedRoom);
         } catch (error) {
-            console.error('Error joining as debater B:', error);
             alert(error instanceof Error ? error.message : '토론자 B 참여 중 오류가 발생했습니다');
         }
     };
@@ -524,7 +457,6 @@ const DebateRoomPageWrapper: React.FC = () => {
     // 토론방 나가기 처리
     const handleLeave = async () => {
         if (!roomId) {
-            console.error('Room ID is undefined');
             return;
         }
 
@@ -563,7 +495,6 @@ const DebateRoomPageWrapper: React.FC = () => {
 
             navigate('/discussion');
         } catch (error) {
-            console.error('Error leaving room:', error);
             alert(error instanceof Error ? error.message : '오류가 발생했습니다');
         }
     };
@@ -586,11 +517,9 @@ const DebateRoomPageWrapper: React.FC = () => {
                 const contentType = response.headers.get("content-type");
                 if (contentType && contentType.indexOf("application/json") !== -1) {
                     const errorData = await response.json();
-                    console.error('토론방 참여 오류:', errorData);
                     throw new Error(errorData.message || '토론방 참여에 실패했습니다');
                 } else {
                     const errorText = await response.text();
-                    console.error('JSON이 아닌 응답:', errorText.substring(0, 500)); // 응답 앞부분만 로깅
                     throw new Error('서버 응답이 유효한 JSON 형식이 아닙니다');
                 }
             }
@@ -600,20 +529,16 @@ const DebateRoomPageWrapper: React.FC = () => {
             // 역할 설정
             if (updatedRoom.debaterA === userName) {
                 setRole('debater');
-                console.log('토론자 A로 설정됨');
             } else if (updatedRoom.debaterB === userName) {
                 setRole('debater');
-                console.log('토론자 B로 설정됨');
             } else {
                 setRole('viewer');
-                console.log('관전자로 설정됨');
             }
 
             // 방 데이터 업데이트
             setRoomData(updatedRoom);
 
         } catch (error) {
-            console.error('Error joining room:', error);
             alert(error instanceof Error ? error.message : '참여 중 오류가 발생했습니다');
         }
     };
@@ -622,13 +547,10 @@ const DebateRoomPageWrapper: React.FC = () => {
     const handleFactCheck = (messageIndex: number) => {
         // 이 함수는 이제 단순히 이벤트를 전달하는 역할만 함
         // 실제 요약 요청은 DebateRoomPage.tsx에서 수행됨
-        console.log('팩트체크/요약 요청 - 메시지 인덱스:', messageIndex);
     };
 
     // 웹소켓 메시지 처리에서 팩트체크 관련 메시지 필터링 제거
     const handleDebateMessage = (responseMessage: any) => {
-        console.log('받은 메시지:', responseMessage);
-        
         // 기존 메시지 처리 로직
         switch (responseMessage.type) {
             case 'CHAT':
@@ -672,7 +594,7 @@ const DebateRoomPageWrapper: React.FC = () => {
     // fetchRoomData 함수 추가
     const fetchRoomData = async () => {
         try {
-            const response = await fetch(`/api/debate-rooms/${roomId}`, {
+            const response = await fetch(`${API_BASE}/api/debate-rooms/${roomId}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -685,7 +607,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             const data = await response.json();
             setRoomData(data);
         } catch (error) {
-            console.error('Error fetching room data:', error);
+            // 오류 처리만 하고 로그 출력하지 않음
         }
     };
 
@@ -694,7 +616,6 @@ const DebateRoomPageWrapper: React.FC = () => {
         // 토론방 메시지 구독
         stompClient.current?.subscribe(`/topic/room/${roomId}`, (message: { body: string }) => {
             const data = JSON.parse(message.body);
-            console.log('토론방 메시지 수신:', data);
             
             // 메시지 타입에 따라 처리
             switch (data.type) {
@@ -747,13 +668,10 @@ const DebateRoomPageWrapper: React.FC = () => {
         // 오류 메시지 구독
         stompClient.current?.subscribe(`/topic/error/${roomId}`, (message: { body: string }) => {
             const data = JSON.parse(message.body);
-            console.log('오류 메시지:', data);
             
             // 오류 알림 표시
             alert(data.content);
         });
-        
-        // 기타 구독...
     };
 
     // 로딩 상태나 오류 처리

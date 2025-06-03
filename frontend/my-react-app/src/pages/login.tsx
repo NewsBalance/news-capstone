@@ -63,18 +63,13 @@ function LoginPage() {
         credentials: 'include'  // 세션 쿠키를 받기 위해 필요
       });
 
-      console.log('응답 상태:', response.status);
-
       // 모든 응답 결과 확인
       const responseText = await response.text();
-      console.log('응답 텍스트:', responseText);
 
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log('응답 데이터:', result);
       } catch (e) {
-        console.error('JSON 파싱 오류:', e);
         result = { message: '서버 응답을 처리할 수 없습니다.' };
       }
 
@@ -101,7 +96,6 @@ function LoginPage() {
         alert(`로그인 실패: ${result.message || '알 수 없는 오류가 발생했습니다.'}`);
       }
     } catch(err) {
-      console.error('로그인 오류:', err);
       alert('서버 통신 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
