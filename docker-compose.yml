@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: ./db
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1q2w3e4r
+      POSTGRES_DB: capstone
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask-app:
+    build:
+      context: ./ai
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./ai:/app
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  react-app:
+    build:
+      context: ./frontend/my-react-app
+    container_name: react-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - springboot-app
+    networks:
+      - frontend
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: server-elk
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - backend
+    healthcheck:
+      test: curl -s http://server-elk:9200 >/dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5    
+
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.0
+    container_name: server-logstash
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+    networks:
+      - backend
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: server-kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - backend
+
+
+  springboot-app:
+    build:
+      context: ./backend/demo
+    container_name: springboot-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      flask-app:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+  frontend:

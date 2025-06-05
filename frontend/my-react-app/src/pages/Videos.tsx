@@ -45,8 +45,8 @@ const sanitizeInput = (input: string): string => {
 };
 
 const mapBias = (value: number): Bias => {
-  if (value <= -0.3) return 'left';
-  if (value <= 0.3) return 'center';
+  if (value <= -0.5) return 'left';
+  if (value < 0.5) return 'center';
   return 'right';
 };
 
