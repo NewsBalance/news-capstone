@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: ./db
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1q2w3e4r
+      POSTGRES_DB: capstone
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask-app:
+    build:
+      context: ./ai
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./ai:/app
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  react-app:
+    build:
+      context: ./frontend/my-react-app
+    container_name: react-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - springboot-app
+    networks:
+      - frontend
+
+  elk:
+    image: sebp/elk:8.15.0
+    container_name: server-elk
+    ports:
+      - "5601:5601"  # Kibana
+      - "9200:9200"  # Elasticsearch
+      - "5044:5044"  # Logstash
+    environment:
+      - TZ=Asia/Seoul
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://server-elk:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  springboot-app:
+    build:
+      context: ./backend/demo
+    container_name: springboot-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      flask-app:
+        condition: service_started
+      elk:
+        condition: service_healthy
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+  frontend:

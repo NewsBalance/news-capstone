@@ -57,6 +57,12 @@ public class ApiController {
         }
     }
 
+    @PostMapping("/dockertest")
+    public ResponseEntity<Object> dockerTest(){
+        String result = "API 통신 성공";
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
 
 
     // 기존 단일 URL 처리 엔드포인트는 그대로 두고,
