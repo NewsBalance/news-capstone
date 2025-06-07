@@ -130,7 +130,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             });
 
             // 토론 메시지 구독
-            client.subscribe('/topic/debate/' + roomId, function (message) {
+            client.subscribe('/topic/room/' + roomId, function (message) {
                 try {
                     const responseMessage = JSON.parse(message.body);
                     handleDebateMessage(responseMessage);
@@ -490,6 +490,7 @@ const DebateRoomPageWrapper: React.FC = () => {
             });
 
             if (!response.ok) {
+                navigate('/');
                 throw new Error('퇴장 처리 중 오류가 발생했습니다');
             }
 
