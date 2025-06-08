@@ -28,6 +28,12 @@ export default function SignupPage() {
   const [phoneError, setPhoneError] = useState('');
   const [termsError, setTermsError] = useState('');
 
+  // ---- 이메일 인증 코드 상태 ----
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendCodeMessage, setSendCodeMessage] = useState('');
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+
   // ---- 약관 동의 ----
   const [agreeAll, setAgreeAll] = useState(false);
   const [serviceAgree, setServiceAgree] = useState(false);
@@ -102,6 +108,57 @@ export default function SignupPage() {
     marketingAgree,
     locationAgree,
   ]);
+
+  // ---- 인증번호 전송 ---
+  const handleSendCode = async () => {
+    setVerifyMessage('');
+    setIsEmailVerified(false);
+    if (!email.trim()) {
+      setSendCodeMessage('이메일을 먼저 입력해주세요.');
+      return;
+    }
+    try {
+      const res = await fetch(`${URL}/user/sendcode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setSendCodeMessage(json.message || '인증 코드가 전송되었습니다.');
+      } else {
+        setSendCodeMessage(json.message || '인증 코드 전송에 실패했습니다.');
+      }
+    } catch (e) {
+      setSendCodeMessage('서버 통신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ---- 인증번호 확인 ---- 
+  const handleVerifyCode = async () => {
+    setSendCodeMessage('');
+    if (!verificationCode.trim()) {
+      setVerifyMessage('인증번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const res = await fetch(`${URL}/user/verifycode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode })
+      });
+      const json = await res.json();
+      if(res.ok)
+        setIsEmailVerified(true);
+      setVerifyMessage(
+        res.ok
+          ? json.message || '인증 완료'
+          : json.message || '인증 코드가 올바르지 않습니다.'
+      );
+    } catch {
+      setVerifyMessage('서버 통신 중 오류가 발생했습니다.');
+    }
+  };
 
   // ---- 비밀번호 강도 판단 ----
   const checkPasswordStrength = (val: string) => {
@@ -290,6 +347,19 @@ export default function SignupPage() {
       }
     }
 
+    // 이메일 인증 확인
+    if (!verificationCode.trim()){
+      setVerifyMessage('인증번호를 입력해주세요.');
+      alert('인증번호를 입력해주세요.')
+      valid = false;
+    } else if (!isEmailVerified){
+      setVerifyMessage('이메일 인증을 완료해주세요.');
+      alert('이메일 인증을 완료해주세요.')
+      valid = false;
+    } else {
+      setVerifyMessage('');
+    }
+
     // 닉네임 유효성 검사
     if (!nickname.trim()) {
       setNicknameError(t('signup.errors.nicknameRequired'));
@@ -458,6 +528,55 @@ export default function SignupPage() {
               </div>
             )}
           </div>
+
+          {/* 이메일 인증 + 인증번호 입력 */}
+          {emailIconState === 'available' && (
+              <div className="form-group">
+                <label htmlFor="sendCodeBtn">이메일 인증</label>
+                <div className="form-row">
+                  <input
+                    type="text"
+                    id="verificationCode"
+                    name="verificationCode"
+                    placeholder="인증번호 입력"
+                    style={{width: '200px'}}
+                    value={verificationCode}
+                    onChange={e => setVerificationCode(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="check-btn"
+                    id="checkEmailBtn"
+                    onClick={handleSendCode}
+                  >
+                    전송
+                  </button>
+                  <button
+                    type="button"
+                    id="verifyCodeBtn"
+                    className="check-btn"
+                    onClick={handleVerifyCode}
+                  >
+                    인증
+                  </button>
+                </div>
+                {/* 전송 결과 메시지 */}
+                {sendCodeMessage && (
+                  <div className={sendCodeMessage.includes('성공') ? 'success-message' : 'error-message'}>
+                    {sendCodeMessage}
+                  </div>
+                )}
+                {/* 확인 결과 메시지 */}
+                {verifyMessage && (
+                  <div 
+                    className={verifyMessage.includes('완료') ? 'success-message' : 'error-message'}
+                    style={{ textAlign: 'left'}}
+                  >
+                    {verifyMessage}
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* 닉네임 입력 */}
           <div className="form-group">
