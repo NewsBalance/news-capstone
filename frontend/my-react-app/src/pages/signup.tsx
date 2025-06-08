@@ -1,16 +1,16 @@
 // src/pages/Signup.tsx
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/Signup.css';
 import { API_BASE } from '../api/config';
 
 export default function SignupPage() {
   const { t } = useTranslation();
-
+  const navigate = useNavigate();
   // ---- 폼 필드 상태 ----
   const [email, setEmail] = useState('');
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(''); 
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [birthdate, setBirthdate] = useState('');
@@ -118,7 +118,7 @@ export default function SignupPage() {
       return;
     }
     try {
-      const res = await fetch(`${URL}/user/sendcode`, {
+      const res = await fetch(`${API_BASE}/user/sendcode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -142,7 +142,7 @@ export default function SignupPage() {
       return;
     }
     try {
-      const res = await fetch(`${URL}/user/verifycode`, {
+      const res = await fetch(`${API_BASE}/user/verifycode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: verificationCode })
@@ -346,19 +346,19 @@ export default function SignupPage() {
         setEmailError('');
       }
     }
-
+ 
     // 이메일 인증 확인
-    if (!verificationCode.trim()){
-      setVerifyMessage('인증번호를 입력해주세요.');
-      alert('인증번호를 입력해주세요.')
-      valid = false;
-    } else if (!isEmailVerified){
-      setVerifyMessage('이메일 인증을 완료해주세요.');
-      alert('이메일 인증을 완료해주세요.')
-      valid = false;
-    } else {
-      setVerifyMessage('');
-    }
+ if (!verificationCode.trim()){
+  setVerifyMessage('인증번호를 입력해주세요.');
+  alert('인증번호를 입력해주세요.')
+  valid = false;
+} else if (!isEmailVerified){
+  setVerifyMessage('이메일 인증을 완료해주세요.');
+  alert('이메일 인증을 완료해주세요.')
+  valid = false;
+} else {
+  setVerifyMessage('');
+}
 
     // 닉네임 유효성 검사
     if (!nickname.trim()) {
@@ -451,6 +451,7 @@ export default function SignupPage() {
 
       if (response.ok) {
         alert(t('signup.success'));
+        navigate('/login');
       } else {
         alert(`${t('signup.failure')}: ${result.message}`);
       }
