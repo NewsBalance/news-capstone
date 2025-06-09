@@ -50,42 +50,42 @@ type SummarizeResponse = {
 };
 
 // DebateSummarySection 컴포넌트 수정
-const DebateSummarySection = ({ roomId, messages }: { 
-  roomId: number; 
-  messages: any[];
-}) => {
-  const [summary, setSummary] = useState<string | null>(null);
-  const [articles, setArticles] = useState<RelatedArticle[]>([]);
-
-  const requestSummary = () => {
-    // 메시지가 없으면 요청하지 않음
-    if (!messages || messages.length === 0) return;
-    
-    const requestBody = { roomId, messages };
-
-    fetch(`${API_BASE}/api/debate/summary`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('요약 응답 오류');
-        return res.json();
+const DebateSummarySection = ({ roomId }: { roomId: number }) => {
+    const [summary, setSummary] = useState<string | null>(null);
+    const [articles, setArticles] = useState<RelatedArticle[]>([]);
+  
+    const requestSummary = (message: DebateMessage) => {
+      if (!message) return;
+  
+      const requestBody = {
+        roomId,
+        text: message.text, // 단일 메시지 전송
+      };
+  
+      fetch(`${API_BASE}/api/debate/summary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       })
-      .then((data: SummarizeResponse) => {
-        setSummary(data.summarizemessage);
-        setArticles(data.relatedArticles);
-      })
-      .catch((err) => {
-        console.error('요약 또는 기사 로딩 실패:', err);
-      });
+        .then((res) => {
+          if (!res.ok) throw new Error('요약 응답 오류');
+          return res.json();
+        })
+        .then((data: SummarizeResponse) => {
+          setSummary(data.summarizemessage);
+          setArticles(data.relatedArticles);
+        })
+        .catch((err) => {
+          console.error('요약 또는 기사 로딩 실패:', err);
+        });
+    };
+  
+    return { summary, articles, requestSummary };
   };
-
-  return { summary, articles, requestSummary };
-};
+  
 
 // 메시지 목록 컴포넌트 개선
 const MessageList = ({ messages, onFactCheck }: {
@@ -184,7 +184,8 @@ const DebateRoomPage: React.FC<Props> = ({
     const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
     const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
     // 요약 요청 함수를 위한 참조 추가
-    const summaryRequestRef = useRef<() => void>(() => {});
+    const summaryRequestRef = useRef<((message: DebateMessage) => void) | null>(null);
+
     
     const debateMessagesRef = useRef<HTMLDivElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -373,8 +374,10 @@ const DebateRoomPage: React.FC<Props> = ({
     
     // 팩트체크 기능 수정 - 요약 기능 호출만 진행하고 기존 팩트체크 함수는 제거
     const handleFactCheck = (messageIndex: number) => {
-        // 요약 요청 함수 호출
-        summaryRequestRef.current();
+        const messageToCheck = messages[messageIndex];
+        if (messageToCheck) {
+            requestSummary(messageToCheck);
+        }
     };
 
     // useEffect 수정 - 서버에서 받은 currentTurnUserNickname 사용
@@ -397,10 +400,9 @@ const DebateRoomPage: React.FC<Props> = ({
         }
     }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
 
-    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용 (수정)
+    // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용
     const { summary: summaryFromComponent, articles: articlesFromComponent, requestSummary } = DebateSummarySection({ 
-        roomId: parseInt(roomId || '0'), 
-        messages
+        roomId: parseInt(roomId || '0')
     });
 
     // requestSummary 함수를 참조에 저장
