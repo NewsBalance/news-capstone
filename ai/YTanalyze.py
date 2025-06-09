@@ -130,8 +130,14 @@ def summarize_endpoint():
     data = request.get_json()
     url = data.get("url")
     transcript = get_transcript(url)
+
+    # 첫 번째 시도 실패 시 재시도
     if not transcript:
-        return jsonify({"error":"자막 추출 실패"}), 400
+        transcript = get_transcript(url)
+    
+    # 여전히 실패하면 에러 반환
+    if not transcript:
+        return jsonify({"error": "자막 추출 실패"}), 400
 
     summary = summarize_with_assistant(transcript)
     content_only = summary.split("[KEYWORDS]")[0].strip()
