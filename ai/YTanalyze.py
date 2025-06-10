@@ -172,24 +172,22 @@ def summarize_endpoint():
     return jsonify(result)
 
 
-#  1. GPT Assistant 토론자 발언 요약 요청
+# 1. GPT Assistant 토론자 발언 요약 요청
 def dabate_summarize_with_assistant(text):
-    # 1. Thread 생성
     thread = openai.beta.threads.create()
     thread_id = thread.id
 
-    # 2. 메시지 전송 및 Assistant 실행
     openai.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
         content=text
     )
+
     run = openai.beta.threads.runs.create(
         thread_id=thread_id,
         assistant_id=ASSISTANT2_ID
     )
 
-    # 3. 실행 상태 대기
     while run.status in ["queued", "in_progress"]:
         run = openai.beta.threads.runs.retrieve(
             thread_id=thread_id,
@@ -197,47 +195,49 @@ def dabate_summarize_with_assistant(text):
         )
         time.sleep(1)
 
-    # 4. 결과 메시지 받아오기
     messages = openai.beta.threads.messages.list(thread_id=thread_id, order="asc")
     result = messages.data[-1].content[0].text.value
     return result
 
 
-#  토론자 발언 요지 요약 엔드포인트
+# 2. 토론자 발언 요약 API
 @app.route('/debate/summarize', methods=['POST'])
 def dabate_summarize_endpoint():
     data = request.get_json()
     print(">>> 수신 데이터:", data)
-    
-    # request에서 필요한 데이터 추출
-    message = data.get("messages", [])
-    combined_message = "\n".join([m.get("text", "") for m in message])
-    
+
+    # request에서 단일 메시지 추출
+    message = data.get("messages", {})
+    combined_message = message.get("text", "")  # 단일 메시지 처리
+
     summarize_message = dabate_summarize_with_assistant(combined_message)
 
+    # [Query] 태그 이후 제거
     if "[Query]" in summarize_message:
         summarize_message_clean = summarize_message.split("[Query]")[0].strip()
-        
+    else:
+        summarize_message_clean = summarize_message.strip()
+
+    # 키워드 추출
     queries = extract_keywords_from_summary(summarize_message)
     related_articles = {kw: search_news_articles(kw) for kw in queries}
 
-    
+    # 기사 결과 정리
     related_articles_result = []
-    for articles in related_articles.values():  
+    for articles in related_articles.values():
         for art in articles:
             related_articles_result.append({
                 "title": art["title"],
                 "link": art["link"]
             })
 
-
-    # 데이터 반환
+    # 응답 반환
     result = {
         "summarizemessage": summarize_message_clean,
         "relatedArticles": related_articles_result,
         "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
-        
     }
+
     return jsonify(result)
 
 
