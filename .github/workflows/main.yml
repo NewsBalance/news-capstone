@@ -30,9 +30,13 @@ jobs:
               git pull origin main
             fi
 
-            # 3) 환경파일 복사
+            # 3) ignore 파일 추가
+            echo "${{ secrets.BACK_PROPS }}" > backend/demo/src/main/resources/application.properties
+            echo "${{ secrets.AI_ENV }}" > ai/.env
+
+            # 4) 환경파일 복사
             cp frontend/my-react-app/.env.server frontend/my-react-app/.env
 
-            # 4) Docker Compose 재시작
+            # 5) Docker Compose 재시작
             docker-compose down
             docker-compose up --build -d
