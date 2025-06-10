@@ -31,8 +31,8 @@ jobs:
             fi
 
             # 3) ignore 파일 추가
-            echo "${{ secrets.BACK_PROPS }}" > backend/demo/src/main/resources/application.properties
-            echo "${{ secrets.AI_ENV }}" > ai/.env
+            echo "${{ secrets.BACK_PROPS }}" > /home/ubuntu/aws-test/news-capstone/backend/demo/src/main/resources/application.properties
+            echo "${{ secrets.AI_ENV }}" > /home/ubuntu/aws-test/news-capstone/ai/.env
 
             # 4) 환경파일 복사
             cp frontend/my-react-app/.env.server frontend/my-react-app/.env
