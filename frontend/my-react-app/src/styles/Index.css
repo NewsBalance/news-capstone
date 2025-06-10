@@ -1,0 +1,164 @@
+/* 레이아웃 컨테이너 */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 헤더(내비게이션) */
+.site-header {
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.site-logo {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #4b2d63;
+}
+.nav-menu ul {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.nav-menu a {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.25rem 0;
+  transition: color 0.2s ease;
+}
+.nav-menu a:hover {
+  color: var(--primary);
+}
+.nav-menu a.active {
+  border-bottom: 2px solid var(--primary);
+}
+.login-btn {
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: var(--primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.login-btn:hover {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* 메인 히어로 섹션 */
+.hero-section {
+  background: #fff;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  padding-top: 2rem;
+}
+.hero-top,
+.hero-middle,
+.hero-bottom {
+  text-align: center;
+  width: 100%;
+  max-width: 1200px;
+}
+.hero-title {
+  font-family: "Open Sans", sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #4b2d63;
+}
+.hero-subtitle {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: #666;
+}
+.hero-subtitle a {
+  color: #666;
+}
+.hero-subtitle a:hover {
+  color: var(--primary);
+}
+
+/* 검색창 스타일 */
+.search-bar-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  max-width: 600px;
+  width: 90%;
+  margin: 0 auto;
+}
+.search-bar-container input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  padding: 0.5rem;
+}
+.search-bar-container button {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.search-bar-container button:hover {
+  background-color: #4d2f9a;
+}
+
+/* 실시간 핫 키워드 */
+.hot-keywords-section {
+  margin: 2rem 0;
+}
+.hot-keywords-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+.hot-keywords-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.keyword {
+  background-color: #eaeaea;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.keyword:hover {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .header-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .search-bar-container {
+    width: 100%;
+  }
+}
