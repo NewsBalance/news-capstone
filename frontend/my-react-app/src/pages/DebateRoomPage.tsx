@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { API_BASE } from '../api/config';
 import parse from 'html-react-parser';
+import DebateSummarySection from "../components/DebateSummarySection";
 
 interface DebateMessage {
     speaker: string;
@@ -47,44 +48,6 @@ type SummarizeResponse = {
     summarizemessage: string;
     relatedArticles: RelatedArticle[];
     keywords: string[];
-};
-
-// DebateSummarySection 컴포넌트 수정
-const DebateSummarySection = ({ roomId, messages }: { 
-  roomId: number; 
-  messages: any[];
-}) => {
-  const [summary, setSummary] = useState<string | null>(null);
-  const [articles, setArticles] = useState<RelatedArticle[]>([]);
-
-  const requestSummary = () => {
-    // 메시지가 없으면 요청하지 않음
-    if (!messages || messages.length === 0) return;
-    
-    const requestBody = { roomId, messages };
-
-    fetch(`${API_BASE}/api/debate/summary`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('요약 응답 오류');
-        return res.json();
-      })
-      .then((data: SummarizeResponse) => {
-        setSummary(data.summarizemessage);
-        setArticles(data.relatedArticles);
-      })
-      .catch((err) => {
-        console.error('요약 또는 기사 로딩 실패:', err);
-      });
-  };
-
-  return { summary, articles, requestSummary };
 };
 
 // 메시지 목록 컴포넌트 개선
@@ -136,6 +99,8 @@ const MessageList = ({ messages, onFactCheck }: {
     );
 };
 
+
+
 // 옵션: 입력 텍스트 검증 및 소독 함수
 const sanitizeInput = (input: string): string => {
   // HTML 태그 제거
@@ -183,6 +148,7 @@ const DebateRoomPage: React.FC<Props> = ({
     const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
     const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
     const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
+    const [summaryTargetMessage, setSummaryTargetMessage] = useState<DebateMessage | null>(null);
     // 요약 요청 함수를 위한 참조 추가
     const summaryRequestRef = useRef<() => void>(() => {});
     
@@ -370,12 +336,18 @@ const DebateRoomPage: React.FC<Props> = ({
             document.head.removeChild(style);
         };
     }, []);
-    
-    // 팩트체크 기능 수정 - 요약 기능 호출만 진행하고 기존 팩트체크 함수는 제거
+
+        // 팩트체크 핸들러: 메시지 하나를 선택
     const handleFactCheck = (messageIndex: number) => {
-        // 요약 요청 함수 호출
-        summaryRequestRef.current();
+        const target = messages[messageIndex];
+        setSummaryTargetMessage(target);
     };
+    
+    // // 팩트체크 기능 수정 - 요약 기능 호출만 진행하고 기존 팩트체크 함수는 제거
+    // const handleFactCheck = (messageIndex: number) => {
+    //     // 요약 요청 함수 호출
+    //     summaryRequestRef.current();
+    // };
 
     // useEffect 수정 - 서버에서 받은 currentTurnUserNickname 사용
     useEffect(() => {
@@ -398,15 +370,15 @@ const DebateRoomPage: React.FC<Props> = ({
     }, [messages, debaterA, debaterB, debaterAReady, debaterBReady, userName, currentTurnUserNickname]);
 
     // 요약 정보와 관련 기사를 가져오기 위해 컴포넌트 사용 (수정)
-    const { summary: summaryFromComponent, articles: articlesFromComponent, requestSummary } = DebateSummarySection({ 
-        roomId: parseInt(roomId || '0'), 
-        messages
-    });
+    // const { summary: summaryFromComponent, articles: articlesFromComponent, requestSummary } = DebateSummarySection({ 
+    //     roomId: parseInt(roomId || '0'), 
+    //     messages
+    // });
 
     // requestSummary 함수를 참조에 저장
-    useEffect(() => {
-        summaryRequestRef.current = requestSummary;
-    }, [requestSummary]);
+    // useEffect(() => {
+    //     summaryRequestRef.current = requestSummary;
+    // }, [requestSummary]);
 
     return (
         <div className="flex flex-col h-screen bg-neutral-50 text-gray-800 font-sans overflow-hidden">
@@ -504,45 +476,11 @@ const DebateRoomPage: React.FC<Props> = ({
                             <ParticipantInfo />
 
 
-                            <div className="info-section mb-4">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">발언 요지</h3>
-                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                    <ul className="text-sm text-gray-700 list-disc pl-4 space-y-1">
-                                    {summaryFromComponent ? (
-                                        <li>{summaryFromComponent}</li>
-                                         ) : (
-                                        <li>요약을 불러오는 중...</li>
-                                    )}
-                                    </ul>
-                                </div>
-                            </div>
-
-
-                            
-                            <div className="info-section">
-                                <h3 className="text-md font-semibold text-gray-800 mb-2 text-center">참고 자료</h3>
-                                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                    <div className="text-sm text-gray-700">
-                                        {articlesFromComponent.length > 0 ? (
-                                        articlesFromComponent.map((article, idx) => {
-                                            const htmlContent = `<a href="${article.link}" target="_blank" rel="noopener noreferrer" class="text-blue-700 underline whitespace-normal break-words"> ${article.title}</a>`;
-                                            return (
-                                            <div key={idx} className="mb-1">
-                                                {parse(htmlContent)}
-                                            </div>
-                                            );
-                                        })
-                                        ) : (
-                                        <p className="text-gray-500">관련 기사가 없습니다</p>
-                                        )}
-                                        <div className="mt-3 pt-2 border-t border-gray-200">
-                                        <p className="text-xs text-gray-500 italic text-center">
-                                            마지막 업데이트: {messages.length > 0 ? '방금 전' : '업데이트 없음'}
-                                        </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {/* 중앙 패널 내부: 토론 정보 → 요약 섹션 */}
+                            <DebateSummarySection 
+                                roomId={parseInt(roomId || '0')} 
+                                message={summaryTargetMessage}
+                            />
                         </div>
                     </div>
 

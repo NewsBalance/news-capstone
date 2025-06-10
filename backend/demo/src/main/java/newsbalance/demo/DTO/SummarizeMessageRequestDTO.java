@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 public class SummarizeMessageRequestDTO {
     private Long roomId;
-    private List<clientMessageDTO> messages;
+    private clientMessageDTO messages;
 
     @Data
     @AllArgsConstructor
