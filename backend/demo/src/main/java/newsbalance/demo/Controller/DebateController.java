@@ -212,7 +212,7 @@ public class DebateController {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestMap, headers);
 
             ResponseEntity<SummarizeMessageResponseDTO> response = restTemplate.postForEntity(
-                    "http://localhost:5000/debate/summarize",
+                    "http://flask-app:5000/debate/summarize",
                     entity,
                     SummarizeMessageResponseDTO.class
             );
