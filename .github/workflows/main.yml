@@ -20,10 +20,19 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ${{ secrets.PROJECT_DIR }}
-            git pull origin main
-            
+            # 1) 실제 프로젝트 디렉토리로 이동
+            cd /home/ubuntu/aws-test/news-capstone
+
+            # 2) Git pull (origin main 브랜치)
+            if [ ! -d .git ]; then
+              git clone https://github.com/NewsBalance/news-capstone.git .
+            else
+              git pull origin main
+            fi
+
+            # 3) 환경파일 복사
             cp frontend/my-react-app/.env.server frontend/my-react-app/.env
 
+            # 4) Docker Compose 재시작
             docker-compose down
             docker-compose up --build -d
