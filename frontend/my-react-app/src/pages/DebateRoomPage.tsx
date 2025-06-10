@@ -150,7 +150,8 @@ const DebateRoomPage: React.FC<Props> = ({
     const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
     const [summaryTargetMessage, setSummaryTargetMessage] = useState<DebateMessage | null>(null);
     // 요약 요청 함수를 위한 참조 추가
-    const summaryRequestRef = useRef<() => void>(() => {});
+    const summaryRequestRef = useRef<((message: DebateMessage) => void) | null>(null);
+
     
     const debateMessagesRef = useRef<HTMLDivElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
