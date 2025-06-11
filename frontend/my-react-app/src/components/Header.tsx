@@ -34,7 +34,7 @@ const Header: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link to="/videos" className={isActive('/videos')}>
+              <Link to="/urlsearch" className={isActive('/urlsearch')}>
                 {t('header.videos', '영상분석')}
               </Link>
             </li>

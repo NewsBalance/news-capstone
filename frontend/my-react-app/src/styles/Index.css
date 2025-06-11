@@ -162,3 +162,12 @@
     width: 100%;
   }
 }
+
+/* UrlSearchPage 전체를 가로•세로 중앙 정렬 */
+.url-search-page {
+  display: flex;
+  justify-content: center;  /* 가로 중앙 */
+  align-items: center;      /* 세로 중앙 */
+  /* 헤더 높이를 제외한 나머지 화면을 모두 사용하려면 height 설정 */
+  height: calc(100vh - 60px); /* 예: 헤더 높이가 60px 라고 가정 */
+}

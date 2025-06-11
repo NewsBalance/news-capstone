@@ -20,6 +20,7 @@ import VideoDetailPage from './pages/VideoDetail';
 import DebateRoomPageWrapper from './pages/DebateRoomPageWrapper';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import UrlSearchPage from './pages/UrlSearch'
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path='/urlsearch' element={<UrlSearchPage />} />
 
           <Route
               path="/myPage"

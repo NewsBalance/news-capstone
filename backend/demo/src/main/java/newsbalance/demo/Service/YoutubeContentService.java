@@ -2,6 +2,7 @@ package newsbalance.demo.Service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import newsbalance.demo.DTO.UrlContentRequestDTO;
 import newsbalance.demo.Entity.RelatedArticle;
 import newsbalance.demo.Entity.SummarySentence;
 import newsbalance.demo.Entity.YoutubeContent;
@@ -63,6 +64,39 @@ public class YoutubeContentService {
         // 4. Elasticsearch 저장 (초기 save 시점보다 마지막에 호출)
         youtubeContentElasticRepository.save(saved);
     }
+
+    @Transactional
+    public void saveUrlContent(UrlContentRequestDTO dto) {
+        YoutubeContent content = new YoutubeContent();
+        content.setVideoUrl(dto.getUrl());
+        content.setBiasScore(dto.getBiasScore());
+        content.setTitle(dto.getTitle());
+
+        List<SummarySentence> sentences = dto.getSummarySentences().stream()
+                .map(s -> {
+                    SummarySentence ss = new SummarySentence();
+                    ss.setContent(s.getContent());
+                    ss.setScore(s.getScore());
+                    ss.setVideoSummary(content);
+                    return ss;
+                })
+                .collect(Collectors.toList());
+        content.setSentencesScore(sentences);
+
+        List<RelatedArticle> relatedArticles = dto.getRelatedArticles().stream()
+                .map(a -> {
+                    RelatedArticle ra = new RelatedArticle();
+                    ra.setTitle(a.getTitle());
+                    ra.setLink(a.getLink());
+                    return ra;
+                })
+                .toList();
+        content.setRelatedArticles(relatedArticles);
+
+        // 3. JPA 저장 (ID 발급 및 자식 연관관계 저장)
+        YoutubeContent saved = youtubeContentRepository.save(content);
+    }
+
 
     public Optional<YoutubeContent> getYoutubecontent(String url) {
         return youtubeContentRepository.findByVideoUrl(url);

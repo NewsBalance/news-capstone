@@ -2,7 +2,9 @@ package newsbalance.demo.Controller;
 
 import lombok.RequiredArgsConstructor;
 import newsbalance.demo.DTO.Request.URLDTO;
+import newsbalance.demo.DTO.UrlContentRequestDTO;
 import newsbalance.demo.Entity.VideoInfo;
+import newsbalance.demo.Entity.YoutubeContent;
 import newsbalance.demo.Service.YouTubeService;
 import newsbalance.demo.Service.YoutubeContentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import newsbalance.demo.DTO.Request.YoutubeContentRequestDTO;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
@@ -32,29 +31,37 @@ public class ApiController {
 
     @PostMapping("/debug/getdata")
     public ResponseEntity<?> debugSummarize(@RequestBody URLDTO urlDTO) {
-        // Python 서버에 보낼 페이로드 생성
-        Map<String, String> payload = Collections.singletonMap("url", urlDTO.getUrl());
+        if(youtubeContentService.getYoutubecontent(urlDTO.getUrl()).isPresent()){
+            Optional<YoutubeContent> Info = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
+            return ResponseEntity.ok(Info);
+        }
+
+        Map<String, String> request = new HashMap<>();
+        request.put("url", urlDTO.getUrl());
 
         try {
             // Python 서버로 POST 요청 (응답을 Map 형태로 받음)
-            ResponseEntity<Map> response =
+            ResponseEntity<UrlContentRequestDTO> response =
                     restTemplate.postForEntity(
                             "http://flask-app:5000/summarize",
-                            payload,
-                            Map.class
+                            request,
+                            UrlContentRequestDTO.class
                     );
 
-            // Python 서버의 상태 코드와 본문을 그대로 클라이언트에 전달
-            return ResponseEntity
-                    .status(response.getStatusCode())
-                    .body(response.getBody());
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                youtubeContentService.saveUrlContent(response.getBody());
+            } else {
+                System.err.println("파이썬 서버 오류: " + request);
 
+            }
         } catch (Exception e) {
             // 예외 발생 시 에러 메시지와 함께 500 리턴
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("error", e.getMessage()));
         }
+        Optional<YoutubeContent> Info = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
+        return ResponseEntity.ok(Info);
     }
 
     @PostMapping("/dockertest")

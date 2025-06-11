@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 import nltk
 nltk.download('punkt')
 
+import subprocess
+import json
+import re
 from youtube_transcript_api import YouTubeTranscriptApi
 import nltk, openai, time, torch
 from nltk.tokenize import sent_tokenize
@@ -36,14 +39,49 @@ app = Flask(__name__)
 
 
 #  1. 유튜브 자막 추출
-def get_transcript(video_url):
-    video_id = video_url.split("v=")[-1]
+
+def get_transcript(video_url, lang="ko"):
+    # video_id 추출
+    match = re.search(r"[?&]v=([a-zA-Z0-9_-]{11})", video_url)
+    if not match:
+        return None, "❌ 유효하지 않은 유튜브 URL 형식입니다."
+    video_id = match.group(1)
+
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["ko", "en"])
-        return " ".join([t["text"] for t in transcript])
+        # yt-dlp로 자동 생성 자막 URL 추출
+        result = subprocess.run(
+            ["yt-dlp", "-J", video_url],
+            capture_output=True, text=True, check=True
+        )
+        video_info = json.loads(result.stdout)
+        subtitles = video_info.get("automatic_captions", {})
+        if lang not in subtitles:
+            return None, f"❌ '{lang}' 언어의 자동 생성 자막이 없습니다."
+
+        subtitle_url = subtitles[lang][0]["url"]
+
+        # json3 자막 그대로 요청
+        response = requests.get(subtitle_url)
+        if response.status_code != 200:
+            return None, "❌ 자막 데이터 요청 실패"
+
+        data = response.json()
+        if "events" not in data:
+            return None, "❌ 자막 이벤트 데이터가 없습니다."
+
+        texts = []
+        for event in data["events"]:
+            if "segs" in event:
+                seg_text = "".join([seg.get("utf8", "") for seg in event["segs"]])
+                texts.append(seg_text.strip())
+
+        full_text = " ".join(texts)
+        return full_text, None
+
+    except subprocess.CalledProcessError as e:
+        return None, f"❌ yt-dlp 실행 실패: {e}"
     except Exception as e:
-        print(f"[ 자막 오류] {e}")
-        return None
+        return None, f"❌ 자막 처리 실패: {e}"
 
 #  2. GPT Assistant 요약 요청
 def summarize_with_assistant(text):
@@ -129,17 +167,29 @@ def extract_keywords_from_summary(summary_text):
 def summarize_endpoint():
     data = request.get_json()
     url = data.get("url")
-    transcript = get_transcript(url)
-
-    # 첫 번째 시도 실패 시 재시도
-    if not transcript:
-        transcript = get_transcript(url)
+    transcript, err = get_transcript(url)
     
-    # 여전히 실패하면 에러 반환
-    if not transcript:
-        return jsonify({"error": "자막 추출 실패"}), 400
+    if err or not transcript or not isinstance(transcript, str) or transcript.strip() == "":
+        return jsonify({"error": err or "자막 추출 실패"}), 400
 
-    summary = summarize_with_assistant(transcript)
+    try:
+        # yt-dlp -J 호출로 메타정보 가져오기
+        info_proc = subprocess.run(
+            ["yt-dlp", "-J", url],
+            capture_output=True, text=True, check=True
+        )
+        info_json = json.loads(info_proc.stdout)
+        video_title = info_json.get("title", "")
+    except Exception as e:
+        app.logger.warning(f"제목 추출 실패: {e}")
+        video_title = ""
+        
+    try:
+        summary = summarize_with_assistant(transcript)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"GPT Assistant 처리 실패: {str(e)}"}), 500
     content_only = summary.split("[KEYWORDS]")[0].strip()
     sentences = sent_tokenize(content_only)
     scores = predict_bias(sentences)
@@ -148,81 +198,6 @@ def summarize_endpoint():
     queries = extract_keywords_from_summary(summary)
     related_articles = {kw: search_news_articles(kw) for kw in queries}
 
-    # 쿼리별 뉴스 기사 딕셔너리 구성
-    related_articles_result = []
-    for articles in related_articles.values():  # 딕셔너리의 값만 가져옴
-        for art in articles:
-            related_articles_result.append({
-                "title": art["title"],
-                "link": art["link"]
-            })
-
-    result = {
-        "url": url,
-        "biasScore": avg,
-        "summarySentences": [
-            {"content": s, "score": b}
-            for s, b in zip(sentences, scores)
-            
-        ],
-        "relatedArticles": related_articles_result,
-        "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
-        
-    }
-    return jsonify(result)
-
-
-# 1. GPT Assistant 토론자 발언 요약 요청
-def dabate_summarize_with_assistant(text):
-    thread = openai.beta.threads.create()
-    thread_id = thread.id
-
-    openai.beta.threads.messages.create(
-        thread_id=thread_id,
-        role="user",
-        content=text
-    )
-
-    run = openai.beta.threads.runs.create(
-        thread_id=thread_id,
-        assistant_id=ASSISTANT2_ID
-    )
-
-    while run.status in ["queued", "in_progress"]:
-        run = openai.beta.threads.runs.retrieve(
-            thread_id=thread_id,
-            run_id=run.id,
-        )
-        time.sleep(1)
-
-    messages = openai.beta.threads.messages.list(thread_id=thread_id, order="asc")
-    result = messages.data[-1].content[0].text.value
-    return result
-
-
-# 2. 토론자 발언 요약 API
-@app.route('/debate/summarize', methods=['POST'])
-def dabate_summarize_endpoint():
-    data = request.get_json()
-    print(">>> 수신 데이터:", data)
-
-    # request에서 단일 메시지 추출
-    message = data.get("messages", {})
-    combined_message = message.get("text", "")  # 단일 메시지 처리
-
-    summarize_message = dabate_summarize_with_assistant(combined_message)
-
-    # [Query] 태그 이후 제거
-    if "[Query]" in summarize_message:
-        summarize_message_clean = summarize_message.split("[Query]")[0].strip()
-    else:
-        summarize_message_clean = summarize_message.strip()
-
-    # 키워드 추출
-    queries = extract_keywords_from_summary(summarize_message)
-    related_articles = {kw: search_news_articles(kw) for kw in queries}
-
-    # 기사 결과 정리
     related_articles_result = []
     for articles in related_articles.values():
         for art in articles:
@@ -231,13 +206,86 @@ def dabate_summarize_endpoint():
                 "link": art["link"]
             })
 
-    # 응답 반환
+    result = {
+        "url": url,
+        "title": video_title,
+        "biasScore": avg,
+        "summarySentences": [
+            {"content": s, "score": b}
+            for s, b in zip(sentences, scores)
+        ],
+        "relatedArticles": related_articles_result,
+        "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
+    }
+    return jsonify(result)
+
+
+#  1. GPT Assistant 토론자 발언 요약 요청
+def dabate_summarize_with_assistant(text):
+    # 1. Thread 생성
+    thread = openai.beta.threads.create()
+    thread_id = thread.id
+
+    # 2. 메시지 전송 및 Assistant 실행
+    openai.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=text
+    )
+    run = openai.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=ASSISTANT2_ID
+    )
+
+    # 3. 실행 상태 대기
+    while run.status in ["queued", "in_progress"]:
+        run = openai.beta.threads.runs.retrieve(
+            thread_id=thread_id,
+            run_id=run.id,
+        )
+        time.sleep(1)
+
+    # 4. 결과 메시지 받아오기
+    messages = openai.beta.threads.messages.list(thread_id=thread_id, order="asc")
+    result = messages.data[-1].content[0].text.value
+    return result
+
+
+#  토론자 발언 요지 요약 엔드포인트
+@app.route('/debate/summarize', methods=['POST'])
+def dabate_summarize_endpoint():
+    data = request.get_json()
+    print(">>> 수신 데이터:", data)
+    
+    # request에서 필요한 데이터 추출
+    message = data.get("messages", [])
+    combined_message = "\n".join([m.get("text", "") for m in message])
+    
+    summarize_message = dabate_summarize_with_assistant(combined_message)
+
+    if "[Query]" in summarize_message:
+        summarize_message_clean = summarize_message.split("[Query]")[0].strip()
+        
+    queries = extract_keywords_from_summary(summarize_message)
+    related_articles = {kw: search_news_articles(kw) for kw in queries}
+
+    
+    related_articles_result = []
+    for articles in related_articles.values():  
+        for art in articles:
+            related_articles_result.append({
+                "title": art["title"],
+                "link": art["link"]
+            })
+
+
+    # 데이터 반환
     result = {
         "summarizemessage": summarize_message_clean,
         "relatedArticles": related_articles_result,
         "keywords": list({kw_part for kw in queries for kw_part in kw.split("+")})
+        
     }
-
     return jsonify(result)
 
 
