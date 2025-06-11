@@ -46,3 +46,24 @@ body {
   border-bottom: 1px solid var(--nb-border);
 }
 
+
+.hero-title {
+  font-size: 3rem;
+  text-align: center;
+  margin: 0;
+  color: #4b3f72;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #777;
+  margin-bottom: 2rem;
+}
+
+.search-bar-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
