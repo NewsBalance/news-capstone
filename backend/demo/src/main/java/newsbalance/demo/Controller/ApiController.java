@@ -31,37 +31,53 @@ public class ApiController {
 
     @PostMapping("/debug/getdata")
     public ResponseEntity<?> debugSummarize(@RequestBody URLDTO urlDTO) {
-        if(youtubeContentService.getYoutubecontent(urlDTO.getUrl()).isPresent()){
-            Optional<YoutubeContent> Info = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
-            return ResponseEntity.ok(Info);
-        }
+    // 이미 DB에 있으면 조회만
+    Optional<YoutubeContent> existing = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
+    if (existing.isPresent()) {
+        return ResponseEntity.ok(existing);
+    }
 
-        Map<String, String> request = new HashMap<>();
-        request.put("url", urlDTO.getUrl());
+    Map<String, String> request = Collections.singletonMap("url", urlDTO.getUrl());
 
-        try {
-            // Python 서버로 POST 요청 (응답을 Map 형태로 받음)
-            ResponseEntity<UrlContentRequestDTO> response =
-                    restTemplate.postForEntity(
-                            "http://flask-app:5000/summarize",
-                            request,
-                            UrlContentRequestDTO.class
-                    );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                youtubeContentService.saveUrlContent(response.getBody());
-            } else {
-                System.err.println("파이썬 서버 오류: " + request);
-
-            }
-        } catch (Exception e) {
-            // 예외 발생 시 에러 메시지와 함께 500 리턴
+    try {
+        // Flask로 요청
+        ResponseEntity<UrlContentRequestDTO> response = restTemplate.postForEntity(
+            "http://flask-app:5000/summarize",
+            request,
+            UrlContentRequestDTO.class
+        );
+        // 정상 응답 처리
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            youtubeContentService.saveUrlContent(response.getBody());
+        } else {
+            // 예: 204 No Content 같은 경우
             return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("error", e.getMessage()));
+                .status(response.getStatusCode())
+                .body(Collections.singletonMap("error", "Flask 서버가 빈 응답을 보냈습니다."));
         }
-        Optional<YoutubeContent> Info = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
-        return ResponseEntity.ok(Info);
+
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            // Flask가 4xx, 5xx를 던졌을 때 그대로 내려줌
+            String errorBody = ex.getResponseBodyAsString();
+            HttpStatus status = ex.getStatusCode();
+            return ResponseEntity
+                .status(status)
+                .body(Collections.singletonMap("error", errorBody));
+        } catch (ResourceAccessException ex) {
+            // 예: connection refused
+            return ResponseEntity
+                .status(HttpStatus.GATEWAY_TIMEOUT)
+                .body(Collections.singletonMap("error", "Flask 서버 연결 실패: " + ex.getMessage()));
+        } catch (Exception ex) {
+            // 그 외 예외
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Collections.singletonMap("error", ex.getMessage()));
+        }
+    
+        // 저장 후 다시 조회
+        Optional<YoutubeContent> saved = youtubeContentService.getYoutubecontent(urlDTO.getUrl());
+        return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/dockertest")
