@@ -8,6 +8,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    ffmpeg \
+    yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. 필요한 Python 패키지 복사 및 설치
@@ -22,7 +24,7 @@ COPY . .
 # 이 모델 폴더는 docker build 전에 반드시 존재해야 함
 
 # 7. 환경변수 파일 로딩 (.env)
-# 이건 docker run 시점에 —env-file 옵션으로 주입 (또는 docker-compose에서 지정)
+# 이건 docker run 시점에 --env-file 옵션으로 주입 (또는 docker-compose에서 지정)
 
 # 8. Flask 실행
 CMD ["python", "YTanalyze.py"]
