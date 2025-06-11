@@ -97,7 +97,7 @@ function GoalsPage() {
             <h3>정확도 평가</h3>
             <p>
               잘못된 정보나 과장된 주장을 팩트체킹하고,
-              진실성 지표를 통해 콘텐츠 신뢰도를 확인할 수 있습니다.
+              관련 기사를 제공합니다.
             </p>
           </div>
           <div className="point-card">
@@ -142,8 +142,8 @@ function GoalsPage() {
                 className="team-img"
               />
               <div className="team-info">
-                <p className="team-name">장대규</p>
-                <p className="team-role">Backend Developer</p>
+                <p className="team-name">최성</p>
+                <p className="team-role">Team Leader / AI engineer, Cloud server</p>
                 <p className="team-desc-text">서버와 DB, API를 책임지며 안정적인 서비스를 제공합니다.</p>
               </div>
             </div>
@@ -154,7 +154,7 @@ function GoalsPage() {
                 className="team-img"
               />
               <div className="team-info">
-                <p className="team-name">최성</p>
+                <p className="team-name">장대규</p>
                 <p className="team-role">Frontend Developer</p>
                 <p className="team-desc-text">UI/UX를 구현하며 사용자에게 직관적인 경험을 제공합니다.</p>
               </div>
@@ -167,7 +167,7 @@ function GoalsPage() {
               />
               <div className="team-info">
                 <p className="team-name">신의진</p>
-                <p className="team-role">AI Researcher</p>
+                <p className="team-role">Backend Engineer, Cloud server</p>
                 <p className="team-desc-text">인공지능 모델을 연구하여 정치적 편향성과 정확도를 분석합니다.</p>
               </div>
             </div>
@@ -183,7 +183,7 @@ function GoalsPage() {
               />
               <div className="team-info">
                 <p className="team-name">이익호</p>
-                <p className="team-role">QA Engineer</p>
+                <p className="team-role">W/S Engineer</p>
                 <p className="team-desc-text">세심한 테스트와 품질 관리를 통해 서비스 안정성을 보장합니다.</p>
               </div>
             </div>
@@ -195,7 +195,7 @@ function GoalsPage() {
               />
               <div className="team-info">
                 <p className="team-name">김승재</p>
-                <p className="team-role">UI/UX Designer</p>
+                <p className="team-role">Data Engineer</p>
                 <p className="team-desc-text">깔끔하고 직관적인 디자인으로 이용자의 편의를 돕습니다.</p>
               </div>
             </div>
@@ -207,7 +207,7 @@ function GoalsPage() {
               />
               <div className="team-info">
                 <p className="team-name">박수인</p>
-                <p className="team-role">Product Manager</p>
+                <p className="team-role">Data Engineer</p>
                 <p className="team-desc-text">기능 기획부터 일정 관리까지 전반적인 프로젝트를 조율합니다.</p>
               </div>
             </div>
@@ -227,8 +227,8 @@ function GoalsPage() {
           <div className="core-value">
             <h3>객관성</h3>
             <p>
-              정치적 성향이나 사건을 배제한 순수 데이터 기반 평가를 통해
-              공정한 결과물을 제시합니다.
+              공정한 기준으로 학습된 AI가 각 컨텐츠의 편향도를
+              객관적으로 판단합니다.
             </p>
           </div>
           <div className="core-value">

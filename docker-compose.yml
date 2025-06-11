@@ -46,6 +46,7 @@ services:
       - springboot-app
     networks:
       - frontend
+      - backend
 
   elk:
     image: sebp/elk:8.15.0
@@ -78,6 +79,7 @@ services:
       elk:
         condition: service_healthy
     networks:
+      - frontend
       - backend
 
 volumes:

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/Index.css';
+import heroImage from '../assets/hero-cave-ai.png';
+
 
 const HOT_KEYWORDS = ['정치', '경제', '선거', '탄핵', '관세'];
 
@@ -58,9 +60,20 @@ export default function IndexPage() {
   };
 
   return (
+
     <>
       <main className="hero-section">
         <div className="container hero-top">
+          <img
+            src={heroImage}
+            alt="AI가 횃불을 들고 동굴을 밝히는 모습"
+            style={{
+              width: '350px',            // 원하는 크기로 조절
+              display: 'block',
+              margin: '0 auto 1rem',
+            }}
+          />                         
+
           <h1 className="hero-title">NewsBalance</h1>
           <p className="hero-subtitle">
             <Link to="/goals" title={t('index.goalsTitle')}>

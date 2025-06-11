@@ -554,13 +554,14 @@ const DebateRoomPageWrapper: React.FC = () => {
     const handleDebateMessage = (responseMessage: any) => {
         // 기존 메시지 처리 로직
         switch (responseMessage.type) {
-            case 'CHAT':
-                setMessages(prev => [...prev, {
-                    speaker: responseMessage.sender,
-                    text: responseMessage.content,
-                    summary: responseMessage.summary
-                }]);
-                break;
+       	    case 'CHAT':
+	    case 'DEBATE':
+		setMessages(prev => [...prev, {
+		    speaker: responseMessage.sender,
+		    text: responseMessage.content,
+		    summary: responseMessage.summary
+		}]);
+		break;
             case 'SYSTEM':
                 setMessages(prev => [...prev, {
                     speaker: 'System',

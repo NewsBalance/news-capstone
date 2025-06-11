@@ -1,0 +1,42 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1) 실제 프로젝트 디렉토리로 이동
+            cd /home/ubuntu/aws-test/news-capstone
+
+            # 2) Git pull (origin main 브랜치)
+            if [ ! -d .git ]; then
+              git clone https://github.com/NewsBalance/news-capstone.git .
+            else
+              git pull origin main
+            fi
+
+            # 3) ignore 파일 추가
+            echo "${{ secrets.BACK_PROPS }}" > /home/ubuntu/aws-test/news-capstone/backend/demo/src/main/resources/application.properties
+            echo "${{ secrets.AI_ENV }}" > /home/ubuntu/aws-test/news-capstone/ai/.env
+
+            # 4) 환경파일 복사
+            cp frontend/my-react-app/.env.server frontend/my-react-app/.env
+
+            # 5) Docker Compose 재시작
+            docker-compose down
+            docker-compose up --build -d

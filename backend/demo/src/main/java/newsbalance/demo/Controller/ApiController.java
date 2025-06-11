@@ -43,7 +43,7 @@ public class ApiController {
             // Python 서버로 POST 요청 (응답을 Map 형태로 받음)
             ResponseEntity<UrlContentRequestDTO> response =
                     restTemplate.postForEntity(
-                            "http://localhost:5000/summarize",
+                            "http://flask-app:5000/summarize",
                             request,
                             UrlContentRequestDTO.class
                     );
@@ -88,7 +88,7 @@ public class ApiController {
             try {
                 ResponseEntity<YoutubeContentRequestDTO> response =
                         restTemplate.postForEntity(
-                                "http://localhost:5000/summarize",
+                                "http://flask-app:5000/summarize",
                                 request,
                                 YoutubeContentRequestDTO.class
                         );
