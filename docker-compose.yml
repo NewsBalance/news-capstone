@@ -46,7 +46,6 @@ services:
       - springboot-app
     networks:
       - frontend
-      - backend
 
   elk:
     image: sebp/elk:8.15.0
@@ -78,9 +77,11 @@ services:
         condition: service_started
       elk:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
-      - frontend
       - backend
+    
 
 volumes:
   pgdata:
