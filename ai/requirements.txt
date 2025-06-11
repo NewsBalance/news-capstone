@@ -6,3 +6,4 @@ youtube_transcript_api
 python-dotenv
 nltk
 requests
+yt-dlp
