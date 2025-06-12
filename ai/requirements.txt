@@ -1,0 +1,9 @@
+Flask==2.2.5
+openai
+transformers
+torch
+youtube_transcript_api
+python-dotenv
+nltk
+requests
+yt-dlp

@@ -1,0 +1,156 @@
+.url-search-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+/* 이미지 공통 스타일 */
+.search-image {
+  display: block;
+  height: auto;
+  margin: 1rem 0;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.search-image.top {
+  width: 300px;
+}
+
+.search-image.bottom {
+  width: 800px;
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+/* 버튼 + 검색창 래퍼 */
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 700px;
+  width: 100%;
+}
+
+/* 유튜브 아이콘 버튼 */
+.youtube-icon-button {
+  flex-shrink: 0;
+  width: 56px;               /* 아이콘(50px) + 여유 공간 */
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ff0000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* svg 크기 강제 지정 */
+.youtube-icon-button > svg {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+.youtube-icon-button:hover {
+  background-color: #cc0000;
+}
+
+/* 검색창 컨테이너 */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 입력 필드 */
+.search-bar-container input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  padding: 0.5rem;
+  background-color: transparent;
+}
+
+/* 버튼 스타일 */
+.search-bar-container button[type="submit"] {
+  background-color: #5f3dc4;
+  color: #fff;
+  border: none;
+  border-radius: 40px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-bar-container button[type="submit"]:hover {
+  background-color: #4d2f9a;
+}
+
+.search-bar-container button[type="submit"]:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 에러 메시지 */
+.error-text {
+  color: red;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* 반응형 조정 */
+@media (max-width: 480px) {
+  .search-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .youtube-icon-button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .youtube-icon-button > svg {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .search-image.top {
+    width: 120px;
+  }
+
+  .search-image.bottom {
+    width: 250px;
+  }
+}
+
+/* UrlSearch.css 맨 아래에 추가 */
+.youtube-icon-button {
+  /* 기존 width/height 그대로 */
+  width: 56px;
+  height: 56px;
+  overflow: visible; /* 혹시 필요하면 */
+}
+
+.youtube-icon-button > svg {
+  /* 버튼 크기만큼 아이콘을 크게 */
+  width: 70px !important;
+  height: 70px !important;
+}

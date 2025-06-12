@@ -1,0 +1,222 @@
+/* src/styles/Login.css */
+
+/* 공통 리셋 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: "Noto Sans", "Open Sans", sans-serif;
+  color: #333;
+  line-height: 1.5;
+  background-color: #fff;
+  min-height: 100vh;
+  position: relative;
+}
+a {
+  text-decoration: none;
+  color: inherit;
+}
+ul, li {
+  list-style: none;
+}
+
+/* 로그인 섹션 */
+.login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 2rem 0;
+}
+.login-box {
+  width: 100%;
+  max-width: 450px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  background-color: #fff;
+}
+.login-box h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #4b2d63;
+}
+
+/* 폼 필드 */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.form-group input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.form-group input.error {
+  border-color: #ff4444;
+}
+
+/* 옵션 */
+.options {
+  display: flex;
+  justify-content: flex-start; /* 왼쪽 정렬 */
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+.remember-me-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap; /* 한 줄로 유지 */
+}
+.remember-me-label {
+  font-size: 0.9rem; /* 글자 크기 살짝 키움 */
+  cursor: pointer;
+}
+
+/* 안내 메시지 */
+.error-message {
+  color: #ff4444;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+.success-message {
+  color: #2f9a45;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* 로그인 버튼 */
+.submit-btn {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background-color: #5f3dc4;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.submit-btn:hover {
+  background-color: #4d2f9a;
+}
+
+/* 로그인 아래쪽 액션 */
+.login-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.login-actions a {
+  color: #5f3dc4;
+  font-size: 0.9rem;
+}
+.login-actions a:hover {
+  text-decoration: underline;
+}
+
+/* 빠른 로그인 (선 위에 텍스트 오버레이) */
+.quick-login {
+  position: relative;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  text-align: center;
+}
+.quick-login::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #eee;
+}
+.quick-login-label {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.6rem;
+  background: #fff;
+  top: -0.6em;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* 소셜 아이콘 공통 */
+.social-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f1f1f1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+.social-icon:hover {
+  transform: scale(1.1);
+}
+/* 이미지 비율 유지 */
+.social-icon img {
+  max-width: 60%;
+  max-height: 60%;
+  object-fit: contain;
+  display: block;
+}
+
+/* 푸터 */
+.footer-left,
+.footer-right {
+  position: fixed;
+  bottom: 20px;
+  color: #666;
+  font-size: 0.9rem;
+}
+.footer-left {
+  left: 20px;
+  display: flex;
+  gap: 0.4rem;
+}
+.footer-right {
+  right: 20px;
+  display: flex;
+  gap: 1rem;
+}
+.footer-right a:hover {
+  text-decoration: underline;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  .login-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .footer-left,
+  .footer-right {
+    bottom: 70px;
+  }
+}

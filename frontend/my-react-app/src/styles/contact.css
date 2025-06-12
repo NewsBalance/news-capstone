@@ -1,0 +1,250 @@
+/* src/styles/contact.css */
+
+/* 페이지 최상위 스코프 & CSS 변수 */
+.contact-page {
+  --primary: #5f3dc4;
+  --bg: #faf5fc;
+  --text: #333;
+  --error: #d93025;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg);
+}
+
+/* 메인 컨테이너 */
+.contact-page .contact-container {
+  max-width: 768px;
+  width: 100%;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  flex: 1;
+}
+
+/* 언어 전환 */
+.contact-page .lang-switch {
+  display: inline-flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.contact-page .lang-switch button {
+  background: none;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--primary);
+  opacity: 0.6;
+  transition: opacity .2s;
+}
+.contact-page .lang-switch button.active,
+.contact-page .lang-switch button:focus {
+  opacity: 1;
+  outline: none;
+  text-decoration: underline;
+}
+
+/* 페이지 제목 */
+.contact-page .contact-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* 전송 성공 메시지 */
+.contact-page .contact-success {
+  background: #e6ffed;
+  border: 1px solid #b7eb8f;
+  color: #237804;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+/* 폼 그룹 & 레이블 */
+.contact-page .contact-form {
+  display: flex;
+  flex-direction: column;
+}
+.contact-page .form-group,
+.contact-page fieldset.form-group {
+  margin-bottom: 1.5rem;
+}
+.contact-page .form-group label,
+.contact-page fieldset.form-group legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+  display: block;
+}
+
+/* 입력, 셀렉트, 텍스트영역 */
+.contact-page .form-group input,
+.contact-page .form-group select,
+.contact-page .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.contact-page .form-group input:focus,
+.contact-page .form-group select:focus,
+.contact-page .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(95,61,196,0.2);
+}
+
+/* 라디오 그룹 */
+.contact-page .radio-group {
+  display: flex;
+  gap: 1rem;
+}
+.contact-page .radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+/* 첨부파일 정보 */
+.contact-page .file-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.contact-page .file-info small {
+  color: #555;
+}
+
+/* 에러 메시지 */
+.contact-page .error {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* 제출 버튼 */
+.contact-page .contact-form button {
+  padding: 0.75rem;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.contact-page .contact-form button:hover:not([disabled]) {
+  background: #4a2aa5;
+}
+.contact-page .contact-form button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 푸터 재사용 (공통) */
+footer {
+  background-color: #fff;
+  border-top: 1px solid #eee;
+  padding: 2rem 1rem;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+.footer-info {
+  flex: 1 1 300px;
+}
+.footer-logo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--primary);
+}
+.footer-desc {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.6;
+}
+.social-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.social-links a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity .2s;
+}
+.social-links a:hover,
+.social-links a:focus {
+  opacity: 0.7;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+.footer-links a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .2s;
+}
+.footer-links a:hover,
+.footer-links a:focus {
+  color: var(--primary);
+}
+copyright {
+  width: 100%;
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+/* 반응형: 태블릿 이하 */
+@media (max-width: 768px) {
+  .contact-page .contact-container {
+    padding: 1.5rem;
+    margin: 1.5rem auto;
+  }
+  .footer-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-links {
+    justify-content: center;
+  }
+}
+
+/* 반응형: 모바일 */
+@media (max-width: 480px) {
+  .contact-page .contact-container {
+    padding: 1rem;
+    margin: 1rem auto;
+  }
+  .radio-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

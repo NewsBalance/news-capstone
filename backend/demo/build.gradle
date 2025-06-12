@@ -1,0 +1,92 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.4'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'newsbalance'
+version = '0.0.1-SNAPSHOT'
+
+jar {
+	enabled = true
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+// ================================
+// Spring Boot BOM import 추가
+// ================================
+dependencyManagement {
+	imports {
+		// Spring Boot 3.4.4가 관리하는 모든 starter, lombok, jackson 등 버전을 한 번에 불러온다
+		mavenBom "org.springframework.boot:spring-boot-dependencies:3.4.4"
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.webjars:sockjs-client:1.5.1'
+	implementation 'org.webjars:stomp-websocket:2.3.4'
+
+//	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// Spring Data Elasticsearch
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+	// Elasticsearch Java client 버전 강제 통일
+	implementation 'co.elastic.clients:elasticsearch-java:8.15.5'
+	implementation 'org.elasticsearch.client:elasticsearch-rest-client:8.15.5'
+
+	// Google API Client Library for Java
+	implementation 'org.apache.httpcomponents:httpclient'
+
+	// 자막 파싱 등을 위한 Jsoup
+	implementation 'org.jsoup:jsoup:1.15.3'
+	implementation 'org.json:json:20231013'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Elasticsearch client 버전 충돌 방지를 위해 강제 통일
+configurations.all {
+	resolutionStrategy {
+		force 'co.elastic.clients:elasticsearch-java:8.15.5'
+		force 'org.elasticsearch.client:elasticsearch-rest-client:8.15.5'
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

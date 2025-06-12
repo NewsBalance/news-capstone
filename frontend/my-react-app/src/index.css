@@ -1,0 +1,69 @@
+/* src/index.css */
+
+/* --- Tailwind CSS import (필수 3줄) --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- 기존 CRA 코드 --- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* 기본 테마 변수 */
+:root {
+  --nb-bg: #ffffff;
+  --nb-text: #333333;
+  --nb-header-bg: #ffffff;
+  --nb-border: #eeeeee;
+}
+
+[data-theme='dark'] {
+  --nb-bg: #1c1c1c;
+  --nb-text: #f0f0f0;
+  --nb-header-bg: #2a2a2a;
+  --nb-border: #444444;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--nb-bg);
+  color: var(--nb-text);
+}
+
+.site-header {
+  background-color: var(--nb-header-bg);
+  border-bottom: 1px solid var(--nb-border);
+}
+
+
+.hero-title {
+  font-size: 3rem;
+  text-align: center;
+  margin: 0;
+  color: #4b3f72;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #777;
+  margin-bottom: 2rem;
+}
+
+.search-bar-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
