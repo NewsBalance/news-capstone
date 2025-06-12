@@ -109,7 +109,7 @@ public class DebateService {
         messagingTemplate.convertAndSend("/topic/room/" + room.getId(), message);
 
         // AI 요약기능 연동 (임시 스텁)
-        String summary = "[AI 요약] " + message.getContent(); // 요약 스텁
+        String summary = ""; // 요약 스텁
         
         // 요약 내용 저장
         debateMessage.setSummary(summary);
