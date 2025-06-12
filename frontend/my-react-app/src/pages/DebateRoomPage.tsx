@@ -37,6 +37,14 @@ interface Props {
     onFactCheck: (messageIndex: number) => void;
     currentTurnUserNickname?: string;
     roomData?: any;
+    isDebateStarted?: boolean;
+    onRequestDebateEnd: () => void;
+    onAcceptDebateEnd: () => void;
+    onRejectDebateEnd: () => void;
+    debateEndRequest?: {
+        requester: string;
+        isPending: boolean;
+    } | null;
 }
 
 type RelatedArticle = {
@@ -50,12 +58,54 @@ type SummarizeResponse = {
     keywords: string[];
 };
 
-// 메시지 목록 컴포넌트 개선
-const MessageList = ({ messages, onFactCheck }: {
+// 동적 점 애니메이션 컴포넌트 추가
+const DynamicDots: React.FC<{ text: string; color?: string }> = ({ text, color = "text-blue-600" }) => {
+    const [dotCount, setDotCount] = useState(1);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setDotCount(prev => prev >= 3 ? 1 : prev + 1);
+        }, 600);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <span className={color}>
+            {text}{'.'.repeat(dotCount)}
+        </span>
+    );
+};
+
+// 향상된 스피너 컴포넌트 추가
+const EnhancedSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; color?: string }> = ({ 
+    size = 'md', 
+    color = 'border-blue-600' 
+}) => {
+    const sizeClasses = {
+        sm: 'h-3 w-3',
+        md: 'h-4 w-4', 
+        lg: 'h-5 w-5'
+    };
+
+    return (
+        <div className={`${sizeClasses[size]} relative`}>
+            <div className={`${sizeClasses[size]} border-2 border-gray-200 rounded-full animate-pulse`}></div>
+            <div className={`${sizeClasses[size]} border-2 ${color} border-t-transparent rounded-full animate-spin absolute top-0 left-0`}></div>
+        </div>
+    );
+};
+
+// 메시지 목록 컴포넌트 개선 -  말풍선
+const MessageList = ({ messages, onFactCheck, currentFactCheckingIndex, debaterA, debaterB }: {
     messages: DebateMessage[], 
-    onFactCheck: (messageIndex: number) => void 
+    onFactCheck: (messageIndex: number) => void,
+    currentFactCheckingIndex: number | null,
+    debaterA: string | null,
+    debaterB: string | null
 }) => {
     const [checkedMessages, setCheckedMessages] = useState<Set<number>>(new Set());
+    
     const handleFactCheckClick = (index: number) => {
         onFactCheck(index);
         // 팩트체크 버튼을 누른 메시지 기록
@@ -71,30 +121,97 @@ const MessageList = ({ messages, onFactCheck }: {
     }
     
     return (
-        <div className="message-list w-full">
-            {messages.map((msg, i) => (
-                <div key={i} className="chat-bubble bg-white shadow-sm border border-gray-200 rounded-lg p-3 mb-3 w-full">
-                    <div className="message-header">
-                        <p className="font-bold text-pink-600">{msg.speaker}</p>
+        <div className="message-list w-full space-y-3">
+            {messages.map((msg, i) => {
+                const isDebaterA = msg.speaker === debaterA;
+                const isDebaterB = msg.speaker === debaterB;
+                const isSystem = msg.speaker === 'System';
+                
+                // 시스템 메시지는 중앙 정렬
+                if (isSystem) {
+                    return (
+                        <div key={i} className="flex justify-center">
+                            <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-full text-sm max-w-xs">
+                                {msg.text}
+                            </div>
+                        </div>
+                    );
+                }
+                
+                return (
+                    <div key={i} className={`flex ${isDebaterA ? 'justify-start' : 'justify-end'} transition-all duration-300`}>
+                        <div className={`max-w-[75%] ${
+                            currentFactCheckingIndex === i ? 'fact-check-loading' : ''
+                        }`}>
+                            {/* 사용자 이름 */}
+                            <div className={`text-xs mb-1 ${isDebaterA ? 'text-left text-pink-600' : 'text-right text-blue-600'}`}>
+                                {msg.speaker}
+                            </div>
+                            
+                            {/* 말풍선 메시지 */}
+                            <div className={`relative p-3 rounded-2xl shadow-sm transition-all duration-300 ${
+                                isDebaterA 
+                                    ? 'bg-white border border-pink-200 rounded-bl-sm' 
+                                    : 'bg-blue-500 text-white rounded-br-sm'
+                            } ${
+                                currentFactCheckingIndex === i 
+                                    ? (isDebaterA ? 'border-blue-300 bg-blue-50 shadow-blue-100 scale-[1.02]' : 'bg-blue-600 shadow-blue-200 scale-[1.02]')
+                                    : ''
+                            }`}>
+                                {/* 말풍선 꼬리 */}
+                                <div className={`absolute top-3 w-0 h-0 ${
+                                    isDebaterA 
+                                        ? '-left-2 border-t-[6px] border-t-transparent border-r-[8px] border-r-white border-b-[6px] border-b-transparent'
+                                        : '-right-2 border-t-[6px] border-t-transparent border-l-[8px] border-l-blue-500 border-b-[6px] border-b-transparent'
+                                } ${
+                                    currentFactCheckingIndex === i && isDebaterA ? 'border-r-blue-50' : ''
+                                } ${
+                                    currentFactCheckingIndex === i && !isDebaterA ? 'border-l-blue-600' : ''
+                                }`}></div>
+                                
+                                <p className={`whitespace-normal break-words ${
+                                    isDebaterA ? 'text-gray-800' : 'text-white'
+                                }`}>
+                                    {msg.text}
+                                </p>
+                                
+                                {msg.summary && (
+                                    <p className={`text-sm italic mt-2 pt-2 border-t whitespace-normal break-words ${
+                                        isDebaterA 
+                                            ? 'text-gray-600 border-gray-200' 
+                                            : 'text-blue-100 border-blue-400'
+                                    }`}>
+                                        {msg.summary}
+                                    </p>
+                                )}
+                            </div>
+                            
+                            {/* 팩트체크 버튼 */}
+                            <div className={`mt-2 ${isDebaterA ? 'text-left' : 'text-right'}`}>
+                                {currentFactCheckingIndex === i ? (
+                                    <div className="inline-flex items-center text-xs text-blue-600 bg-blue-100 px-3 py-2 rounded-full">
+                                        <EnhancedSpinner size="sm" color="border-blue-600" />
+                                        <span className="ml-2 font-medium">
+                                            <DynamicDots text="팩트체크 중" color="text-blue-600" />
+                                        </span>
+                                    </div>
+                                ) : checkedMessages.has(i) ? (
+                                    <span className="inline-block text-xs bg-green-50 text-green-600 px-3 py-1 rounded-full border border-green-200 font-medium animate-pulse">
+                                        ✓ 분석 완료
+                                    </span>
+                                ) : (
+                                    <button 
+                                        onClick={() => handleFactCheckClick(i)}
+                                        className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 hover:scale-105 px-3 py-1 rounded-full border border-orange-200 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                                    >
+                                        🔍 팩트체크
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <p className="message-content text-gray-700 whitespace-normal break-all overflow-hidden">{msg.text}</p>
-                    {msg.summary && (
-                        <p className="message-summary text-gray-600 text-sm italic mt-2 pt-2 border-t border-gray-100 whitespace-normal break-all overflow-hidden">
-                       
-                        </p>
-                    )}
-                    <div className="message-actions mt-2 text-right">
-                        {!msg.isFactChecked && !checkedMessages.has(i) && msg.speaker !== 'System' && (
-                            <button 
-                                onClick={() => handleFactCheckClick(i)}
-                                className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 px-2 py-1 rounded border border-orange-200 transition-colors"
-                            >
-                                팩트체크
-                            </button>
-                        )}
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 };
@@ -140,11 +257,17 @@ const DebateRoomPage: React.FC<Props> = ({
     onFactCheck,
     currentTurnUserNickname,
     roomData,
+    isDebateStarted,
+    onRequestDebateEnd,
+    onAcceptDebateEnd,
+    onRejectDebateEnd,
+    debateEndRequest,
 }) => {
     const [input, setInput] = useState("");
     const [chatInput, setChatInput] = useState("");
     const [isReady, setIsReady] = useState(false);
     const [isFactChecking, setIsFactChecking] = useState(false);
+    const [currentFactCheckingIndex, setCurrentFactCheckingIndex] = useState<number | null>(null);
     const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
     const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
     const [showSpectatorChat, setShowSpectatorChat] = useState<boolean>(true);
@@ -303,31 +426,37 @@ const DebateRoomPage: React.FC<Props> = ({
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
             }
             
             .animate-fadeIn {
-                animation: fadeIn 0.5s ease-in-out;
+                animation: fadeIn 0.5s ease-out;
             }
             
-            @keyframes blink {
-                0% { opacity: 0.2; }
-                20% { opacity: 1; }
-                100% { opacity: 0.2; }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
             }
             
-            .loading-dots .dot {
-                animation: blink 1.4s infinite both;
-                display: inline-block;
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }
+                50% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
             }
             
-            .loading-dots .dot:nth-child(2) {
-                animation-delay: 0.2s;
+            .fact-check-loading {
+                animation: glow 2s ease-in-out infinite;
             }
             
-            .loading-dots .dot:nth-child(3) {
-                animation-delay: 0.4s;
+            @keyframes bounce {
+                0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+                40%, 43% { transform: translateY(-8px); }
+                70% { transform: translateY(-4px); }
+                90% { transform: translateY(-2px); }
+            }
+            
+            .animate-bounce-subtle {
+                animation: bounce 2s ease-in-out;
             }
         `;
         document.head.appendChild(style);
@@ -342,6 +471,8 @@ const DebateRoomPage: React.FC<Props> = ({
     const handleFactCheck = (messageIndex: number) => {
         const target = messages[messageIndex];
         setSummaryTargetMessage(target);
+        setCurrentFactCheckingIndex(messageIndex);
+        setIsFactChecking(true);
     };
     
     // // 팩트체크 기능 수정 - 요약 기능 호출만 진행하고 기존 팩트체크 함수는 제거
@@ -392,14 +523,49 @@ const DebateRoomPage: React.FC<Props> = ({
                     </div>
                     <div className="flex items-center gap-2">
                         <AuthStatus />
-                        {/* 모든 버튼의 디자인 일관성 유지 */}
-                        {role === 'debater' && (
+                        {/* 토론 시작 전/후에 따른 버튼 변경 */}
+                        {role === 'debater' && !isDebateStarted && (
                             <button
                                 onClick={handleReady}
                                 className={`ready-button ${isReady ? 'bg-red-500 hover:bg-red-600' : 'bg-purple-600 hover:bg-purple-700'} text-white px-2 py-0.5 rounded text-xs transition-colors`}
                             >
                                 {isReady ? '준비 취소' : '준비'}
                             </button>
+                        )}
+                        
+                        {/* 토론 시작 후 토론 종료 버튼 표시 */}
+                        {role === 'debater' && isDebateStarted && !debateEndRequest?.isPending && (
+                            <button
+                                onClick={onRequestDebateEnd}
+                                className="end-debate-button bg-orange-600 hover:bg-orange-700 text-white px-2 py-0.5 rounded text-xs transition-colors"
+                            >
+                                토론 종료
+                            </button>
+                        )}
+                        
+                        {/* 토론 종료 요청이 있을 때 수락/거절 버튼 */}
+                        {role === 'debater' && debateEndRequest?.isPending && debateEndRequest.requester !== userName && (
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={onAcceptDebateEnd}
+                                    className="accept-end-button bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-xs transition-colors"
+                                >
+                                    종료 수락
+                                </button>
+                                <button
+                                    onClick={onRejectDebateEnd}
+                                    className="reject-end-button bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded text-xs transition-colors"
+                                >
+                                    종료 거절
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* 토론 종료를 요청한 토론자에게는 대기 상태 표시 */}
+                        {role === 'debater' && debateEndRequest?.isPending && debateEndRequest.requester === userName && (
+                            <span className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
+                                종료 승인 대기중...
+                            </span>
                         )}
                         <button
                             onClick={handleLeave}
@@ -439,7 +605,13 @@ const DebateRoomPage: React.FC<Props> = ({
                             className="chat-messages flex-1 overflow-y-auto overflow-x-hidden p-4 bg-neutral-50"
                             style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-all' }}
                         >
-                            <MessageList messages={messages} onFactCheck={handleFactCheck} />
+                            <MessageList 
+                                messages={messages} 
+                                onFactCheck={handleFactCheck} 
+                                currentFactCheckingIndex={currentFactCheckingIndex}
+                                debaterA={debaterA}
+                                debaterB={debaterB}
+                            />
                         </div>
                         
                         <div className="chat-input-container p-4 bg-white border-t border-gray-200 sticky bottom-0">
@@ -476,11 +648,27 @@ const DebateRoomPage: React.FC<Props> = ({
                             {/* 참가자 정보 컴포넌트 사용 */}
                             <ParticipantInfo />
 
+                            {/* 토론 종료 요청 알림 */}
+                            {debateEndRequest?.isPending && (
+                                <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <h4 className="text-sm font-semibold text-orange-800 mb-1">토론 종료 요청</h4>
+                                    <p className="text-xs text-orange-700">
+                                        {debateEndRequest.requester}님이 토론 종료를 요청했습니다.
+                                        {debateEndRequest.requester !== userName && role === 'debater' && 
+                                            " 상단의 버튼을 통해 수락 또는 거절해주세요."
+                                        }
+                                    </p>
+                                </div>
+                            )}
 
                             {/* 중앙 패널 내부: 토론 정보 → 요약 섹션 */}
                             <DebateSummarySection 
                                 roomId={parseInt(roomId || '0')} 
                                 message={summaryTargetMessage}
+                                onFactCheckComplete={() => {
+                                    setCurrentFactCheckingIndex(null);
+                                    setIsFactChecking(false);
+                                }}
                             />
                         </div>
                     </div>
@@ -531,21 +719,6 @@ const DebateRoomPage: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* 현재 발언자 표시 */}
-            <div className="current-speaker-info fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded-lg shadow-md border border-gray-200 flex flex-col items-center animate-fadeIn">
-                <h3 className="text-lg font-medium mb-1">
-                    <span className="text-gray-700">현재 발언자:</span> 
-                    <span className={`ml-2 font-bold ${currentSpeaker === debaterA ? 'text-pink-600' : 'text-blue-600'}`}>
-                        {currentSpeaker || '대기 중'}
-                    </span>
-                </h3>
-                {isMyTurn && (
-                    <div className="my-turn-indicator mt-2 text-center">
-                        <span className="turn-badge bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">내 차례</span>
-                        <p className="turn-notice text-sm text-gray-600 mt-1">5분 이내에 발언하지 않으면 턴이 넘어갑니다.</p>
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
