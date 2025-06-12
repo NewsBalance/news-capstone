@@ -372,11 +372,23 @@ const DebateRoomPage: React.FC<Props> = ({
     };
     
     // 토론자 메시지 키보드 이벤트 핸들러 추가
-    const handleDebateMessageKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleDebateMessageKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault(); // 기본 엔터 동작 방지
             handleSendMessage();
         }
+    };
+    
+    // textarea 자동 높이 조절
+    const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const textarea = e.target;
+        setInput(textarea.value);
+        
+        // 높이를 자동으로 조절
+        textarea.style.height = 'auto';
+        const scrollHeight = textarea.scrollHeight;
+        const maxHeight = 120; // 최대 높이 (약 5줄)
+        textarea.style.height = Math.min(scrollHeight, maxHeight) + 'px';
     };
     
     const handleLeave = async () => {
@@ -634,19 +646,22 @@ const DebateRoomPage: React.FC<Props> = ({
                         </div>
                         
                         <div className="chat-input-container p-4 bg-white border-t border-gray-200 sticky bottom-0">
-                            <input
+                            <textarea
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
+                                onChange={handleTextareaResize}
                                 onKeyDown={handleDebateMessageKeyDown}
-                                placeholder={`${role === 'debater' ? (isMyTurn ? '당신의 주장을 입력하세요...' : '지금은 발언할 수 없습니다.') : '관전자는 메시지를 보낼 수 없습니다'}`}
-                                className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                placeholder={`${role === 'debater' ? (isMyTurn ? '당신의 주장을 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)' : '지금은 발언할 수 없습니다.') : '관전자는 메시지를 보낼 수 없습니다'}`}
+                                className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none overflow-hidden"
                                 disabled={!(role === 'debater' && isMyTurn)}
                                 maxLength={300}  // 최대 글자 수 제한
+                                rows={1}
+                                style={{ minHeight: '40px' }}
                             />
                             <button
                                 onClick={handleSendMessage}  // 수정된 핸들러 사용
-                                className={`send-button ${!(role === 'debater' && isMyTurn) ? 'opacity-50 cursor-not-allowed' : ''} bg-pink-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-pink-700 transition-colors`}
+                                className={`send-button ${!(role === 'debater' && isMyTurn) ? 'opacity-50 cursor-not-allowed' : ''} bg-pink-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-pink-700 transition-colors flex-shrink-0 self-end`}
                                 disabled={!(role === 'debater' && isMyTurn)}
+                                style={{ minHeight: '40px' }}
                             >
                                 전송
                             </button>
