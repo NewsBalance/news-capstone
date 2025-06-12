@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,6 +44,9 @@ public class DebateService {
     // 턴 타이머를 관리하는 맵 (룸ID -> 타이머 작업)
     private final Map<Long, ScheduledFuture<?>> turnTimers = new ConcurrentHashMap<>();
     
+    // 토론 종료 요청을 관리하는 맵 (룸ID -> 요청자 닉네임)
+    private final Map<Long, String> debateEndRequests = new ConcurrentHashMap<>();
+    
     // 스케줄러 추가
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
     
@@ -60,6 +64,9 @@ public class DebateService {
             case "CHAT", "DEBATE" -> handleChat(sender, room, message);
             case "READY" -> handleReady(sender, room);
             case "FORFEIT", "EXIT", "ACK" -> endDebate(message, room);
+            case "DEBATE_END_REQUEST" -> handleDebateEndRequest(sender, room, message);
+            case "DEBATE_END_ACCEPT" -> handleDebateEndAccept(sender, room, message);
+            case "DEBATE_END_REJECT" -> handleDebateEndReject(sender, room, message);
             default -> {
                 // 알 수 없는 메시지 타입 로깅
                 System.out.println("알 수 없는 메시지 타입: " + message.getType());
@@ -462,8 +469,162 @@ public class DebateService {
         startTurnTimer(roomId);
     }
     
-    // 토론방 삭제 또는 종료 시 타이머 정리
+    // 토론 종료 요청 처리
+    @Transactional
+    private void handleDebateEndRequest(User sender, DebateRoom room, Message message) {
+        // 토론이 시작되지 않았으면 종료 요청 불가
+        if (!room.isStarted()) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론이 시작되지 않아 종료 요청을 할 수 없습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 토론자가 아니면 종료 요청 불가
+        if (!isDebater(sender, room)) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론자만 토론 종료를 요청할 수 있습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 이미 종료 요청이 있는지 확인
+        if (debateEndRequests.containsKey(room.getId())) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "이미 토론 종료 요청이 진행 중입니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 종료 요청 저장
+        debateEndRequests.put(room.getId(), sender.getNickname());
+        
+        // 종료 요청 메시지 저장
+        DebateMessage requestMessage = DebateMessage.builder()
+                .type("SYSTEM")
+                .content(sender.getNickname() + "님이 토론 종료를 요청했습니다.")
+                .sender("System")
+                .debateRoom(room)
+                .createdAt(LocalDateTime.now())
+                .build();
+        messageRepository.save(requestMessage);
+        
+        // 모든 참여자에게 종료 요청 알림
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), 
+                new Message("DEBATE_END_REQUEST", message.getContent(), sender.getNickname(), room.getId()));
+                
+        System.out.println("토론 종료 요청 - 방: " + room.getId() + ", 요청자: " + sender.getNickname());
+    }
+    
+    // 토론 종료 수락 처리
+    @Transactional
+    private void handleDebateEndAccept(User sender, DebateRoom room, Message message) {
+        // 종료 요청이 있는지 확인
+        String requester = debateEndRequests.get(room.getId());
+        if (requester == null) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론 종료 요청이 없습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 토론자가 아니면 수락 불가
+        if (!isDebater(sender, room)) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론자만 토론 종료를 수락할 수 있습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 요청자 본인이 수락하는 경우 방지
+        if (requester.equals(sender.getNickname())) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "본인이 요청한 종료를 수락할 수 없습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 토론 종료 처리
+        room.setStarted(false);
+        room.setDebaterAReady(false);
+        room.setDebaterBReady(false);
+        roomRepository.save(room);
+        
+        // 종료 요청 제거
+        debateEndRequests.remove(room.getId());
+        
+        // 턴 타이머 정리
+        cancelTurnTimer(room.getId());
+        
+        // 종료 수락 메시지 저장
+        DebateMessage acceptMessage = DebateMessage.builder()
+                .type("SYSTEM")
+                .content(sender.getNickname() + "님이 토론 종료를 수락했습니다. 토론이 종료됩니다.")
+                .sender("System")
+                .debateRoom(room)
+                .createdAt(LocalDateTime.now())
+                .build();
+        messageRepository.save(acceptMessage);
+        
+        // 모든 참여자에게 종료 수락 알림
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), 
+                new Message("DEBATE_END_ACCEPT", message.getContent(), sender.getNickname(), room.getId()));
+        
+        // 방 상태 업데이트 전송 (토론 종료 상태)
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/status", 
+                Map.of("started", false, "ended", true));
+                
+        System.out.println("토론 종료 수락 - 방: " + room.getId() + ", 수락자: " + sender.getNickname());
+    }
+    
+    // 토론 종료 거절 처리
+    @Transactional
+    private void handleDebateEndReject(User sender, DebateRoom room, Message message) {
+        // 종료 요청이 있는지 확인
+        String requester = debateEndRequests.get(room.getId());
+        if (requester == null) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론 종료 요청이 없습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 토론자가 아니면 거절 불가
+        if (!isDebater(sender, room)) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "토론자만 토론 종료를 거절할 수 있습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 요청자 본인이 거절하는 경우 방지
+        if (requester.equals(sender.getNickname())) {
+            messagingTemplate.convertAndSend("/topic/error/" + room.getId(), 
+                    new Message("ERROR", "본인이 요청한 종료를 거절할 수 없습니다.", "System", room.getId()));
+            return;
+        }
+        
+        // 종료 요청 제거
+        debateEndRequests.remove(room.getId());
+        
+        // 종료 거절 메시지 저장
+        DebateMessage rejectMessage = DebateMessage.builder()
+                .type("SYSTEM")
+                .content(sender.getNickname() + "님이 토론 종료를 거절했습니다.")
+                .sender("System")
+                .debateRoom(room)
+                .createdAt(LocalDateTime.now())
+                .build();
+        messageRepository.save(rejectMessage);
+        
+        // 모든 참여자에게 종료 거절 알림
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), 
+                new Message("DEBATE_END_REJECT", message.getContent(), sender.getNickname(), room.getId()));
+                
+        System.out.println("토론 종료 거절 - 방: " + room.getId() + ", 거절자: " + sender.getNickname());
+    }
+    
+    // 사용자가 토론자인지 확인하는 헬퍼 메서드
+    private boolean isDebater(User user, DebateRoom room) {
+        return (room.getDebaterA() != null && room.getDebaterA().getId().equals(user.getId())) ||
+               (room.getDebaterB() != null && room.getDebaterB().getId().equals(user.getId()));
+    }
+    
+    // 토론방 삭제 또는 종료 시 타이머 및 요청 정리
     public void cleanupRoomTimers(Long roomId) {
         cancelTurnTimer(roomId);
+        debateEndRequests.remove(roomId);
     }
 }

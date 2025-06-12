@@ -39,6 +39,9 @@ public class DebateRoomService {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    
+    @Autowired
+    private DebateService debateService;
 
     @Transactional(readOnly = true)
     public List<DebateRoomDto> getAllDebateRooms() {
@@ -300,6 +303,14 @@ public class DebateRoomService {
                 room.setScheduledForDeletion(true);
                 room.setDeletionTime(LocalDateTime.now().plusMinutes(3));
             }
+            
+            // 토론 종료 요청 상태 및 타이머 정리
+            debateService.cleanupRoomTimers(roomId);
+        }
+        // 토론자A가 나가는 경우 (방장)
+        else if (room.getDebaterA() != null && room.getDebaterA().getId().equals(user.getId())) {
+            // 토론 종료 요청 상태 및 타이머 정리
+            debateService.cleanupRoomTimers(roomId);
         }
         // 관전자가 나가는 경우
         else if (!isDebater(room, user)) {
@@ -318,6 +329,9 @@ public class DebateRoomService {
         if (!room.getDebaterA().getNickname().equals(nickname)) {
             throw new IllegalStateException("방장만 방을 삭제할 수 있습니다");
         }
+        
+        // 토론 종료 요청 상태 및 타이머 정리
+        debateService.cleanupRoomTimers(roomId);
         
         debateRoomRepository.delete(room);
     }

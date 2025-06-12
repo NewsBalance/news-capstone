@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import DebateRoomPage from './DebateRoomPage';
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as StompJs from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,12 +35,20 @@ interface RoomData {
     debaterA: string | null;
     debaterB: string | null;
     currentTurnUserNickname?: string;
+    ended?: boolean;
 }
 
 const DebateRoomPageWrapper: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
+    
+    // 디버깅용 로그 함수 (개발 환경에서만 출력)
+    const debugLog = (message: string, data?: any) => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[DebateRoom ${roomId}] ${message}`, data || '');
+        }
+    };
     
     // 상태 관리
     const [userName, setUserName] = useState<string>('');
@@ -53,9 +61,31 @@ const DebateRoomPageWrapper: React.FC = () => {
     const [participantCount, setParticipantCount] = useState<number>(0);
     const [currentSpeaker, setCurrentSpeaker] = useState<string>('');
     const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
+    const [debateEndRequest, setDebateEndRequest] = useState<{
+        requester: string;
+        isPending: boolean;
+    } | null>(null);
 
     // WebSocket 클라이언트 참조
     const stompClient = useRef<any>(null);
+
+    // 개발자 도구용 디버깅 함수들 (개발 환경에서만)
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            (window as any).debugDebateRoom = {
+                getMessages: () => messages,
+                getChatMessages: () => chatMessages,
+                getRoomData: () => roomData,
+                getConnectionStatus: () => stompClient.current?.connected || false
+            };
+        }
+        
+        return () => {
+            if (process.env.NODE_ENV === 'development') {
+                delete (window as any).debugDebateRoom;
+            }
+        };
+    }, [messages, chatMessages, roomData]);
 
     // 사용자 정보 설정
     useEffect(() => {
@@ -143,7 +173,18 @@ const DebateRoomPageWrapper: React.FC = () => {
             client.subscribe('/topic/chat/' + roomId, function (message) {
                 try {
                     const responseMessage = JSON.parse(message.body);
-                    setChatMessages(prev => [...prev, `${responseMessage.sender}: ${responseMessage.content}`]);
+                    const newChatMessage = `${responseMessage.sender}: ${responseMessage.content}`;
+                    
+                    setChatMessages(prev => {
+                        // 중복 메세지 방지
+                        if (prev.includes(newChatMessage)) {
+                            debugLog('중복 채팅 메세지 감지되어 무시됨:', newChatMessage);
+                            return prev;
+                        }
+                        
+                        debugLog('새 채팅 메세지 추가:', newChatMessage);
+                        return [...prev, newChatMessage];
+                    });
                 } catch (err) {
                     // 오류 처리만 하고 로그 출력하지 않음
                 }
@@ -193,24 +234,30 @@ const DebateRoomPageWrapper: React.FC = () => {
             // 토론방 데이터 설정
             setRoomData(data);
             
-            // 토론 메시지 처리
+            // 토론 메시지 처리 (기존 메세지 로드)
             if (Array.isArray(data.messages)) {
-                setMessages(data.messages.map((msg: any) => ({
+                const previousMessages = data.messages.map((msg: any) => ({
                     speaker: msg.sender,
                     text: msg.content,
                     summary: msg.summary
-                })));
+                }));
+                setMessages(previousMessages);
+                debugLog(`이전 토론 메세지 ${previousMessages.length}개 로드됨`);
             } else {
                 setMessages([]);
+                debugLog('이전 토론 메세지 없음');
             }
             
-            // 채팅 메시지 처리
+            // 채팅 메시지 처리 (기존 채팅 메세지 로드)
             if (Array.isArray(data.chatMessages)) {
-                setChatMessages(data.chatMessages.map((msg: any) => 
+                const previousChatMessages = data.chatMessages.map((msg: any) => 
                     `${msg.message}`
-                ));
+                );
+                setChatMessages(previousChatMessages);
+                debugLog(`이전 채팅 메세지 ${previousChatMessages.length}개 로드됨`);
             } else {
                 setChatMessages([]);
+                debugLog('이전 채팅 메세지 없음');
             }
             
             // 역할 설정
@@ -345,11 +392,11 @@ const DebateRoomPageWrapper: React.FC = () => {
                 body: JSON.stringify(message)
             });
             
-            // 클라이언트 측에서 바로 메시지 추가 (낙관적 UI 업데이트)
-            setMessages(prev => [...prev, {
-                speaker: userName,
-                text: text
-            }]);
+            // 클라이언트 측 낙관적 UI 업데이트 제거 - 서버에서 오는 메세지만 사용
+            // setMessages(prev => [...prev, {
+            //     speaker: userName,
+            //     text: text
+            // }]);
         } catch (error) {
             alert("메시지 전송에 실패했습니다. 다시 시도해주세요.");
         }
@@ -550,24 +597,186 @@ const DebateRoomPageWrapper: React.FC = () => {
         // 실제 요약 요청은 DebateRoomPage.tsx에서 수행됨
     };
 
-    // 웹소켓 메시지 처리에서 팩트체크 관련 메시지 필터링 제거
+    // 토론 종료 요청 함수
+    const handleRequestDebateEnd = async () => {
+        if (!stompClient.current || !roomId) {
+            alert("서버에 연결되어 있지 않습니다.");
+            return;
+        }
+
+        try {
+            const message = {
+                type: "DEBATE_END_REQUEST",
+                content: `${userName}님이 토론 종료를 요청했습니다.`,
+                sender: userName,
+                roomId: Number(roomId)
+            };
+
+            stompClient.current.publish({
+                destination: '/app/debate',
+                body: JSON.stringify(message)
+            });
+
+            // 요청 상태 설정
+            setDebateEndRequest({
+                requester: userName,
+                isPending: true
+            });
+
+        } catch (error) {
+            alert("토론 종료 요청에 실패했습니다.");
+        }
+    };
+
+    // 토론 종료 수락 함수
+    const handleAcceptDebateEnd = async () => {
+        if (!stompClient.current || !roomId) {
+            alert("서버에 연결되어 있지 않습니다.");
+            return;
+        }
+
+        try {
+            const message = {
+                type: "DEBATE_END_ACCEPT",
+                content: `${userName}님이 토론 종료를 수락했습니다. 토론이 종료됩니다.`,
+                sender: userName,
+                roomId: Number(roomId)
+            };
+
+            stompClient.current.publish({
+                destination: '/app/debate',
+                body: JSON.stringify(message)
+            });
+
+            // 요청 상태 초기화
+            setDebateEndRequest(null);
+
+        } catch (error) {
+            alert("토론 종료 수락에 실패했습니다.");
+        }
+    };
+
+    // 토론 종료 거절 함수
+    const handleRejectDebateEnd = async () => {
+        if (!stompClient.current || !roomId) {
+            alert("서버에 연결되어 있지 않습니다.");
+            return;
+        }
+
+        try {
+            const message = {
+                type: "DEBATE_END_REJECT",
+                content: `${userName}님이 토론 종료를 거절했습니다.`,
+                sender: userName,
+                roomId: Number(roomId)
+            };
+
+            stompClient.current.publish({
+                destination: '/app/debate',
+                body: JSON.stringify(message)
+            });
+
+            // 요청 상태 초기화
+            setDebateEndRequest(null);
+
+        } catch (error) {
+            alert("토론 종료 거절에 실패했습니다.");
+        }
+    };
+
+    // 웹소켓 메시지 처리 함수
     const handleDebateMessage = (responseMessage: any) => {
-        // 기존 메시지 처리 로직
         switch (responseMessage.type) {
-       	    case 'CHAT':
-	    case 'DEBATE':
-		setMessages(prev => [...prev, {
-		    speaker: responseMessage.sender,
-		    text: responseMessage.content,
-		    summary: responseMessage.summary
-		}]);
-		break;
+            case 'CHAT':
+            case 'DEBATE':
+                // 토론 메시지 처리 - 중복 방지
+                setMessages(prev => {
+                    // 동일한 내용의 메세지가 이미 있는지 확인
+                    const isDuplicate = prev.some(msg => 
+                        msg.speaker === responseMessage.sender && 
+                        msg.text === responseMessage.content
+                    );
+                    
+                    if (isDuplicate) {
+                        debugLog('중복 메세지 감지되어 무시됨:', responseMessage.content);
+                        return prev;
+                    }
+                    
+                    debugLog('새 토론 메세지 추가:', responseMessage.content);
+                    return [...prev, {
+                        speaker: responseMessage.sender,
+                        text: responseMessage.content,
+                        summary: responseMessage.summary
+                    }];
+                });
+                break;
+                
             case 'SYSTEM':
+                // 시스템 메시지 처리
                 setMessages(prev => [...prev, {
                     speaker: 'System',
                     text: responseMessage.content,
                 }]);
                 break;
+                
+            case 'START':
+                // 토론 시작 메시지
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: '토론이 시작되었습니다.',
+                }]);
+                break;
+                
+            case 'READY':
+                // 준비 완료 메시지
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: responseMessage.content,
+                }]);
+                break;
+                
+            case 'TURN':
+                // 턴 변경 처리
+                setCurrentSpeaker(responseMessage.content);
+                setIsMyTurn(responseMessage.content === userName);
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: `${responseMessage.content}님의 발언 차례입니다.`,
+                }]);
+                break;
+                
+            case 'DEBATE_END_REQUEST':
+                // 토론 종료 요청 처리
+                setDebateEndRequest({
+                    requester: responseMessage.sender,
+                    isPending: true
+                });
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: responseMessage.content,
+                }]);
+                break;
+                
+            case 'DEBATE_END_ACCEPT':
+                // 토론 종료 수락 처리
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: responseMessage.content,
+                }]);
+                setDebateEndRequest(null);
+                // 토론 종료 상태 업데이트
+                setRoomData(prev => prev ? { ...prev, ended: true, started: false } : prev);
+                break;
+                
+            case 'DEBATE_END_REJECT':
+                // 토론 종료 거절 처리
+                setMessages(prev => [...prev, {
+                    speaker: 'System',
+                    text: responseMessage.content,
+                }]);
+                setDebateEndRequest(null);
+                break;
+                
             case 'CREATOR_LEAVE':
                 setMessages(prev => [...prev, {
                     speaker: 'System',
@@ -576,6 +785,7 @@ const DebateRoomPageWrapper: React.FC = () => {
                 alert('토론 생성자가 나가서 토론방이 제거됩니다.');
                 setTimeout(() => navigate('/discussion'), 3000);
                 break;
+                
             case 'DEBATER_LEAVE':
                 setMessages(prev => [...prev, {
                     speaker: 'System',
@@ -584,10 +794,12 @@ const DebateRoomPageWrapper: React.FC = () => {
                 // 토론자가 나가면 방 상태 업데이트
                 fetchRoomData();
                 break;
-            case 'START':
+                
+            default:
+                // 기타 메시지 타입은 시스템 메시지로 처리
                 setMessages(prev => [...prev, {
                     speaker: 'System',
-                    text: '토론이 시작되었습니다.',
+                    text: responseMessage.content || '알 수 없는 메시지',
                 }]);
                 break;
         }
@@ -613,68 +825,7 @@ const DebateRoomPageWrapper: React.FC = () => {
         }
     };
 
-    // WebSocket 메시지 구독 설정
-    const setupSubscriptions = () => {
-        // 토론방 메시지 구독
-        stompClient.current?.subscribe(`/topic/room/${roomId}`, (message: { body: string }) => {
-            const data = JSON.parse(message.body);
-            
-            // 메시지 타입에 따라 처리
-            switch (data.type) {
-                case 'DEBATE':
-                    // 토론 메시지 처리
-                    setMessages(prev => [...prev, {
-                        speaker: data.sender,
-                        text: data.content
-                    }]);
-                    break;
-                    
-                case 'SYSTEM':
-                    // 시스템 메시지 처리 (턴 타임아웃 포함)
-                    setMessages(prev => [...prev, {
-                        speaker: '시스템',
-                        text: data.content,
-                        isSystem: true
-                    }]);
-                    break;
-                    
-                case 'TURN':
-                    // 턴 변경 메시지 처리
-                    setCurrentSpeaker(data.content);
-                    // 현재 턴이 자신인지 표시
-                    setIsMyTurn(data.content === userName);
-                    break;
-                    
-                // 기타 메시지 타입 처리...
-            }
-        });
-        
-        // 턴 알림 구독 추가
-        stompClient.current?.subscribe(`/topic/turn/${roomId}`, (message: { body: string }) => {
-            const data = JSON.parse(message.body);
-            
-            // 현재 발언자 업데이트
-            setCurrentSpeaker(data.content);
-            
-            // 내 턴인지 확인
-            setIsMyTurn(data.content === userName);
-            
-            // 턴 변경 메시지 표시
-            setMessages(prev => [...prev, {
-                speaker: '시스템',
-                text: `${data.content}님의 발언 차례입니다.`,
-                isSystem: true
-            }]);
-        });
-        
-        // 오류 메시지 구독
-        stompClient.current?.subscribe(`/topic/error/${roomId}`, (message: { body: string }) => {
-            const data = JSON.parse(message.body);
-            
-            // 오류 알림 표시
-            alert(data.content);
-        });
-    };
+
 
     // 로딩 상태나 오류 처리
     if (loading) {
@@ -711,6 +862,11 @@ const DebateRoomPageWrapper: React.FC = () => {
             isLoggedIn={!!userName}
             onFactCheck={handleFactCheck}
             currentTurnUserNickname={roomData.currentTurnUserNickname}
+            isDebateStarted={roomData.started && !roomData.ended}
+            onRequestDebateEnd={handleRequestDebateEnd}
+            onAcceptDebateEnd={handleAcceptDebateEnd}
+            onRejectDebateEnd={handleRejectDebateEnd}
+            debateEndRequest={debateEndRequest}
         />
     );
 };
