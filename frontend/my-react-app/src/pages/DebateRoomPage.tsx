@@ -130,56 +130,67 @@ const MessageList = ({ messages, onFactCheck, currentFactCheckingIndex, debaterA
                 // 시스템 메시지는 중앙 정렬
                 if (isSystem) {
                     return (
-                        <div key={i} className="flex justify-center">
-                            <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-full text-sm max-w-xs">
+                        <div key={i} className="flex justify-center w-full">
+                            <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-full text-sm max-w-xs text-center">
                                 {msg.text}
                             </div>
                         </div>
                     );
                 }
                 
+                // 토론자별 정렬과 스타일 결정
+                const isLeft = isDebaterA;  // debaterA는 왼쪽
+                const isRight = isDebaterB; // debaterB는 오른쪽
+                
                 return (
-                    <div key={i} className={`flex ${isDebaterA ? 'justify-start' : 'justify-end'} transition-all duration-300`}>
+                    <div key={i} className={`flex w-full transition-all duration-300 ${
+                        isLeft ? 'justify-start' : (isRight ? 'justify-end' : 'justify-center')
+                    }`}>
                         <div className={`max-w-[75%] ${
                             currentFactCheckingIndex === i ? 'fact-check-loading' : ''
                         }`}>
                             {/* 사용자 이름 */}
-                            <div className={`text-xs mb-1 ${isDebaterA ? 'text-left text-pink-600' : 'text-right text-blue-600'}`}>
+                            <div className={`text-xs mb-1 ${
+                                isLeft ? 'text-left text-pink-600' : (isRight ? 'text-right text-blue-600' : 'text-center text-gray-600')
+                            }`}>
                                 {msg.speaker}
                             </div>
                             
                             {/* 말풍선 메시지 */}
                             <div className={`relative p-3 rounded-2xl shadow-sm transition-all duration-300 ${
-                                isDebaterA 
+                                isLeft 
                                     ? 'bg-white border border-pink-200 rounded-bl-sm' 
-                                    : 'bg-blue-500 text-white rounded-br-sm'
+                                    : (isRight ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700')
                             } ${
                                 currentFactCheckingIndex === i 
-                                    ? (isDebaterA ? 'border-blue-300 bg-blue-50 shadow-blue-100 scale-[1.02]' : 'bg-blue-600 shadow-blue-200 scale-[1.02]')
+                                    ? (isLeft ? 'border-blue-300 bg-blue-50 shadow-blue-100 scale-[1.02]' : 
+                                       (isRight ? 'bg-blue-600 shadow-blue-200 scale-[1.02]' : ''))
                                     : ''
                             }`}>
-                                {/* 말풍선 꼬리 */}
-                                <div className={`absolute top-3 w-0 h-0 ${
-                                    isDebaterA 
-                                        ? '-left-2 border-t-[6px] border-t-transparent border-r-[8px] border-r-white border-b-[6px] border-b-transparent'
-                                        : '-right-2 border-t-[6px] border-t-transparent border-l-[8px] border-l-blue-500 border-b-[6px] border-b-transparent'
-                                } ${
-                                    currentFactCheckingIndex === i && isDebaterA ? 'border-r-blue-50' : ''
-                                } ${
-                                    currentFactCheckingIndex === i && !isDebaterA ? 'border-l-blue-600' : ''
-                                }`}></div>
+                                {/* 말풍선 꼬리 - 토론자 메시지에만 적용 */}
+                                {(isLeft || isRight) && (
+                                    <div className={`absolute top-3 w-0 h-0 ${
+                                        isLeft 
+                                            ? '-left-2 border-t-[6px] border-t-transparent border-r-[8px] border-r-white border-b-[6px] border-b-transparent'
+                                            : '-right-2 border-t-[6px] border-t-transparent border-l-[8px] border-l-blue-500 border-b-[6px] border-b-transparent'
+                                    } ${
+                                        currentFactCheckingIndex === i && isLeft ? 'border-r-blue-50' : ''
+                                    } ${
+                                        currentFactCheckingIndex === i && isRight ? 'border-l-blue-600' : ''
+                                    }`}></div>
+                                )}
                                 
                                 <p className={`whitespace-normal break-words ${
-                                    isDebaterA ? 'text-gray-800' : 'text-white'
+                                    isLeft ? 'text-gray-800' : (isRight ? 'text-white' : 'text-gray-700')
                                 }`}>
                                     {msg.text}
                                 </p>
                                 
                                 {msg.summary && (
                                     <p className={`text-sm italic mt-2 pt-2 border-t whitespace-normal break-words ${
-                                        isDebaterA 
+                                        isLeft 
                                             ? 'text-gray-600 border-gray-200' 
-                                            : 'text-blue-100 border-blue-400'
+                                            : (isRight ? 'text-blue-100 border-blue-400' : 'text-gray-500 border-gray-300')
                                     }`}>
                                         {msg.summary}
                                     </p>
@@ -187,7 +198,7 @@ const MessageList = ({ messages, onFactCheck, currentFactCheckingIndex, debaterA
                             </div>
                             
                             {/* 팩트체크 버튼 */}
-                            <div className={`mt-2 ${isDebaterA ? 'text-left' : 'text-right'}`}>
+                            <div className={`mt-2 ${isLeft ? 'text-left' : (isRight ? 'text-right' : 'text-center')}`}>
                                 {currentFactCheckingIndex === i ? (
                                     <div className="inline-flex items-center text-xs text-blue-600 bg-blue-100 px-3 py-2 rounded-full">
                                         <EnhancedSpinner size="sm" color="border-blue-600" />
@@ -357,6 +368,14 @@ const DebateRoomPage: React.FC<Props> = ({
     const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSendChat();
+        }
+    };
+    
+    // 토론자 메시지 키보드 이벤트 핸들러 추가
+    const handleDebateMessageKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // 기본 엔터 동작 방지
+            handleSendMessage();
         }
     };
     
@@ -618,6 +637,7 @@ const DebateRoomPage: React.FC<Props> = ({
                             <input
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleDebateMessageKeyDown}
                                 placeholder={`${role === 'debater' ? (isMyTurn ? '당신의 주장을 입력하세요...' : '지금은 발언할 수 없습니다.') : '관전자는 메시지를 보낼 수 없습니다'}`}
                                 className="input-field bg-neutral-50 border border-gray-300 rounded-lg p-2 w-full mr-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                 disabled={!(role === 'debater' && isMyTurn)}
